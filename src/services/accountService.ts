@@ -1,0 +1,34 @@
+import { djangoClient } from '../api/axiosInstance';
+import { BILLING_ENDPOINTS } from '../constants/apiEndpoints';
+import type { BillingAccount, TransactionItem } from '../types/account';
+
+export async function getBillingAccount(): Promise<BillingAccount> {
+  const res = await djangoClient.get(BILLING_ENDPOINTS.ACCOUNT);
+  return (res.data ?? {}) as BillingAccount;
+}
+
+export async function getPlanStatus(): Promise<unknown> {
+  const res = await djangoClient.get(BILLING_ENDPOINTS.PLAN_STATUS).catch(() => ({ data: null }));
+  return res?.data ?? null;
+}
+
+export async function getFeedbackAccess(): Promise<{ can_access_full_feedback?: boolean; tier?: number }> {
+  const res = await djangoClient.get(BILLING_ENDPOINTS.FEEDBACK_ACCESS).catch(() => ({ data: {} }));
+  return (res?.data ?? {}) as { can_access_full_feedback?: boolean; tier?: number };
+}
+
+export async function getTransactions(page: number): Promise<{ results?: TransactionItem[] }> {
+  const res = await djangoClient.get(BILLING_ENDPOINTS.TRANSACTIONS(page));
+  return (res.data ?? {}) as { results?: TransactionItem[] };
+}
+
+export async function getApiKeys(): Promise<unknown[]> {
+  const res = await djangoClient.get(BILLING_ENDPOINTS.API_KEYS).catch(() => ({ data: [] }));
+  const data = res?.data;
+  return Array.isArray(data) ? data : [];
+}
+
+export async function createApiKey(label: string): Promise<unknown> {
+  const res = await djangoClient.post(BILLING_ENDPOINTS.API_KEYS, { label: label.trim() });
+  return res.data;
+}

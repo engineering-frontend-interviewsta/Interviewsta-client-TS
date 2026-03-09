@@ -1,0 +1,100 @@
+/** Django backend (auth, user, etc.) */
+export const AUTH_ENDPOINTS = {
+  LOGIN: 'auth/login/',
+  REGISTER: 'auth/register/',
+  LOGOUT: 'auth/logout/',
+  REFRESH: 'auth/refresh/',
+  ME: 'auth/me/',
+  FORGOT_PASSWORD: 'auth/forgot-password/',
+  GOOGLE: 'auth/google/',
+  GITHUB: 'auth/github/',
+  PATCH_ME: 'auth/me/',
+} as const;
+
+/** FastAPI interview service */
+export const INTERVIEW_ENDPOINTS = {
+  START: '/interview/start',
+  START_STATUS: (taskId: string) => `/interview/start-status/${taskId}`,
+  RESPOND_STATUS: (sessionId: string, taskId: string) =>
+    `/interview/${sessionId}/respond-status/${taskId}`,
+  RESPOND: (sessionId: string) => `/interview/${sessionId}/respond`,
+  STATUS: (sessionId: string) => `/interview/${sessionId}/status`,
+  STREAM: (sessionId: string) => `/interview/${sessionId}/stream`,
+  VIDEO_TELEMETRY: (sessionId: string) => `/interview/${sessionId}/video-telemetry`,
+  VIDEO_QUALITY: (sessionId: string) => `/interview/${sessionId}/video-quality`,
+  END: '/interview/end',
+  FEEDBACK_STATUS: (taskId: string) => `/interview/feedback-status/${taskId}`,
+} as const;
+
+/** Other Django endpoints (extend as you migrate) */
+export const RESUME_ENDPOINTS = {
+  GET_ANALYSIS: 'get-resume-analysis/',
+} as const;
+
+export const COACHING_ENDPOINTS = {
+  SESSIONS: 'coaching-sessions/',
+} as const;
+
+/** Dashboard & student (Django) */
+export const DASHBOARD_ENDPOINTS = {
+  LATEST_STATS: 'latest-stats',
+  RESUME_PROGRESS: 'get-resume-progress',
+  PERFORMANCE_ANALYSIS: 'student/performance-analysis/',
+  CLASSES: 'classes/',
+  TIME_SLOTS: 'time-slots/',
+  ASSIGNMENTS: 'assignments/',
+} as const;
+
+/** Feedback (Django) */
+export const FEEDBACK_ENDPOINTS = {
+  SESSION_HISTORY: 'get-session-history/',
+} as const;
+
+/** Billing & account (Django) */
+export const BILLING_ENDPOINTS = {
+  ACCOUNT: 'billing/account/',
+  PLAN_STATUS: 'billing/plan-status/',
+  FEEDBACK_ACCESS: 'billing/feedback-access/',
+  TRANSACTIONS: (page: number) => `billing/transactions/?page=${page}`,
+  CREATE_ORDER: 'billing/create-order/',
+  VERIFY_PAYMENT: 'billing/verify-payment/',
+  API_KEYS: 'billing/api-keys/',
+  ADMIN_USERS: (page: number) => `billing/admin/users/?page=${page}`,
+  ADMIN_DASHBOARD: 'billing/admin/dashboard/',
+} as const;
+
+/** Teacher (Django) */
+export const TEACHER_ENDPOINTS = {
+  DASHBOARD_STATS: 'teacher/dashboard-stats/',
+  CLASS_PERFORMANCE: (classId: string) => `teacher/class/${classId}/performance/`,
+  STUDENTS_BATCH: 'teacher/students-batch/',
+} as const;
+
+/** Student (Django) */
+export const STUDENT_ENDPOINTS = {
+  CLASSES: 'classes/student/',
+  JOIN_CLASS: 'student-classes/join/',
+  PERFORMANCE_ANALYSIS: 'student/performance-analysis/',
+} as const;
+
+/** Classes, assignments, time-slots (Django) */
+export const CLASS_ENDPOINTS = {
+  LIST: 'classes/',
+  DETAIL: (id: string) => `classes/${id}/`,
+  ASSIGNMENTS_BY_CLASS: (classId: string) => `assignments/?class_assigned=${classId}`,
+  ASSIGNMENT_DETAIL: (id: string) => `assignments/${id}/`,
+  SUBMISSIONS: 'assignment-submissions/',
+  SUBMISSIONS_BY_ASSIGNMENT: (assignmentId: string) => `assignment-submissions/?assignment=${assignmentId}`,
+  TIME_SLOTS: (classId: string) => `time-slots/?class_obj=${classId}`,
+  TIME_SLOTS_CREATE: 'time-slots/',
+  ANNOUNCEMENTS: (classId: string) => `announcements/?class_obj=${classId}`,
+  ANNOUNCEMENTS_CREATE: 'announcements/',
+} as const;
+
+/** Resume (Django) */
+export const RESUME_APP_ENDPOINTS = {
+  UPLOAD_ANALYSIS: 'get-resume-analysis/',
+  UPLOAD_FILES: 'upload-files/',
+  GET_RESUME_HR: 'get-resume-hr/',
+  GET_RESUME_TECHNICAL: 'get-resume-technical/',
+} as const;
