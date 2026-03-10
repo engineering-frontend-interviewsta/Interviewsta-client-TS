@@ -134,9 +134,9 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="mb-6">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Past Reports & Analysis</h2>
-          <p className="text-gray-600">Review your interview performance and resume insights</p>
+        <div className="mb-4">
+          <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-1">Past Reports & Analysis</h2>
+          <p className="text-sm text-gray-600">Review your interview performance and resume insights</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
