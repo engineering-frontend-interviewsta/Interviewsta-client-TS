@@ -1,7 +1,28 @@
+export interface AccountUser {
+  id: number;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  date_joined?: string;
+}
+
+export interface AccountPlan {
+  tier?: number;
+  tier_name?: string;
+  billing_cycle?: 'monthly' | 'yearly';
+  total_credits?: number;
+  remaining_credits?: number;
+  used_interview_credits?: number;
+  used_resume_credits?: number;
+  interviews_equivalent?: number;
+  month_reset_date?: string | null;
+}
+
+/** Shape returned by billing/account/ */
 export interface BillingAccount {
-  plan?: string;
-  credits_remaining?: number;
-  [key: string]: unknown;
+  user?: AccountUser;
+  account?: AccountPlan;
 }
 
 export interface TransactionItem {
@@ -9,5 +30,6 @@ export interface TransactionItem {
   amount?: number;
   created_at?: string;
   status?: string;
-  [key: string]: unknown;
+  description?: string;
+  currency?: string;
 }
