@@ -9,6 +9,7 @@ import {
 import * as authService from '../services/authService';
 import { setAccessToken, setRole, clearAuthStorage } from '../utils/storage';
 import type { AuthResult, User } from '../types/auth';
+import { ROUTES } from '../constants/routerConstants';
 
 interface AuthState {
   user: User | null;
@@ -27,6 +28,8 @@ interface AuthContextValue extends AuthState {
     phone?: string,
     country?: string
   ) => Promise<AuthResult>;
+  loginWithGoogle: (code: string, role?: string) => Promise<AuthResult>;
+  loginWithGithub: (code: string, role?: string) => Promise<AuthResult>;
 }
 
 const defaultState: AuthState = {
@@ -40,6 +43,8 @@ const defaultContextValue: AuthContextValue = {
   login: async () => ({ success: false }),
   logout: async () => {},
   register: async () => ({ success: false }),
+  loginWithGoogle: async () => ({ success: false }),
+  loginWithGithub: async () => ({ success: false }),
 };
 
 const AuthContext = createContext<AuthContextValue>(defaultContextValue);
@@ -140,6 +145,62 @@ export function AuthProvider({ children }: AuthProviderProps) {
     []
   );
 
+  const loginWithGoogle = useCallback(
+    async (code: string, role = 'student'): Promise<AuthResult> => {
+      try {
+        const redirectUri =
+          typeof window !== 'undefined' ? `${window.location.origin}${ROUTES.AUTH_CALLBACK}` : '';
+        const response = await authService.googleLogin(code, redirectUri, role);
+        const { access, user: u } = response.data;
+        setAccessToken(access);
+        setRole(u.role);
+        const user = authService.toUser(u);
+        setState({ user, role: u.role, isLoading: false });
+        return { success: true, user, role: u.role };
+      } catch (err: unknown) {
+        const error =
+          err &&
+          typeof err === 'object' &&
+          'response' in err &&
+          err.response &&
+          typeof err.response === 'object' &&
+          'data' in err.response
+            ? (err.response as { data?: { error?: string } }).data?.error
+            : null;
+        return { success: false, error: error ?? 'Google login failed' };
+      }
+    },
+    []
+  );
+
+  const loginWithGithub = useCallback(
+    async (code: string, role = 'student'): Promise<AuthResult> => {
+      try {
+        const redirectUri =
+          typeof window !== 'undefined' ? `${window.location.origin}${ROUTES.AUTH_CALLBACK}` : '';
+        const response = await authService.githubLogin(code, redirectUri, role);
+        const { access, user: u } = response.data;
+        setAccessToken(access);
+        setRole(u.role);
+        const user = authService.toUser(u);
+        setState({ user, role: u.role, isLoading: false });
+        return { success: true, user, role: u.role };
+      } catch (err: unknown) {
+        const error =
+          err &&
+          typeof err === 'object' &&
+          'response' in err &&
+          err.response &&
+          typeof err.response === 'object' &&
+          'data' in err.response
+            ? (err.response as { data?: { error?: string } }).data?.error
+            : null;
+        return { success: false, error: error ?? 'GitHub login failed' };
+      }
+    },
+    []
+  );
+
   const logout = useCallback(async () => {
     try {
       await authService.logout();
@@ -156,6 +217,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     register,
+    loginWithGoogle,
+    loginWithGithub,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

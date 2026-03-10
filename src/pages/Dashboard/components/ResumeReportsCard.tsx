@@ -9,7 +9,7 @@ interface ResumeReportsCardProps {
 }
 
 export default function ResumeReportsCard({ reports, onReportClick }: ResumeReportsCardProps) {
-  const viewAllPath = ROUTES.RESUME_LANDING; // TODO: replace with /resume-analysis-reports when added
+  const viewAllPath = ROUTES.RESUME_ANALYSIS_REPORTS;
   const displayList = reports.slice(0, 3);
 
   return (

@@ -69,3 +69,34 @@ export interface ClassroomStats {
   upcomingSlots: number;
   assignments: number;
 }
+
+export interface PerformanceTrendPoint {
+  date: string | null;
+  score: number;
+}
+
+export interface PerformanceTypeStats {
+  count: number;
+  avg_score: number;
+  trend?: PerformanceTrendPoint[];
+}
+
+export interface PerformanceByType {
+  technical?: PerformanceTypeStats;
+  hr?: PerformanceTypeStats;
+  case_study?: PerformanceTypeStats;
+  communication?: PerformanceTypeStats;
+  debate?: PerformanceTypeStats;
+  [key: string]: PerformanceTypeStats | undefined;
+}
+
+export interface PerformanceOverall {
+  total_sessions: number;
+  overall_avg: number;
+  trend: PerformanceTrendPoint[];
+}
+
+export interface PerformanceAnalysis {
+  by_type: PerformanceByType;
+  overall: PerformanceOverall;
+}

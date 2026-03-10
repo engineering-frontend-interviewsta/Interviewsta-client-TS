@@ -9,7 +9,7 @@ interface VideoReportsCardProps {
 }
 
 export default function VideoReportsCard({ reports, onReportClick }: VideoReportsCardProps) {
-  const viewAllPath = ROUTES.VIDEO_INTERVIEW; // TODO: replace with /video-interview-reports when added
+  const viewAllPath = ROUTES.VIDEO_INTERVIEW_REPORTS;
   const displayList = reports.slice(0, 3);
 
   return (

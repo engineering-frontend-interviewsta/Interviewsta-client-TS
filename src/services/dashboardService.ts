@@ -7,6 +7,7 @@ import type {
   ResumeReport,
   RecentActivityItem,
   ClassroomStats,
+  PerformanceAnalysis,
 } from '../types/dashboard';
 
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -53,9 +54,11 @@ export async function getResumeProgress(bypassCache = false): Promise<ResumeRepo
 }
 
 /** Student performance analysis */
-export async function getPerformanceAnalysis(): Promise<unknown> {
+export async function getPerformanceAnalysis(): Promise<PerformanceAnalysis | null> {
   const res = await djangoClient.get(DASHBOARD_ENDPOINTS.PERFORMANCE_ANALYSIS).catch(() => ({ data: null }));
-  return res?.data ?? null;
+  const data = res?.data;
+  if (!data) return null;
+  return data as PerformanceAnalysis;
 }
 
 /** Classroom stats (classes, time slots, assignments) */

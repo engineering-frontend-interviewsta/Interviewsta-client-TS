@@ -12,9 +12,9 @@ export default function Signup() {
 
   useEffect(() => {
     if (!isLoading && user && role) {
-      if (role === 'teacher') navigate(ROUTES.TEACHER_CLASSES, { replace: true });
+      if (role === 'teacher') navigate(ROUTES.TEACHER_DASHBOARD, { replace: true });
       else if (role === 'admin') navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-      else navigate(ROUTES.DASHBOARD, { replace: true });
+      else navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
     }
   }, [isLoading, user, role, navigate]);
 
@@ -76,7 +76,7 @@ export default function Signup() {
         setError(result.error ?? 'Registration failed.');
         return;
       }
-      navigate(ROUTES.DASHBOARD, { replace: true });
+      navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
     } catch {
       setError('Registration failed. Please try again.');
     } finally {

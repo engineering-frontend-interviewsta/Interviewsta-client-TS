@@ -186,7 +186,7 @@ export default function VideoInterview() {
               ))
             )}
           </div>
-          <Link to={ROUTES.DASHBOARD} className="text-blue-600 hover:underline">
+          <Link to={ROUTES.STUDENT_DASHBOARD} className="text-blue-600 hover:underline">
             Back to Dashboard
           </Link>
         </div>

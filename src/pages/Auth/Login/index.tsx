@@ -6,9 +6,9 @@ import { ROUTES } from '../../../constants/routerConstants';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function redirectByRole(navigate: (path: string, opts?: { replace: boolean }) => void, role: string | null) {
-  if (role === 'teacher') navigate(ROUTES.TEACHER_CLASSES, { replace: true });
+  if (role === 'teacher') navigate(ROUTES.TEACHER_DASHBOARD, { replace: true });
   else if (role === 'admin') navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-  else navigate(ROUTES.DASHBOARD, { replace: true });
+  else navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
 }
 
 export default function Login() {
@@ -53,6 +53,24 @@ export default function Login() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleGoogleSignIn = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      setError('Google login is not configured.');
+      return;
+    }
+    const redirectUri = `${window.location.origin}${ROUTES.AUTH_CALLBACK}`;
+    const scope = 'profile email';
+    const googleAuthUrl =
+      'https://accounts.google.com/o/oauth2/v2/auth?' +
+      `client_id=${encodeURIComponent(clientId)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      'response_type=code&' +
+      `scope=${encodeURIComponent(scope)}&` +
+      'state=google';
+    window.location.href = googleAuthUrl;
   };
 
   if (isLoading || user) return null;
@@ -124,6 +142,21 @@ export default function Login() {
             {isSubmitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex-1 h-px bg-neutral-200" />
+            <span className="text-xs text-neutral-500 uppercase tracking-wide">or continue with</span>
+            <div className="flex-1 h-px bg-neutral-200" />
+          </div>
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            className="w-full flex items-center justify-center gap-2 border border-neutral-300 rounded-lg py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-50"
+          >
+            <span className="text-lg">G</span>
+            <span>Continue with Google</span>
+          </button>
+        </div>
         <p className="mt-4 text-center text-neutral-600 text-sm">
           Don’t have an account?{' '}
           <Link to={ROUTES.SIGNUP} className="text-blue-600 font-medium hover:underline">

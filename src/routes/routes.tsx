@@ -10,6 +10,7 @@ import lazyWithRetry from '../utils/lazyWithRetry';
 const Home = lazy(() => import('../pages/Home'));
 const Login = lazy(() => import('../pages/Auth/Login'));
 const Signup = lazy(() => import('../pages/Auth/Signup'));
+const OAuthCallback = lazy(() => import('../pages/Auth/OAuthCallback'));
 const About = lazy(() => import('../pages/About'));
 const Contact = lazy(() => import('../pages/Contact'));
 const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy'));
@@ -17,10 +18,12 @@ const TermsOfService = lazy(() => import('../pages/TermsOfService'));
 const VideoInterviewsPage = lazy(() => import('../pages/VideoInterviews'));
 const ResumeAnalysisPage = lazy(() => import('../pages/ResumeAnalysis'));
 const LandingDashboard = lazy(() => import('../pages/LandingDashboard'));
-const Dashboard = lazyWithRetry(() => import('../pages/Dashboard'));
+const StudentDashboard = lazyWithRetry(() => import('../pages/Dashboard'));
 const VideoInterview = lazyWithRetry(() => import('../pages/VideoInterview'));
 const InterviewInterface = lazyWithRetry(() => import('../pages/InterviewInterface'));
 const Feedback = lazyWithRetry(() => import('../pages/Feedback'));
+const VideoInterviewHistory = lazyWithRetry(() => import('../pages/VideoInterviewHistory'));
+const ResumeAnalysisHistory = lazyWithRetry(() => import('../pages/ResumeAnalysisHistory'));
 const TeacherClasses = lazyWithRetry(() => import('../pages/Teacher/Classes'));
 const TeacherSchedule = lazyWithRetry(() => import('../pages/Teacher/Schedule'));
 const TeacherStudents = lazyWithRetry(() => import('../pages/Teacher/Students'));
@@ -44,6 +47,7 @@ const routeConfig = [
       { index: true, element: <Home /> },
       { path: 'login', element: <Login /> },
       { path: 'signup', element: <Signup /> },
+      { path: 'auth/callback', element: <OAuthCallback /> },
       { path: 'about', element: <About /> },
       { path: 'contact', element: <Contact /> },
       { path: 'privacy-policy', element: <PrivacyPolicy /> },
@@ -55,16 +59,22 @@ const routeConfig = [
     ],
   },
   {
-    path: ROUTES.DASHBOARD,
+    path: ROUTES.STUDENT_DASHBOARD,
     element: <AppLayout />,
     errorElement: <RouteError />,
-    children: [{ index: true, element: <Dashboard /> }],
+    children: [{ index: true, element: <StudentDashboard /> }],
   },
   {
     path: ROUTES.VIDEO_INTERVIEW,
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [{ index: true, element: <VideoInterview /> }],
+  },
+  {
+    path: ROUTES.VIDEO_INTERVIEW_REPORTS,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <VideoInterviewHistory /> }],
   },
   {
     path: ROUTES.INTERVIEW_INTERFACE,
@@ -126,6 +136,12 @@ const routeConfig = [
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [{ index: true, element: <ResumeAnalysisFlow /> }],
+  },
+  {
+    path: ROUTES.RESUME_ANALYSIS_REPORTS,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <ResumeAnalysisHistory /> }],
   },
   {
     path: ROUTES.RESUME_GENERATION,

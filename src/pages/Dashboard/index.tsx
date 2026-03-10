@@ -9,14 +9,16 @@ import {
   clearDashboardCache,
   mapVideoReport,
   mapResumeReport,
-  buildRecentActivity,
 } from '../../services/dashboardService';
-import type { VideoInterviewReport, ResumeReport } from '../../types/dashboard';
+import type { VideoInterviewReport, ResumeReport, PerformanceAnalysis } from '../../types/dashboard';
 import DashboardHeader from './components/DashboardHeader';
 import DashboardQuickLinks from './components/DashboardQuickLinks';
 import DashboardSkeleton from './components/DashboardSkeleton';
 import VideoReportsCard from './components/VideoReportsCard';
 import ResumeReportsCard from './components/ResumeReportsCard';
+import PerformanceOverviewCards from './components/PerformanceOverviewCards';
+import PerformanceTrendChart from './components/PerformanceTrendChart';
+import PerformanceByTypeBreakdown from './components/PerformanceByTypeBreakdown';
 import { ROUTES } from '../../constants/routerConstants';
 
 /** Interview type lookup: (interviewId) => meta. Use null until we have interviewTypes data. */
@@ -30,7 +32,7 @@ export default function Dashboard() {
   const [videoReports, setVideoReports] = useState<VideoInterviewReport[]>([]);
   const [resumeReports, setResumeReports] = useState<ResumeReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [performanceAnalysis, setPerformanceAnalysis] = useState<unknown>(null);
+  const [performanceAnalysis, setPerformanceAnalysis] = useState<PerformanceAnalysis | null>(null);
   const [classroomStats, setClassroomStats] = useState<{ classesJoined: number; upcomingSlots: number; assignments: number } | null>(null);
 
   const loadData = useCallback(async () => {
@@ -51,8 +53,6 @@ export default function Dashboard() {
       setResumeReports(resumeRaw.map(mapResumeReport));
       setPerformanceAnalysis(perf);
       setClassroomStats(classroom ?? null);
-      // buildRecentActivity available if we add a RecentActivity section later
-      void buildRecentActivity(videoRaw, resumeRaw, (id) => getInterviewMeta(id), 3);
     } catch {
       navigate(ROUTES.HOME);
     } finally {
@@ -77,7 +77,7 @@ export default function Dashboard() {
         interview_type: report.interviewType,
         title: report.title,
         date: report.date,
-        back: ROUTES.DASHBOARD,
+        back: ROUTES.STUDENT_DASHBOARD,
       },
     });
   };
@@ -89,7 +89,7 @@ export default function Dashboard() {
         fileName: report.fileName,
         date: report.date,
         resume_id: report.id,
-        back: ROUTES.DASHBOARD,
+        back: ROUTES.STUDENT_DASHBOARD,
       },
     });
   };
@@ -104,12 +104,12 @@ export default function Dashboard() {
         <DashboardHeader displayName={user?.displayName ?? user?.email ?? null} />
         <DashboardQuickLinks />
 
-        {performanceAnalysis != null && (
-          <div className="mb-8">
-            {/* Placeholder for PerformanceOverviewCards / PerformanceTrendChart when we add those components */}
-            <div className="rounded-2xl bg-white border border-gray-100 p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Performance overview</h2>
-              <p className="text-gray-600 text-sm">Detailed charts can be added here.</p>
+        {performanceAnalysis && (
+          <div className="mb-8 space-y-6">
+            <PerformanceOverviewCards byType={performanceAnalysis.by_type} overall={performanceAnalysis.overall} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <PerformanceTrendChart trend={performanceAnalysis.overall.trend} title="Overall performance trend" />
+              <PerformanceByTypeBreakdown byType={performanceAnalysis.by_type} />
             </div>
           </div>
         )}
