@@ -59,10 +59,11 @@ export function mapVideoReport(
   item: VideoInterviewReportRaw,
   interviewTypeLookup?: (interviewId: number) => { title?: string; category?: string; difficulty?: string; topics?: string[] } | null
 ): VideoInterviewReport {
-  const meta = interviewTypeLookup?.(item.interview_id ?? 0);
+  const interviewId = item.interview_id ?? item.id;
+  const meta = interviewTypeLookup?.(interviewId);
   const typeLabel = item.company ?? item.subject ?? item.interview_type ?? meta?.category ?? 'Interview';
   return {
-    id: item.id,
+    id: interviewId,
     type: typeLabel,
     title: item.title ?? meta?.title ?? 'Interview',
     date: new Date(item.created_at).toLocaleDateString(),
@@ -74,6 +75,8 @@ export function mapVideoReport(
     interviewType: item.interview_type,
     company: item.company,
     subject: item.subject,
+    sessionId: item.session_id,
+    rank: item.rank,
   };
 }
 

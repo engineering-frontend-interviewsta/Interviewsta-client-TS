@@ -2,6 +2,8 @@
 export interface VideoInterviewReportRaw {
   id: number;
   interview_id?: number;
+  /** Optional unique session identifier if backend provides it */
+  session_id?: string;
   interview_type?: string;
   company?: string;
   subject?: string;
@@ -9,6 +11,8 @@ export interface VideoInterviewReportRaw {
   created_at: string;
   duration?: number;
   overall_score?: number;
+  /** Optional leaderboard rank or similar */
+  rank?: number;
 }
 
 /** Single item from get-resume-progress (resume analysis report) */
@@ -26,6 +30,7 @@ export interface ResumeReportRaw {
 
 /** Normalized video interview report for UI */
 export interface VideoInterviewReport {
+  /** Identifier we use to refetch feedback – maps to backend interview_id */
   id: number;
   type: string;
   title: string;
@@ -38,6 +43,10 @@ export interface VideoInterviewReport {
   interviewType?: string;
   company?: string;
   subject?: string;
+  /** Optional session_id when available */
+  sessionId?: string;
+  /** Optional rank when provided by backend */
+  rank?: number;
 }
 
 /** Normalized resume report for UI */
