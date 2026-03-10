@@ -28,7 +28,7 @@ export default function VideoInterviewHistory() {
     const load = async () => {
       try {
         setLoading(true);
-        const raw = await getLatestStats(true);
+        const raw = await getLatestStats();
         setReports(raw.map((item) => mapVideoReport(item, lookupInterviewMeta)));
       } catch {
         setError('Failed to load video interview history.');
@@ -50,7 +50,8 @@ export default function VideoInterviewHistory() {
   const pagedReports = sortedReports.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const handleRowClick = (report: VideoInterviewReport) => {
-    navigate(ROUTES.FEEDBACK, {
+    const path = ROUTES.FEEDBACK_HISTORY.replace(':interviewId', String(report.id));
+    navigate(path, {
       state: {
         type: 'video-interview',
         interview_id: report.id,

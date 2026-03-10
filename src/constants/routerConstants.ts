@@ -17,6 +17,7 @@ export const ROUTES = {
   RESUME_GENERATION: '/resume-generation',
   ACCOUNT: '/account',
   FEEDBACK: '/feedback',
+  FEEDBACK_HISTORY: '/feedback-history/:interviewId',
   ABOUT: '/about',
   CONTACT: '/contact',
   PRIVACY_POLICY: '/privacy-policy',

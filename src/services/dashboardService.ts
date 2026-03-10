@@ -10,47 +10,21 @@ import type {
   PerformanceAnalysis,
 } from '../types/dashboard';
 
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
-const CACHE_KEYS = { LATEST_STATS: 'dashboard_latestStats', RESUME_PROGRESS: 'dashboard_resumeProgress' } as const;
-
-async function getCached<T>(key: string, fetchFn: () => Promise<T>, ttlMs = CACHE_TTL_MS): Promise<T> {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw) {
-      const { value, timestamp } = JSON.parse(raw) as { value: T; timestamp: number };
-      if (Date.now() - timestamp < ttlMs) return value;
-    }
-  } catch {
-    // ignore
-  }
-  const value = await fetchFn();
-  try {
-    localStorage.setItem(key, JSON.stringify({ value, timestamp: Date.now() }));
-  } catch {
-    // ignore
-  }
-  return value;
-}
-
+// Dashboard data is lightweight; always fetch fresh for simplicity.
 export function clearDashboardCache(): void {
-  localStorage.removeItem(CACHE_KEYS.LATEST_STATS);
-  localStorage.removeItem(CACHE_KEYS.RESUME_PROGRESS);
+  // no-op now that we always fetch fresh data
 }
 
-/** Fetch latest video interview stats (with optional cache bypass) */
-export async function getLatestStats(bypassCache = false): Promise<VideoInterviewReportRaw[]> {
-  const fetch = () =>
-    djangoClient.get(DASHBOARD_ENDPOINTS.LATEST_STATS).then((res) => (Array.isArray(res.data) ? res.data : []));
-  if (bypassCache) return fetch();
-  return getCached(CACHE_KEYS.LATEST_STATS, fetch);
+/** Fetch latest video interview stats (always hits API) */
+export async function getLatestStats(): Promise<VideoInterviewReportRaw[]> {
+  const res = await djangoClient.get(DASHBOARD_ENDPOINTS.LATEST_STATS);
+  return Array.isArray(res.data) ? res.data : [];
 }
 
-/** Fetch resume progress / reports */
-export async function getResumeProgress(bypassCache = false): Promise<ResumeReportRaw[]> {
-  const fetch = () =>
-    djangoClient.get(DASHBOARD_ENDPOINTS.RESUME_PROGRESS).then((res) => (Array.isArray(res.data) ? res.data : []));
-  if (bypassCache) return fetch();
-  return getCached(CACHE_KEYS.RESUME_PROGRESS, fetch);
+/** Fetch resume progress / reports (always hits API) */
+export async function getResumeProgress(): Promise<ResumeReportRaw[]> {
+  const res = await djangoClient.get(DASHBOARD_ENDPOINTS.RESUME_PROGRESS);
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 /** Student performance analysis */

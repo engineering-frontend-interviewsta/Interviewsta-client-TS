@@ -44,8 +44,8 @@ export default function Dashboard() {
     }
     try {
       const [videoRaw, resumeRaw, perf, classroom] = await Promise.all([
-        getLatestStats(shouldRefresh),
-        getResumeProgress(shouldRefresh),
+        getLatestStats(),
+        getResumeProgress(),
         getPerformanceAnalysis().catch(() => null),
         getClassroomStats().catch(() => null),
       ]);
@@ -69,8 +69,8 @@ export default function Dashboard() {
   }, [user, loadData]);
 
   const handleVideoReportClick = (report: VideoInterviewReport) => {
-    // TODO: navigate to feedback view when route exists
-    navigate(ROUTES.FEEDBACK, {
+    const path = ROUTES.FEEDBACK_HISTORY.replace(':interviewId', String(report.id));
+    navigate(path, {
       state: {
         type: 'video-interview',
         interview_id: report.id,

@@ -8,8 +8,8 @@ export default function StrengthsAndImprovements({ data }: StrengthsAndImproveme
   const summary = data.feedback_summary;
   if (!summary) return null;
 
-  const strengths = summary.strengths ?? [];
-  const improvements = summary.areas_of_improvements ?? [];
+  const strengths = Array.from(new Set(summary.strengths ?? []));
+  const improvements = Array.from(new Set(summary.areas_of_improvements ?? []));
   if (strengths.length === 0 && improvements.length === 0) return null;
 
   return (

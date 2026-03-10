@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { getSessionHistory } from '../../services/feedbackService';
 import { ROUTES } from '../../constants/routerConstants';
 import type { SessionHistoryResponse } from '../../types/feedback';
 import { ArrowLeft } from 'lucide-react';
 import ScoreBreakdown from './components/ScoreBreakdown';
 import StrengthsAndImprovements from './components/StrengthsAndImprovements';
+import TechnicalMetaSummary from './components/TechnicalMetaSummary';
+import TechnicalExtras from './components/TechnicalExtras';
 
 export type FeedbackLocationState = {
   type: 'video-interview' | 'resume-analysis';
@@ -29,6 +31,7 @@ export type FeedbackLocationState = {
 export default function Feedback() {
   const location = useLocation();
   const navigate = useNavigate();
+  const params = useParams<{ interviewId?: string }>();
   const state = location.state as FeedbackLocationState | null;
 
   const [loading, setLoading] = useState(true);
@@ -38,15 +41,25 @@ export default function Feedback() {
   const backPath = state?.back ?? ROUTES.DASHBOARD;
 
   useEffect(() => {
-    if (!state?.type) {
+    const interviewIdFromParams = params.interviewId ? Number(params.interviewId) : null;
+
+    if (!state?.type && !interviewIdFromParams) {
       navigate(ROUTES.DASHBOARD, { replace: true });
       return;
     }
-    if (state.type === 'video-interview' && 'interview_id' in state) {
-      const interviewType = state.interview_type ?? 'Technical Interview';
+
+    const hasStateVideoId = state && state.type === 'video-interview' && 'interview_id' in state;
+
+    if (hasStateVideoId || interviewIdFromParams) {
+      const interviewId = hasStateVideoId ? (state as FeedbackLocationState & { interview_id: number }).interview_id : interviewIdFromParams!;
+      const interviewType =
+        hasStateVideoId && (state as FeedbackLocationState & { interview_type?: string }).interview_type
+          ? (state as FeedbackLocationState & { interview_type?: string }).interview_type
+          : 'Technical Interview';
+
       getSessionHistory({
-        interview_id: state.interview_id,
-        interview_type: interviewType,
+        interview_id: interviewId,
+        interview_type: interviewType as string,
       })
         .then((data) => {
           setVideoFeedback(data);
@@ -60,9 +73,16 @@ export default function Feedback() {
     } else {
       setLoading(false);
     }
-  }, [state, navigate]);
+  }, [state, navigate, params.interviewId]);
 
-  if (!state?.type) {
+  const effectiveState: FeedbackLocationState | null =
+    state && state.type
+      ? state
+      : params.interviewId
+        ? ({ type: 'video-interview' } as FeedbackLocationState)
+        : null;
+
+  if (!effectiveState?.type) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-gray-600">Redirecting…</p>
@@ -70,64 +90,93 @@ export default function Feedback() {
     );
   }
 
-  if (loading && state.type === 'video-interview') {
+  if (loading && effectiveState.type === 'video-interview') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-10 px-4 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 py-10 px-4 flex items-center justify-center">
         <div className="text-gray-600">Loading feedback…</div>
       </div>
     );
   }
 
+  // Derive a simple, robust interview type label for technical feedback
+  const resolvedInterviewType =
+    (videoFeedback?.interview_test_details?.interview_mode as string | undefined) ||
+    (state && 'interview_type' in state ? (state as FeedbackLocationState & { interview_type?: string }).interview_type : undefined) ||
+    'Technical Interview';
+
+  const headerTitle =
+    (videoFeedback?.interview_test_details?.interview_title as string | undefined) ||
+    (state && 'title' in state ? (state as FeedbackLocationState & { title?: string }).title : undefined) ||
+    (effectiveState.type === 'resume-analysis' && state && 'fileName' in state
+      ? (state as FeedbackLocationState & { fileName?: string }).fileName
+      : undefined) ||
+    (effectiveState.type === 'resume-analysis' ? 'Resume Analysis Feedback' : 'Interview Feedback');
+
+  const headerDate =
+    (videoFeedback?.interview_test_details?.created_at as string | undefined) ||
+    (state && 'date' in state ? (state as FeedbackLocationState & { date?: string }).date : undefined);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-10 px-4">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-4xl mx-auto">
         <Link
           to={backPath}
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
         </Link>
 
-        {state.type === 'video-interview' && 'title' in state && (
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            {state.title ?? 'Interview Feedback'}
-          </h1>
-        )}
-        {state.type === 'video-interview' && 'date' in state && state.date && (
-          <p className="text-gray-500 text-sm mb-6">{state.date}</p>
-        )}
-        {state.type === 'resume-analysis' && 'fileName' in state && (
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">
-            {state.fileName ?? 'Resume Analysis Feedback'}
-          </h1>
-        )}
+        <div className="mb-6 rounded-xl bg-white border border-gray-100 p-5 shadow-sm">
+          <h1 className="text-xl font-semibold text-gray-900 mb-1">{headerTitle}</h1>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+            {headerDate && <span>{new Date(headerDate).toLocaleString()}</span>}
+            {effectiveState.type === 'video-interview' && (
+              <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-medium text-blue-700">
+                {resolvedInterviewType}
+              </span>
+            )}
+            {effectiveState.type === 'resume-analysis' && (
+              <span className="inline-flex items-center rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-[11px] font-medium text-purple-700">
+                Resume Analysis
+              </span>
+            )}
+          </div>
+        </div>
 
         {error && (
-          <div className="rounded-lg bg-red-50 text-red-700 p-4 mb-6">
+          <div className="rounded-lg bg-red-50 text-red-700 p-4 mb-6 text-sm">
             {error}
           </div>
         )}
 
-        {state.type === 'video-interview' && videoFeedback && !error && (
-          <div className="space-y-6">
+        {effectiveState.type === 'video-interview' && videoFeedback && !error && (
+          <div className="space-y-5">
             {videoFeedback.status === 'pending' && (
-              <p className="text-gray-600">Feedback is still being generated. Check back shortly.</p>
+              <p className="text-sm text-gray-600">
+                Feedback is still being generated. Check back shortly.
+              </p>
             )}
+
             {videoFeedback.overall_score != null && (
-              <div className="rounded-xl bg-white border border-gray-100 p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Overall score</h2>
-                <p className="text-3xl font-bold text-blue-600">{videoFeedback.overall_score}%</p>
+              <div className="rounded-xl bg-white border border-gray-100 p-5 shadow-sm">
+                <h2 className="text-sm font-medium text-gray-700 mb-1">Overall score</h2>
+                <p className="text-3xl font-bold text-blue-600">
+                  {Math.round(videoFeedback.overall_score)}%
+                </p>
               </div>
             )}
+
+            <TechnicalMetaSummary data={videoFeedback} />
             <ScoreBreakdown data={videoFeedback} />
+            <TechnicalExtras data={videoFeedback} />
             <StrengthsAndImprovements data={videoFeedback} />
           </div>
         )}
 
-        {state.type === 'resume-analysis' && (
+        {effectiveState.type === 'resume-analysis' && (
           <div className="rounded-xl bg-white border border-gray-100 p-6 shadow-sm">
-            <p className="text-gray-600">
+            <p className="text-sm text-gray-600">
               Resume analysis feedback view can be expanded here (e.g. fetch by resume_id).
             </p>
           </div>

@@ -16,7 +16,7 @@ export default function ResumeAnalysisHistory() {
     const load = async () => {
       try {
         setLoading(true);
-        const raw = await getResumeProgress(true);
+        const raw = await getResumeProgress();
         setReports(raw.map(mapResumeReport));
       } catch {
         setError('Failed to load resume analysis history.');
