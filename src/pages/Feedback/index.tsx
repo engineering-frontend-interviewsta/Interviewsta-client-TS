@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { getSessionHistory } from '../../services/feedbackService';
 import { ROUTES } from '../../constants/routerConstants';
@@ -15,8 +15,11 @@ export type FeedbackLocationState = {
 } & (
   | {
       type: 'video-interview';
-      interview_id: number;
+      interview_id?: number;
       interview_type?: string;
+      /** When coming from a just-ended interview (no report id yet) */
+      session_id?: string;
+      session_type?: string;
       title?: string;
       date?: string;
     }
@@ -37,43 +40,104 @@ export default function Feedback() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [videoFeedback, setVideoFeedback] = useState<SessionHistoryResponse | null>(null);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const backPath = state?.back ?? ROUTES.DASHBOARD;
 
   useEffect(() => {
     const interviewIdFromParams = params.interviewId ? Number(params.interviewId) : null;
+    const videoState = state?.type === 'video-interview' ? state : null;
+    const hasSessionParams =
+      videoState && videoState.session_id && videoState.session_type;
+    const hasInterviewId =
+      videoState && videoState.interview_id != null;
+    const hasInterviewIdFromParams = interviewIdFromParams != null;
 
     if (!state?.type && !interviewIdFromParams) {
       navigate(ROUTES.DASHBOARD, { replace: true });
       return;
     }
 
-    const hasStateVideoId = state && state.type === 'video-interview' && 'interview_id' in state;
+    const fetchFeedback = () => {
+      if (hasSessionParams && videoState) {
+        return getSessionHistory({
+          session_id: videoState.session_id!,
+          session_type: videoState.session_type!,
+        });
+      }
+      if (hasInterviewId && videoState) {
+        return getSessionHistory({
+          interview_id: videoState.interview_id!,
+          interview_type: videoState.interview_type ?? 'Technical Interview',
+        });
+      }
+      if (hasInterviewIdFromParams) {
+        return getSessionHistory({
+          interview_id: interviewIdFromParams,
+          interview_type: videoState?.interview_type ?? 'Technical Interview',
+        });
+      }
+      return Promise.reject(new Error('Missing session or interview params'));
+    };
 
-    if (hasStateVideoId || interviewIdFromParams) {
-      const interviewId = hasStateVideoId ? (state as FeedbackLocationState & { interview_id: number }).interview_id : interviewIdFromParams!;
-      const interviewType =
-        hasStateVideoId && (state as FeedbackLocationState & { interview_type?: string }).interview_type
-          ? (state as FeedbackLocationState & { interview_type?: string }).interview_type
-          : 'Technical Interview';
-
-      getSessionHistory({
-        interview_id: interviewId,
-        interview_type: interviewType as string,
+    fetchFeedback()
+      .then((data) => {
+        setVideoFeedback(data);
+        setError(null);
       })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load feedback');
+        setVideoFeedback(null);
+      })
+      .finally(() => setLoading(false));
+  }, [state, navigate, params.interviewId]);
+
+  // Poll when feedback is pending (e.g. just ended interview)
+  useEffect(() => {
+    if (!videoFeedback || videoFeedback.status !== 'pending') return;
+
+    const videoState = state?.type === 'video-interview' ? state : null;
+    const hasSessionParams = videoState?.session_id && videoState?.session_type;
+    const hasInterviewId = videoState?.interview_id != null;
+    const interviewIdFromParams = params.interviewId ? Number(params.interviewId) : null;
+
+    const fetchAgain = () => {
+      let promise: Promise<SessionHistoryResponse>;
+      if (hasSessionParams && videoState) {
+        promise = getSessionHistory({
+          session_id: videoState.session_id,
+          session_type: videoState.session_type,
+        });
+      } else if (hasInterviewId && videoState) {
+        promise = getSessionHistory({
+          interview_id: videoState.interview_id!,
+          interview_type: videoState.interview_type ?? 'Technical Interview',
+        });
+      } else if (interviewIdFromParams != null) {
+        promise = getSessionHistory({
+          interview_id: interviewIdFromParams,
+          interview_type: videoState?.interview_type ?? 'Technical Interview',
+        });
+      } else {
+        return;
+      }
+      promise
         .then((data) => {
           setVideoFeedback(data);
-          setError(null);
+          if (data.status === 'pending') {
+            pollTimeoutRef.current = setTimeout(fetchAgain, 3000);
+          }
         })
-        .catch((err) => {
-          setError(err instanceof Error ? err.message : 'Failed to load feedback');
-          setVideoFeedback(null);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
-  }, [state, navigate, params.interviewId]);
+        .catch(() => {
+          pollTimeoutRef.current = setTimeout(fetchAgain, 3000);
+        });
+    };
+
+    pollTimeoutRef.current = setTimeout(fetchAgain, 3000);
+    return () => {
+      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+    };
+  }, [videoFeedback?.status, state, params.interviewId]);
 
   const effectiveState: FeedbackLocationState | null =
     state && state.type
@@ -101,7 +165,7 @@ export default function Feedback() {
   // Derive a simple, robust interview type label for technical feedback
   const resolvedInterviewType =
     (videoFeedback?.interview_test_details?.interview_mode as string | undefined) ||
-    (state && 'interview_type' in state ? (state as FeedbackLocationState & { interview_type?: string }).interview_type : undefined) ||
+    (state && state.type === 'video-interview' && (state.session_type ?? state.interview_type)) ||
     'Technical Interview';
 
   const headerTitle =

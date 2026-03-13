@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useInterviewSession } from '../../hooks/useInterviewSession';
 import { useMediaDevices } from '../../hooks/useMediaDevices';
@@ -12,9 +12,14 @@ import { ROUTES } from '../../constants/routerConstants';
 export default function InterviewInterface() {
   const location = useLocation();
   const navigate = useNavigate();
-  const state = location.state as { sessionId?: string; interviewType?: string } | null;
+  const state = location.state as {
+    sessionId?: string;
+    interviewType?: string;
+    interviewTypeId?: number;
+  } | null;
   const sessionId = state?.sessionId;
   const interviewType = state?.interviewType ?? 'Technical';
+  const interviewTypeId = state?.interviewTypeId;
 
   const {
     aiMessage,
@@ -45,6 +50,7 @@ export default function InterviewInterface() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [autoEnded, setAutoEnded] = useState(false);
+  const hasNavigatedToFeedbackRef = useRef(false);
 
   const isCodeInterview =
     interviewType === 'Technical' ||
@@ -111,7 +117,7 @@ export default function InterviewInterface() {
         setAutoEnded(true);
         setShowTimeWarning(false);
         sessionStorage.removeItem(key);
-        void endSession({ sessionFinished: true });
+        void endSession({ sessionFinished: true, interviewTestId: interviewTypeId });
       } else {
         setTimeout(tick, 1000);
       }
@@ -120,7 +126,7 @@ export default function InterviewInterface() {
     return () => {
       cancelled = true;
     };
-  }, [planStatus?.has_time_limit, isComplete, endSession, showTimeWarning, autoEnded]);
+  }, [planStatus?.has_time_limit, isComplete, endSession, showTimeWarning, autoEnded, interviewTypeId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,8 +136,22 @@ export default function InterviewInterface() {
   };
 
   const handleEnd = async () => {
-    await endSession({ sessionFinished: true });
+    await endSession({ sessionFinished: true, interviewTestId: interviewTypeId });
   };
+
+  // When session ends (End button, MCQ Finish, or timer), go to feedback once
+  useEffect(() => {
+    if (!isComplete || !sessionId || hasNavigatedToFeedbackRef.current) return;
+    hasNavigatedToFeedbackRef.current = true;
+    navigate(ROUTES.FEEDBACK, {
+      replace: true,
+      state: {
+        type: 'video-interview',
+        session_id: sessionId,
+        session_type: interviewType,
+      },
+    });
+  }, [isComplete, sessionId, interviewType, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -374,7 +394,7 @@ export default function InterviewInterface() {
               {communicationPhase === 'Results' && communicationData.mcqResults && (
                 <MCQResults
                   results={communicationData.mcqResults}
-                  onFinishInterview={() => endSession({ sessionFinished: true })}
+                  onFinishInterview={() => endSession({ sessionFinished: true, interviewTestId: interviewTypeId })}
                 />
               )}
             </div>

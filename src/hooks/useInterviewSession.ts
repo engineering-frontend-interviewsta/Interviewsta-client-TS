@@ -70,6 +70,8 @@ export interface UseInterviewSessionParams {
   interviewType: string;
 }
 
+export type EndSessionOpts = { sessionFinished?: boolean; interviewTestId?: number };
+
 export interface UseInterviewSessionResult {
   aiMessage: string;
   lastNode: string | null;
@@ -81,7 +83,7 @@ export interface UseInterviewSessionResult {
   submitText: (text: string) => Promise<void>;
   submitAudio: (audio: Blob) => Promise<void>;
   submitCode: (code: string) => Promise<void>;
-  endSession: (opts?: { sessionFinished?: boolean }) => Promise<void>;
+  endSession: (opts?: EndSessionOpts) => Promise<string | null>;
   /** Update communication state (e.g. clear phase feedback) */
   updateCommunicationData: (fn: (prev: CommunicationData) => CommunicationData) => void;
 }
@@ -305,16 +307,18 @@ export function useInterviewSession({
   );
 
   const endSession = useCallback(
-    async (opts?: { sessionFinished?: boolean }) => {
+    async (opts?: EndSessionOpts): Promise<string | null> => {
       streamCloseRef.current?.();
       const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
       try {
-        await endInterview({
+        const result = (await endInterview({
           sessionId,
           interviewType,
           duration,
           sessionFinished: opts?.sessionFinished ?? true,
-        });
+          interviewTestId: opts?.interviewTestId,
+        })) as { task_id?: string; session_id?: string; status?: string } | undefined;
+        return result?.task_id ?? null;
       } finally {
         setIsComplete(true);
       }
