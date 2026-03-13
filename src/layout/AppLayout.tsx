@@ -20,7 +20,13 @@ export default function AppLayout() {
       <header className="border-b border-neutral-200 bg-white px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link
-            to={role === 'teacher' ? ROUTES.TEACHER_DASHBOARD : ROUTES.STUDENT_DASHBOARD}
+            to={
+              role === 'admin'
+                ? ROUTES.ADMIN_DASHBOARD
+                : role === 'teacher'
+                  ? ROUTES.TEACHER_DASHBOARD
+                  : ROUTES.STUDENT_DASHBOARD
+            }
             className="font-semibold text-neutral-800"
           >
             Interviewsta
@@ -50,9 +56,14 @@ export default function AppLayout() {
               </Link>
             )}
             {role === 'admin' && (
-              <Link to={ROUTES.ADMIN_DASHBOARD} className="text-neutral-600 hover:text-neutral-900">
-                Admin
-              </Link>
+              <>
+                <Link to={ROUTES.ADMIN_DASHBOARD} className="text-neutral-600 hover:text-neutral-900">
+                  Admin
+                </Link>
+                <Link to={ROUTES.ADMIN_USERS} className="text-neutral-600 hover:text-neutral-900">
+                  Users
+                </Link>
+              </>
             )}
             <Link to={ROUTES.ACCOUNT} className="text-neutral-600 hover:text-neutral-900">
               Account

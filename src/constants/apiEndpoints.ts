@@ -61,6 +61,8 @@ export const BILLING_ENDPOINTS = {
   API_KEYS: 'billing/api-keys/',
   ADMIN_USERS: (page: number) => `billing/admin/users/?page=${page}`,
   ADMIN_DASHBOARD: 'billing/admin/dashboard/',
+  ADMIN_USER_TIER: (userId: number) => `billing/admin/users/${userId}/tier/`,
+  ADMIN_USER_DELETE: (userId: number) => `billing/admin/users/${userId}/delete/`,
 } as const;
 
 /** Teacher (Django) */
