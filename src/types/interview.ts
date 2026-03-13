@@ -32,15 +32,54 @@ export interface SubmitResponseResult {
   status: string;
 }
 
+/** Communication interview: speaking phase payload (backend may use snake_case) */
+export interface SpeakingPayload {
+  instruction?: string;
+  paragraph?: string;
+}
+
+/** Communication interview: comprehension payload */
+export interface ComprehensionPayload {
+  instruction?: string;
+  question?: string;
+  paragraph?: string;
+}
+
+/** Communication interview: single MCQ (question + options) */
+export interface MCQPayload {
+  instruction?: string;
+  question?: string;
+  options?: string[];
+}
+
+/** Single MCQ result (correct answer, user answer) */
+export interface MCQResultItem {
+  question_number?: number;
+  question?: string;
+  user_answer?: string;
+  correct_answer?: string;
+}
+
+/** Backend respond-status can return interview_ai_response with camelCase keys */
+export interface InterviewAIResponsePayload {
+  message?: string;
+  audio_base64?: string;
+  last_node?: string;
+  /** camelCase from FastAPI route */
+  currentspeaking?: SpeakingPayload;
+  speakingfeedback?: string;
+  currentcomprehension?: ComprehensionPayload;
+  comprehensionfeedback?: string;
+  currentmcq?: MCQPayload;
+  mcqfeedback?: string;
+  mcq_results?: MCQResultItem[];
+}
+
 /** Result of GET respond-status (task completion); backend may send result + interview_ai_response */
 export interface RespondTaskResult {
   status?: string;
   result?: { message?: string };
-  interview_ai_response?: {
-    message?: string;
-    audio_base64?: string;
-    last_node?: string;
-  };
+  interview_ai_response?: InterviewAIResponsePayload;
   interview_transcript?: string;
   error?: string;
 }
@@ -52,6 +91,18 @@ export interface AIResponseData {
   questionNumber?: number;
   totalQuestions?: number;
   lastNode?: string;
+}
+
+/** Communication phase state for UI (normalized from backend) */
+export interface CommunicationData {
+  speaking: { instruction?: string; paragraph?: string } | null;
+  speakingFeedback: string | null;
+  comprehension: { instruction?: string; question?: string } | null;
+  comprehensionFeedback: string | null;
+  mcq: MCQPayload | null;
+  mcqCount: number;
+  mcqFeedback: string | null;
+  mcqResults: MCQResultItem[] | null;
 }
 
 /** Result of GET /interview/:sessionId/status */

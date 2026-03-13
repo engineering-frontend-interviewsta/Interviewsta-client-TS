@@ -33,3 +33,8 @@ export interface TransactionItem {
   description?: string;
   currency?: string;
 }
+
+export interface PlanStatus {
+  has_time_limit?: boolean;
+  tier?: number;
+}

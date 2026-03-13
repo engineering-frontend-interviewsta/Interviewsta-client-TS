@@ -1,15 +1,15 @@
 import { djangoClient } from '../api/axiosInstance';
 import { BILLING_ENDPOINTS } from '../constants/apiEndpoints';
-import type { BillingAccount, TransactionItem } from '../types/account';
+import type { BillingAccount, TransactionItem, PlanStatus } from '../types/account';
 
 export async function getBillingAccount(): Promise<BillingAccount> {
   const res = await djangoClient.get(BILLING_ENDPOINTS.ACCOUNT);
   return (res.data ?? {}) as BillingAccount;
 }
 
-export async function getPlanStatus(): Promise<unknown> {
+export async function getPlanStatus(): Promise<PlanStatus | null> {
   const res = await djangoClient.get(BILLING_ENDPOINTS.PLAN_STATUS).catch(() => ({ data: null }));
-  return res?.data ?? null;
+  return (res?.data as PlanStatus | null) ?? null;
 }
 
 export async function getFeedbackAccess(): Promise<{ can_access_full_feedback?: boolean; tier?: number }> {
