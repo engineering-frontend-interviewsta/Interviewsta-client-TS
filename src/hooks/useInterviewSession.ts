@@ -212,21 +212,9 @@ export function useInterviewSession({
       setIsSubmitting(true);
       setError(null);
       try {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const res = reader.result;
-            if (typeof res === 'string') {
-              // strip data URL prefix if present
-              const commaIndex = res.indexOf(',');
-              resolve(commaIndex >= 0 ? res.slice(commaIndex + 1) : res);
-            } else {
-              reject(new Error('Failed to read audio'));
-            }
-          };
-          reader.onerror = () => reject(reader.error ?? new Error('Failed to read audio'));
-          reader.readAsDataURL(audio);
-        });
+        // Backend expects WAV with RIFF header; MediaRecorder gives webm/opus — convert first
+        const { blobToWavBase64 } = await import('../utils/blobToWav');
+        const base64 = await blobToWavBase64(audio);
 
         const { taskId } = await submitResponse({
           sessionId,

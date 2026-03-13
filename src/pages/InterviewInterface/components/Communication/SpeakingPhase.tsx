@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Volume2, Mic, Square, Send } from 'lucide-react';
-import { blobToWavBase64, TARGET_SAMPLE_RATE } from './blobToWav';
+import { blobToWavBase64, TARGET_SAMPLE_RATE } from '../../../../utils/blobToWav';
 
 export interface SpeakingPhaseProps {
   instruction?: string;

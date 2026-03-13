@@ -1,11 +1,18 @@
+/**
+ * Convert a recorded audio Blob (e.g. webm/opus from MediaRecorder) to WAV base64
+ * with RIFF header so the backend STT accepts it.
+ */
 const TARGET_SAMPLE_RATE = 16000;
 
 export async function blobToWavBase64(blob: Blob): Promise<string> {
   const arrayBuffer = await blob.arrayBuffer();
-  const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  const Ctx =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
   const audioCtx = new Ctx();
   const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
-  const channel = audioBuffer.numberOfChannels > 0 ? audioBuffer.getChannelData(0) : new Float32Array(0);
+  const channel =
+    audioBuffer.numberOfChannels > 0 ? audioBuffer.getChannelData(0) : new Float32Array(0);
   const sourceRate = audioBuffer.sampleRate;
   let float32 = channel;
   if (sourceRate !== TARGET_SAMPLE_RATE) {
