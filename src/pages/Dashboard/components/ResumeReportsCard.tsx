@@ -35,14 +35,12 @@ export default function ResumeReportsCard({ reports, onReportClick }: ResumeRepo
                   <div className="min-w-0">
                     <h4 className="font-medium text-gray-900 truncate">{report.fileName}</h4>
                     <p className="text-xs text-gray-600">
-                      {report.date}
-                      {report.targetRole ? ` · ${report.targetRole}` : ''}
-                      {report.company ? ` · ${report.company}` : ''}
+                      {[report.date, report.targetRole, report.company].filter(Boolean).join(' · ') || '—'}
                     </p>
                   </div>
                   <div className="flex flex-col items-end text-xs text-gray-700 flex-shrink-0">
-                    <span>Overall: {report.overallScore ?? '—'}%</span>
-                    <span>Match: {report.jobMatchScore ?? '—'}%</span>
+                    <span>Score: {report.overallScore ?? '—'}%</span>
+                    {report.jobMatchScore != null && <span>Match: {report.jobMatchScore}%</span>}
                   </div>
                 </div>
               </li>

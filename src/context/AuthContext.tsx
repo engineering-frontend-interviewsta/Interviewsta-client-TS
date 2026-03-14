@@ -11,9 +11,17 @@ import { setAccessToken, setRole, clearAuthStorage } from '../utils/storage';
 import type { AuthResult, User } from '../types/auth';
 import { ROUTES } from '../constants/routerConstants';
 
+/** Normalize API user to roles array (backend may send role or roles). */
+function toRoles(data: { role?: string; roles?: string[] } | null): string[] | null {
+  if (!data) return null;
+  if (Array.isArray(data.roles) && data.roles.length > 0) return data.roles;
+  if (data.role) return [data.role];
+  return null;
+}
+
 interface AuthState {
   user: User | null;
-  role: string | null;
+  roles: string[] | null;
   isLoading: boolean;
 }
 
@@ -24,7 +32,7 @@ interface AuthContextValue extends AuthState {
     name: string,
     email: string,
     password: string,
-    role?: string,
+    roles?: string[],
     phone?: string,
     country?: string
   ) => Promise<AuthResult>;
@@ -34,7 +42,7 @@ interface AuthContextValue extends AuthState {
 
 const defaultState: AuthState = {
   user: null,
-  role: null,
+  roles: null,
   isLoading: true,
 };
 
@@ -68,28 +76,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const response = await authService.me();
       const userData = response.data;
-      setRole(userData.role);
+      const roles = toRoles(userData);
+      setRole(roles?.[0] ?? null);
       setState({
         user: authService.toUser(userData),
-        role: userData.role,
+        roles,
         isLoading: false,
       });
     } catch {
       try {
         const refreshResponse = await authService.refresh();
-        const token = refreshResponse.data.access;
+        const token = refreshResponse.data.accessToken;
         setAccessToken(token);
         const meResponse = await authService.me();
         const userData = meResponse.data;
-        setRole(userData.role);
+        const roles = toRoles(userData);
+        setRole(roles?.[0] ?? null);
         setState({
           user: authService.toUser(userData),
-          role: userData.role,
+          roles,
           isLoading: false,
         });
-      } catch {
+      } catch (error) {
+        console.log('[DEBUG]checkAuth error', error);
         clearAuthStorage();
-        setState({ user: null, role: null, isLoading: false });
+        setState({ user: null, roles: null, isLoading: false });
       }
     }
   }, []);
@@ -101,12 +112,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = useCallback(async (email: string, password: string): Promise<AuthResult> => {
     try {
       const response = await authService.login(email, password);
-      const { access, user: u } = response.data;
-      setAccessToken(access);
-      setRole(u.role);
+      const { accessToken, user: u } = response.data;
+      setAccessToken(accessToken);
+      const roles = toRoles(u);
+      setRole(roles?.[0] ?? null);
       const user = authService.toUser(u);
-      setState({ user, role: u.role, isLoading: false });
-      return { success: true, user, role: u.role };
+      setState({ user, roles, isLoading: false });
+      return { success: true, user, role: roles?.[0], roles: roles ?? undefined };
     } catch (err: unknown) {
       const error =
         err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response
@@ -121,18 +133,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
       name: string,
       email: string,
       password: string,
-      role = 'student',
+      roles: string[] = ['user'],
       phone = '',
       country = ''
     ): Promise<AuthResult> => {
       try {
-        const response = await authService.register(name, email, password, role, phone, country);
-        const { access, user: u } = response.data;
-        setAccessToken(access);
-        setRole(u.role);
+        const response = await authService.register(name, email, password, roles, phone, country);
+        const { accessToken, user: u } = response.data;
+        const cookie =
+          (response as { headers?: { 'set-cookie'?: string | string[] } }).headers?.['set-cookie'] ??
+          (response.data as { cookie?: string }).cookie;
+        console.log('[DEBUG] register response', { cookie, data: response.data });
+        setAccessToken(accessToken);
+        const roleList = toRoles(u);
+        setRole(roleList?.[0] ?? null);
         const user = authService.toUser(u);
-        setState({ user, role: u.role, isLoading: false });
-        return { success: true, user, role: u.role };
+        setState({ user, roles: roleList, isLoading: false });
+        return { success: true, user, role: roleList?.[0], roles: roleList ?? undefined };
       } catch (err: unknown) {
         const error =
           err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response
@@ -151,12 +168,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const redirectUri =
           typeof window !== 'undefined' ? `${window.location.origin}${ROUTES.AUTH_CALLBACK}` : '';
         const response = await authService.googleLogin(code, redirectUri, role);
-        const { access, user: u } = response.data;
-        setAccessToken(access);
-        setRole(u.role);
+        const { accessToken, user: u } = response.data;
+        setAccessToken(accessToken);
+        const roleList = toRoles(u);
+        setRole(roleList?.[0] ?? null);
         const user = authService.toUser(u);
-        setState({ user, role: u.role, isLoading: false });
-        return { success: true, user, role: u.role };
+        setState({ user, roles: roleList, isLoading: false });
+        return { success: true, user, role: roleList?.[0], roles: roleList ?? undefined };
       } catch (err: unknown) {
         const error =
           err &&
@@ -179,12 +197,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const redirectUri =
           typeof window !== 'undefined' ? `${window.location.origin}${ROUTES.AUTH_CALLBACK}` : '';
         const response = await authService.githubLogin(code, redirectUri, role);
-        const { access, user: u } = response.data;
-        setAccessToken(access);
-        setRole(u.role);
+        const { accessToken, user: u } = response.data;
+        setAccessToken(accessToken);
+        const roleList = toRoles(u);
+        setRole(roleList?.[0] ?? null);
         const user = authService.toUser(u);
-        setState({ user, role: u.role, isLoading: false });
-        return { success: true, user, role: u.role };
+        setState({ user, roles: roleList, isLoading: false });
+        return { success: true, user, role: roleList?.[0], roles: roleList ?? undefined };
       } catch (err: unknown) {
         const error =
           err &&
@@ -207,8 +226,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch {
       // ignore
     } finally {
+      console.log('[DEBUG]logout');
       clearAuthStorage();
-      setState({ user: null, role: null, isLoading: false });
+      setState({ user: null, roles: null, isLoading: false });
     }
   }, []);
 

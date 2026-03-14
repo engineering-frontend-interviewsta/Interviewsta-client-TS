@@ -7,16 +7,16 @@ import { VALIDATION } from '../../../constants/appConstants';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Signup() {
-  const { user, role, isLoading } = useAuth();
+  const { user, roles, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && user && role) {
-      if (role === 'teacher') navigate(ROUTES.TEACHER_DASHBOARD, { replace: true });
-      else if (role === 'admin') navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+    if (!isLoading && user && roles) {
+      if (roles.includes('teacher')) navigate(ROUTES.TEACHER_DASHBOARD, { replace: true });
+      else if (roles.includes('admin')) navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
       else navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
     }
-  }, [isLoading, user, role, navigate]);
+  }, [isLoading, user, roles, navigate]);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -26,14 +26,14 @@ export default function Signup() {
     country: '',
     password: '',
     confirmPassword: '',
-    role: 'student' as string,
+    roles: ['user'] as string[],
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register } = useAuth();
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setError('');
   };
@@ -68,7 +68,7 @@ export default function Signup() {
         name,
         formData.email.trim(),
         formData.password,
-        formData.role,
+        formData.roles,
         formData.phone?.trim() ?? '',
         formData.country?.trim() ?? ''
       );
@@ -139,10 +139,11 @@ export default function Signup() {
             </label>
             <select
               id="signup-role"
-              value={formData.role}
-              onChange={(e) => handleChange('role', e.target.value)}
+              value={formData.roles}
+              onChange={(e) => handleChange('roles', [e.target.value] as string[])}
               className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
+              <option value="user">User</option>
               <option value="student">Student</option>
               <option value="teacher">Teacher</option>
               <option value="admin">Admin</option>

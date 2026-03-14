@@ -1,4 +1,4 @@
-import { djangoClient } from '../api/axiosInstance';
+import { nestClient } from '../api/axiosInstance';
 import { AUTH_ENDPOINTS } from '../constants/apiEndpoints';
 import type { AuthApiResponse } from '../types/auth';
 
@@ -12,44 +12,45 @@ function toUser(data: AuthApiResponse['user']): { email: string; displayName: st
 }
 
 export async function login(email: string, password: string): Promise<{ data: AuthApiResponse }> {
-  return djangoClient.post<AuthApiResponse>(AUTH_ENDPOINTS.LOGIN, { email, password });
+  console.log('login', AUTH_ENDPOINTS.LOGIN);
+  return nestClient.post<AuthApiResponse>(AUTH_ENDPOINTS.LOGIN, { email, password });
 }
 
 export async function register(
   name: string,
   email: string,
   password: string,
-  role = 'student',
+  roles: string[] = ['user'],
   phone = '',
   country = ''
 ): Promise<{ data: AuthApiResponse }> {
-  return djangoClient.post<AuthApiResponse>(AUTH_ENDPOINTS.REGISTER, {
+  return nestClient.post<AuthApiResponse>(AUTH_ENDPOINTS.REGISTER, {
     name,
     email,
     password,
-    role,
+    roles,
     ...(phone?.trim() && { phone: phone.trim() }),
     ...(country?.trim() && { country: country.trim() }),
   });
 }
 
 export async function logout(): Promise<void> {
-  await djangoClient.post(AUTH_ENDPOINTS.LOGOUT);
+  await nestClient.post(AUTH_ENDPOINTS.LOGOUT);
 }
 
-export async function refresh(): Promise<{ data: { access: string } }> {
-  return djangoClient.post<{ access: string }>(AUTH_ENDPOINTS.REFRESH);
+export async function refresh(): Promise<{ data: { accessToken: string } }> {
+  return nestClient.post<{ accessToken: string }>(AUTH_ENDPOINTS.REFRESH);
 }
 
-export async function me(): Promise<{ data: AuthApiResponse['user'] & { role: string } }> {
-  return djangoClient.get(AUTH_ENDPOINTS.ME);
+export async function me(): Promise<{ data: AuthApiResponse['user'] }> {
+  return nestClient.get(AUTH_ENDPOINTS.ME);
 }
 
 export async function forgotPassword(
   email: string,
   frontendUrl: string = typeof window !== 'undefined' ? window.location.origin : ''
 ): Promise<void> {
-  await djangoClient.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, { email, frontend_url: frontendUrl });
+  await nestClient.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, { email, frontend_url: frontendUrl });
 }
 
 export async function googleLogin(
@@ -57,7 +58,7 @@ export async function googleLogin(
   redirectUri: string,
   role = 'student'
 ): Promise<{ data: AuthApiResponse }> {
-  return djangoClient.post<AuthApiResponse>(AUTH_ENDPOINTS.GOOGLE, {
+  return nestClient.post<AuthApiResponse>(AUTH_ENDPOINTS.GOOGLE, {
     code,
     redirect_uri: redirectUri,
     role,
@@ -69,7 +70,7 @@ export async function githubLogin(
   redirectUri: string,
   role = 'student'
 ): Promise<{ data: AuthApiResponse }> {
-  return djangoClient.post<AuthApiResponse>(AUTH_ENDPOINTS.GITHUB, {
+  return nestClient.post<AuthApiResponse>(AUTH_ENDPOINTS.GITHUB, {
     code,
     redirect_uri: redirectUri,
     role,

@@ -13,6 +13,9 @@ export const AUTH_ENDPOINTS = {
 
 /** FastAPI interview service */
 export const INTERVIEW_ENDPOINTS = {
+  INTERVIEW_TESTS: (page: string, limit: string) => `/interview-test/?page=${page}&limit=${limit}`,
+  PARENT_INTERVIEW_TYPES: '/interview-test/parent-types/',
+  BY_PARENT_TYPE: (parentTypeId: string, page: string, limit: string) => `/interview-test/by-parent-type/${parentTypeId}/?page=${page}&limit=${limit}`,
   START: '/interview/start',
   START_STATUS: (taskId: string) => `/interview/start-status/${taskId}`,
   RESPOND_STATUS: (sessionId: string, taskId: string) =>
@@ -37,12 +40,13 @@ export const COACHING_ENDPOINTS = {
 
 /** Dashboard & student (Django) */
 export const DASHBOARD_ENDPOINTS = {
-  LATEST_STATS: 'latest-stats',
-  RESUME_PROGRESS: 'get-resume-progress',
-  PERFORMANCE_ANALYSIS: 'student/performance-analysis/',
-  CLASSES: 'classes/',
-  TIME_SLOTS: 'time-slots/',
-  ASSIGNMENTS: 'assignments/',
+  PERFORMANCE: '/analytics/performance/',
+  LATEST_STATS: '/analytics/latest-stats',
+  RESUME_SESSIONS: '/analytics/recent-resume-sessions/',
+  INTERVIEW_SESSIONS: '/analytics/recent-interview-sessions/',
+  // CLASSES: 'classes/',
+  // TIME_SLOTS: 'time-slots/',
+  // ASSIGNMENTS: 'assignments/',
 } as const;
 
 /** Feedback (Django) */

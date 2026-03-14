@@ -1,11 +1,13 @@
 import type { PerformanceByType, PerformanceOverall } from '../../../types/dashboard';
 
 const TYPE_CONFIG: { key: keyof PerformanceByType; label: string; sublabel: string }[] = [
-  { key: 'technical', label: 'Technical', sublabel: 'Coding / Company / Subject' },
-  { key: 'hr', label: 'HR', sublabel: 'Behavioral & fit' },
-  { key: 'case_study', label: 'Case Study', sublabel: 'Analytical & business' },
-  { key: 'communication', label: 'Communication', sublabel: 'Speaking & comprehension' },
-  { key: 'debate', label: 'Debate', sublabel: 'Argumentation & persuasion' },
+  { key: 'technical', label: 'Technical', sublabel: 'Coding / System design' },
+  { key: 'behavioral', label: 'Behavioral', sublabel: 'HR & fit' },
+  { key: 'role-based', label: 'Role-based', sublabel: 'Job-specific' },
+  { key: 'case-study', label: 'Case Study', sublabel: 'Analytical & business' },
+  { key: 'debate', label: 'Debate', sublabel: 'Argumentation' },
+  { key: 'specialised', label: 'Specialised', sublabel: 'Niche topics' },
+  { key: 'miscellaneous', label: 'Miscellaneous', sublabel: 'Other' },
 ];
 
 interface Props {
@@ -26,12 +28,12 @@ export default function PerformanceOverviewCards({ byType, overall }: Props) {
         <p className="text-xs text-gray-500 mt-1">{totalSessions} total sessions</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {TYPE_CONFIG.map((config) => {
           const data = byType?.[config.key] ?? { count: 0, avg_score: 0 };
           return (
             <div
-              key={config.key as string}
+              key={String(config.key)}
               className="border border-gray-200 rounded-lg p-4 text-sm flex flex-col justify-between"
             >
               <div>
@@ -49,4 +51,3 @@ export default function PerformanceOverviewCards({ byType, overall }: Props) {
     </div>
   );
 }
-

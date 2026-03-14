@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   getLatestStats,
-  getResumeProgress,
-  getPerformanceAnalysis,
-  getClassroomStats,
+  getResumeSessions,
+  getInterviewSessions,
+  getPerformance,
   clearDashboardCache,
   mapVideoReport,
   mapResumeReport,
+  buildPerformanceAnalysis,
 } from '../../services/dashboardService';
-import type { VideoInterviewReport, ResumeReport, PerformanceAnalysis } from '../../types/dashboard';
+import type { VideoInterviewReport, ResumeReport, PerformanceAnalysis, PerformanceResponse } from '../../types/dashboard';
 import DashboardHeader from './components/DashboardHeader';
 import DashboardQuickLinks from './components/DashboardQuickLinks';
 import DashboardSkeleton from './components/DashboardSkeleton';
@@ -21,19 +22,14 @@ import PerformanceTrendChart from './components/PerformanceTrendChart';
 import PerformanceByTypeBreakdown from './components/PerformanceByTypeBreakdown';
 import { ROUTES } from '../../constants/routerConstants';
 
-/** Interview type lookup: (interviewId) => meta. Use null until we have interviewTypes data. */
-function getInterviewMeta(_interviewId: number): { title?: string; category?: string; difficulty?: string; topics?: string[] } | null {
-  return null;
-}
-
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [videoReports, setVideoReports] = useState<VideoInterviewReport[]>([]);
   const [resumeReports, setResumeReports] = useState<ResumeReport[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [performanceAnalysis, setPerformanceAnalysis] = useState<PerformanceAnalysis | null>(null);
-  const [classroomStats, setClassroomStats] = useState<{ classesJoined: number; upcomingSlots: number; assignments: number } | null>(null);
+  const [performanceByType, setPerformanceByType] = useState<PerformanceResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -43,16 +39,22 @@ export default function Dashboard() {
       sessionStorage.removeItem('refreshDashboard');
     }
     try {
-      const [videoRaw, resumeRaw, perf, classroom] = await Promise.all([
-        getLatestStats(),
-        getResumeProgress(),
-        getPerformanceAnalysis().catch(() => null),
-        getClassroomStats().catch(() => null),
+      const [latestRes, resumeRes, interviewRes, performanceRes] = await Promise.all([
+        getLatestStats().catch(() => null),
+        getResumeSessions(),
+        getInterviewSessions(),
+        getPerformance(),
       ]);
-      setVideoReports(videoRaw.map((item) => mapVideoReport(item, getInterviewMeta)));
-      setResumeReports(resumeRaw.map(mapResumeReport));
-      setPerformanceAnalysis(perf);
-      setClassroomStats(classroom ?? null);
+
+      const analysis = buildPerformanceAnalysis(latestRes, performanceRes ?? null);
+      setPerformanceAnalysis(analysis);
+      setPerformanceByType(performanceRes ?? null);
+
+      const interviewSessions = interviewRes?.sessions ?? [];
+      setVideoReports(interviewSessions.map((s) => mapVideoReport(s)));
+
+      const resumeSessions = resumeRes?.sessions ?? [];
+      setResumeReports(resumeSessions.map(mapResumeReport));
     } catch {
       navigate(ROUTES.HOME);
     } finally {
@@ -109,27 +111,7 @@ export default function Dashboard() {
             <PerformanceOverviewCards byType={performanceAnalysis.by_type} overall={performanceAnalysis.overall} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <PerformanceTrendChart trend={performanceAnalysis.overall.trend} title="Overall performance trend" />
-              <PerformanceByTypeBreakdown byType={performanceAnalysis.by_type} />
-            </div>
-          </div>
-        )}
-
-        {classroomStats != null && (classroomStats.classesJoined > 0 || classroomStats.upcomingSlots > 0 || classroomStats.assignments > 0) && (
-          <div className="mb-8 rounded-xl bg-white border border-gray-100 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">My Classroom</h2>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-indigo-600">{classroomStats.classesJoined}</div>
-                <div className="text-xs text-gray-600">Classes Joined</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-purple-600">{classroomStats.upcomingSlots}</div>
-                <div className="text-xs text-gray-600">Upcoming Slots</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-600">{classroomStats.assignments}</div>
-                <div className="text-xs text-gray-600">Assignments</div>
-              </div>
+              <PerformanceByTypeBreakdown performance={performanceByType} />
             </div>
           </div>
         )}

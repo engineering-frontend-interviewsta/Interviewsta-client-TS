@@ -1,4 +1,4 @@
-import { djangoClient } from '../api/axiosInstance';
+import { nestClient } from '../api/axiosInstance';
 import { FEEDBACK_ENDPOINTS } from '../constants/apiEndpoints';
 import type { SessionHistoryResponse } from '../types/feedback';
 
@@ -14,7 +14,7 @@ export type SessionHistoryParams =
 export async function getSessionHistory(
   params: SessionHistoryParams
 ): Promise<SessionHistoryResponse> {
-  const response = await djangoClient.get(FEEDBACK_ENDPOINTS.SESSION_HISTORY, {
+  const response = await nestClient.get(FEEDBACK_ENDPOINTS.SESSION_HISTORY, {
     params: 'interview_id' in params
       ? { interview_id: params.interview_id, interview_type: params.interview_type }
       : { session_id: params.session_id, session_type: params.session_type },

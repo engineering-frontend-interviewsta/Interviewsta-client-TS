@@ -1,5 +1,5 @@
 import Config from '../config';
-import { fastApiClient } from '../api/axiosInstance';
+import { nestClient, fastApiClient } from '../api/axiosInstance';
 import { INTERVIEW_ENDPOINTS } from '../constants/apiEndpoints';
 import { getAuthToken } from '../utils/auth';
 import type {
@@ -10,6 +10,45 @@ import type {
   AIResponseData,
   InterviewStreamCallbacks,
 } from '../types/interview';
+import type {
+  InterviewTestsPaginatedResponse,
+  ParentInterviewType,
+} from '../types/interviewTest';
+
+const DEFAULT_PAGE_SIZE = 10;
+
+/** Fetch paginated interview tests (All interviews). */
+export async function getInterviewTests(params: {
+  page?: number;
+  limit?: number;
+}): Promise<InterviewTestsPaginatedResponse> {
+  const page = params.page ?? 1;
+  const limit = params.limit ?? DEFAULT_PAGE_SIZE;
+  const response = await nestClient.get<InterviewTestsPaginatedResponse>(
+    INTERVIEW_ENDPOINTS.INTERVIEW_TESTS(String(page), String(limit))
+  );
+  return response.data;
+}
+
+/** Fetch all parent interview types (for tabs). */
+export async function getInterviewParentTypes(): Promise<ParentInterviewType[]> {
+  const response = await nestClient.get<ParentInterviewType[]>(INTERVIEW_ENDPOINTS.PARENT_INTERVIEW_TYPES);
+  const data = response.data;
+  return Array.isArray(data) ? data : [];
+}
+
+/** Fetch paginated interview tests for a given parent type. */
+export async function getInterviewTestsByParentType(
+  parentTypeId: string,
+  params: { page?: number; limit?: number }
+): Promise<InterviewTestsPaginatedResponse> {
+  const page = params.page ?? 1;
+  const limit = params.limit ?? DEFAULT_PAGE_SIZE;
+  const response = await nestClient.get<InterviewTestsPaginatedResponse>(
+    INTERVIEW_ENDPOINTS.BY_PARENT_TYPE(parentTypeId, String(page), String(limit))
+  );
+  return response.data;
+}
 
 /**
  * Start a new interview session.

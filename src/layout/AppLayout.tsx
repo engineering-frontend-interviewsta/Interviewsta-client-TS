@@ -6,9 +6,11 @@ import LoadingFallback from '../components/shared/LoadingFallback';
 const HIDE_HEADER_PATHS: string[] = [ROUTES.INTERVIEW_INTERFACE];
 
 export default function AppLayout() {
-  const { user, isLoading, role, logout } = useAuth();
+  const { user, isLoading, roles, logout } = useAuth();
   const location = useLocation();
   const hideHeader = HIDE_HEADER_PATHS.includes(location.pathname);
+  const isAdmin = roles?.includes('admin');
+  const isTeacher = roles?.includes('teacher');
 
   if (isLoading) {
     return <LoadingFallback />;
@@ -25,9 +27,9 @@ export default function AppLayout() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link
             to={
-              role === 'admin'
+              isAdmin
                 ? ROUTES.ADMIN_DASHBOARD
-                : role === 'teacher'
+                : isTeacher
                   ? ROUTES.TEACHER_DASHBOARD
                   : ROUTES.STUDENT_DASHBOARD
             }
@@ -36,7 +38,7 @@ export default function AppLayout() {
             Interviewsta
           </Link>
           <nav className="flex flex-wrap items-center gap-4 text-sm">
-            {role === 'teacher' ? (
+            {isTeacher ? (
               <Link to={ROUTES.TEACHER_DASHBOARD} className="text-neutral-600 hover:text-neutral-900">
                 Dashboard
               </Link>
@@ -54,12 +56,12 @@ export default function AppLayout() {
             <Link to={ROUTES.RESUME_ANALYSIS} className="text-neutral-600 hover:text-neutral-900">
               Resume
             </Link>
-            {role === 'teacher' && (
+            {isTeacher && (
               <Link to={ROUTES.TEACHER_CLASSES} className="text-neutral-600 hover:text-neutral-900">
                 Classes
               </Link>
             )}
-            {role === 'admin' && (
+            {isAdmin && (
               <>
                 <Link to={ROUTES.ADMIN_DASHBOARD} className="text-neutral-600 hover:text-neutral-900">
                   Admin
