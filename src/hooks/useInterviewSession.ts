@@ -15,6 +15,17 @@ import type {
 const POLL_INTERVAL_MS = 1500;
 const MAX_POLL_ATTEMPTS = 120;
 
+export interface InterviewMessage {
+  id: string;
+  type: 'ai' | 'user';
+  content: string;
+  timestamp: Date;
+}
+
+function nextId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 const emptyCommunicationData: CommunicationData = {
   speaking: null,
   speakingFeedback: null,
@@ -68,56 +79,89 @@ function mergeCommunicationFromResponse(
 export interface UseInterviewSessionParams {
   sessionId: string;
   interviewType: string;
+  /** When true, TTS audio is skipped (dev mode). */
+  devMode?: boolean;
 }
 
 export type EndSessionOpts = { sessionFinished?: boolean; interviewTestId?: number };
 
 export interface UseInterviewSessionResult {
   aiMessage: string;
+  /** Conversation transcript (AI + user messages) for display */
+  messages: InterviewMessage[];
   lastNode: string | null;
   communicationData: CommunicationData;
   status: string;
   isComplete: boolean;
   error: string | null;
   isSubmitting: boolean;
+  /** True while TTS is playing; use to disable VAD so user doesn't speak over AI */
+  isPlayingAudio: boolean;
+  /** Add a user message to the transcript (e.g. when user sends text input) */
+  addUserMessage: (content: string) => void;
   submitText: (text: string) => Promise<void>;
   submitAudio: (audio: Blob) => Promise<void>;
   submitCode: (code: string) => Promise<void>;
   endSession: (opts?: EndSessionOpts) => Promise<string | null>;
-  /** Update communication state (e.g. clear phase feedback) */
   updateCommunicationData: (fn: (prev: CommunicationData) => CommunicationData) => void;
 }
 
 export function useInterviewSession({
   sessionId,
   interviewType,
+  devMode = false,
 }: UseInterviewSessionParams): UseInterviewSessionResult {
   const [aiMessage, setAiMessage] = useState('');
+  const [messages, setMessages] = useState<InterviewMessage[]>([]);
   const [lastNode, setLastNode] = useState<string | null>(null);
   const [communicationData, setCommunicationData] = useState<CommunicationData>(() => emptyCommunicationData);
   const [status, setStatus] = useState('connecting');
   const [isComplete, setIsComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const streamCloseRef = useRef<(() => void) | null>(null);
   const startTimeRef = useRef(Date.now());
   const audioQueueRef = useRef<string[]>([]);
   const isPlayingRef = useRef(false);
+
+  const addAIMessage = useCallback((content: string) => {
+    const t = content?.trim();
+    if (!t) return;
+    setMessages((prev) => {
+      const last = prev[prev.length - 1];
+      if (last?.type === 'ai' && last.content === t) return prev;
+      return [...prev, { id: nextId(), type: 'ai', content: t, timestamp: new Date() }];
+    });
+  }, []);
+
+  const addUserMessage = useCallback((content: string) => {
+    const t = content?.trim();
+    if (!t) return;
+    setMessages((prev) => {
+      const last = prev[prev.length - 1];
+      if (last?.type === 'user' && last.content === t) return prev;
+      return [...prev, { id: nextId(), type: 'user', content: t, timestamp: new Date() }];
+    });
+  }, []);
 
   const playNext = useCallback(() => {
     if (isPlayingRef.current) return;
     const next = audioQueueRef.current.shift();
     if (!next) return;
     isPlayingRef.current = true;
+    setIsPlayingAudio(true);
     const audio = new Audio(`data:audio/wav;base64,${next}`);
     audio.onended = () => {
       isPlayingRef.current = false;
+      setIsPlayingAudio(false);
       if (audioQueueRef.current.length > 0) {
         playNext();
       }
     };
     audio.onerror = () => {
       isPlayingRef.current = false;
+      setIsPlayingAudio(false);
       if (audioQueueRef.current.length > 0) {
         playNext();
       }
@@ -128,13 +172,13 @@ export function useInterviewSession({
 
   const enqueueAudio = useCallback(
     (base64: string | undefined) => {
-      if (!base64) return;
+      if (!base64 || devMode) return;
       audioQueueRef.current.push(base64);
       if (!isPlayingRef.current) {
         playNext();
       }
     },
-    [playNext]
+    [playNext, devMode]
   );
 
   useEffect(() => {
@@ -143,7 +187,10 @@ export function useInterviewSession({
       const { close } = connectToInterviewStream(sessionId, {
         onStatusUpdate: (s) => setStatus(s),
         onAIResponse: (data: AIResponseData) => {
-          if (data.message != null) setAiMessage(data.message);
+          if (data.message != null) {
+            setAiMessage(data.message);
+            addAIMessage(data.message);
+          }
           if (data.audioBase64) enqueueAudio(data.audioBase64);
           if (data.lastNode != null) setLastNode(data.lastNode);
         },
@@ -162,7 +209,7 @@ export function useInterviewSession({
       setError(err instanceof Error ? err.message : 'Failed to connect');
       setStatus('error');
     }
-  }, [sessionId]);
+  }, [sessionId, addAIMessage, enqueueAudio]);
 
   const submitText = useCallback(
     async (text: string) => {
@@ -185,7 +232,11 @@ export function useInterviewSession({
           const res = (await getRespondTaskStatus(sessionId, taskId)) as RespondTaskResult;
           if (res?.status === 'completed') {
             const msg = extractMessage(res);
-            if (msg != null) setAiMessage(msg);
+            if (res.interview_transcript?.trim()) addUserMessage(res.interview_transcript);
+            if (msg != null) {
+              setAiMessage(msg);
+              addAIMessage(msg);
+            }
             const ia = res?.interview_ai_response;
             if (ia?.last_node != null) setLastNode(ia.last_node);
             if (ia) setCommunicationData((prev) => mergeCommunicationFromResponse(prev, ia));
@@ -205,7 +256,7 @@ export function useInterviewSession({
         setIsSubmitting(false);
       }
     },
-    [sessionId, isSubmitting]
+    [sessionId, isSubmitting, addUserMessage, addAIMessage]
   );
 
   const submitAudio = useCallback(
@@ -233,7 +284,11 @@ export function useInterviewSession({
           const res = (await getRespondTaskStatus(sessionId, taskId)) as RespondTaskResult;
           if (res?.status === 'completed') {
             const msg = extractMessage(res);
-            if (msg != null) setAiMessage(msg);
+            if (res.interview_transcript?.trim()) addUserMessage(res.interview_transcript);
+            if (msg != null) {
+              setAiMessage(msg);
+              addAIMessage(msg);
+            }
             if (res.interview_ai_response?.audio_base64) {
               enqueueAudio(res.interview_ai_response.audio_base64);
             }
@@ -256,7 +311,7 @@ export function useInterviewSession({
         setIsSubmitting(false);
       }
     },
-    [sessionId, isSubmitting, enqueueAudio]
+    [sessionId, isSubmitting, enqueueAudio, addUserMessage, addAIMessage]
   );
 
   const submitCode = useCallback(
@@ -280,7 +335,11 @@ export function useInterviewSession({
           const res = (await getRespondTaskStatus(sessionId, taskId)) as RespondTaskResult;
           if (res?.status === 'completed') {
             const msg = extractMessage(res);
-            if (msg != null) setAiMessage(msg);
+            if (res.interview_transcript?.trim()) addUserMessage(res.interview_transcript);
+            if (msg != null) {
+              setAiMessage(msg);
+              addAIMessage(msg);
+            }
             if (res.interview_ai_response?.audio_base64) {
               enqueueAudio(res.interview_ai_response.audio_base64);
             }
@@ -303,7 +362,7 @@ export function useInterviewSession({
         setIsSubmitting(false);
       }
     },
-    [sessionId, isSubmitting, enqueueAudio]
+    [sessionId, isSubmitting, enqueueAudio, addUserMessage, addAIMessage]
   );
 
   const endSession = useCallback(
@@ -328,12 +387,15 @@ export function useInterviewSession({
 
   return {
     aiMessage,
+    messages,
     lastNode,
     communicationData,
     status,
     isComplete,
     error,
     isSubmitting,
+    isPlayingAudio,
+    addUserMessage,
     submitText,
     submitAudio,
     submitCode,

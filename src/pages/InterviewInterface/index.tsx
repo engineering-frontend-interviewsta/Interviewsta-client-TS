@@ -2,12 +2,22 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useInterviewSession } from '../../hooks/useInterviewSession';
 import { useMediaDevices } from '../../hooks/useMediaDevices';
-import { useSpeechCapture } from '../../hooks/useSpeechCapture';
 import { usePlanStatus } from '../../hooks/usePlanStatus';
+import { getInterviewFeedbackStatus } from '../../services/interviewService';
+import { float32ToWavBlob } from '../../utils/blobToWav';
+import { useMicVAD } from '@ricky0123/vad-react';
 import CodeEditorPanel from './components/CodeEditorPanel';
 import CaseStudyPanel from './components/CaseStudyPanel';
 import { SpeakingPhase, ComprehensionPhase, MCQPhase, MCQResults } from './components/Communication';
+import InterviewHeader from './components/InterviewHeader';
+import EndInterviewModal from './components/EndInterviewModal';
+import TranscriptPanel from './components/TranscriptPanel';
 import { ROUTES } from '../../constants/routerConstants';
+
+const FEEDBACK_POLL_INTERVAL_MS = 2000;
+const FEEDBACK_POLL_MAX_ATTEMPTS = 45;
+
+const DEV_MODE_KEY = 'devMode';
 
 export default function InterviewInterface() {
   const location = useLocation();
@@ -21,28 +31,37 @@ export default function InterviewInterface() {
   const interviewType = state?.interviewType ?? 'Technical';
   const interviewTypeId = state?.interviewTypeId;
 
+  const [devMode, setDevMode] = useState(() => typeof localStorage !== 'undefined' && localStorage.getItem(DEV_MODE_KEY) === 'true');
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [isEndingInterview, setIsEndingInterview] = useState(false);
+  const [endTaskId, setEndTaskId] = useState<string | null>(null);
+
   const {
     aiMessage,
+    messages,
     lastNode,
     communicationData,
     status,
     isComplete,
     error,
     isSubmitting,
+    isPlayingAudio,
     submitText,
     submitAudio,
     submitCode,
     endSession,
+    addUserMessage,
     updateCommunicationData,
   } = useInterviewSession({
     sessionId: sessionId ?? '',
     interviewType,
+    devMode,
   });
 
   const [textInput, setTextInput] = useState('');
   const { videoRef, videoEnabled, audioEnabled, micLevel, error: mediaError, toggleVideo, toggleAudio } =
     useMediaDevices();
-  const { isRecording, startRecording, stopRecording } = useSpeechCapture(submitAudio);
+  const allowVadSendRef = useRef(true);
   const [activeTab, setActiveTab] = useState<'conversation' | 'code' | 'notes'>('conversation');
   const [notes, setNotes] = useState('');
   const [caseStudyQuestion, setCaseStudyQuestion] = useState<string | null>(null);
@@ -51,6 +70,8 @@ export default function InterviewInterface() {
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [autoEnded, setAutoEnded] = useState(false);
   const hasNavigatedToFeedbackRef = useRef(false);
+  /** True when user clicked End and we're waiting for feedback task — don't navigate until poll completes */
+  const waitingForFeedbackRef = useRef(false);
 
   const isCodeInterview =
     interviewType === 'Technical' ||
@@ -91,6 +112,42 @@ export default function InterviewInterface() {
     communicationPhase &&
     ['Speaking', 'Speaking_after', 'Comprehension', 'Comprehension_before', 'Comprehension_after', 'MCQ', 'MCQ_after', 'Results'].includes(communicationPhase);
 
+  // During Communication Speaking exercise (paragraph shown, no feedback yet), user must use record button — don't auto-send VAD
+  const isCommunicationSpeakingExercise =
+    isCommunication &&
+    (communicationPhase === 'Speaking' || communicationPhase === 'Speaking_after') &&
+    !!communicationData.speaking &&
+    !communicationData.speakingFeedback;
+  allowVadSendRef.current = !isCommunicationSpeakingExercise;
+
+  const vad = useMicVAD({
+    startOnLoad: false,
+    onSpeechEnd: (audio: Float32Array) => {
+      if (!allowVadSendRef.current || devMode) return;
+      const blob = float32ToWavBlob(audio, 16000);
+      void submitAudio(blob);
+    },
+    positiveSpeechThreshold: 0.6,
+    negativeSpeechThreshold: 0.4,
+    redemptionMs: 1400,
+    minSpeechMs: 400,
+    baseAssetPath: 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.27/dist/',
+    onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/',
+  });
+
+  // When AI is speaking or we're submitting, pause VAD so user doesn't speak over; when mic on and ready, start VAD
+  useEffect(() => {
+    if (isComplete) {
+      vad.pause();
+      return;
+    }
+    if (audioEnabled && !isPlayingAudio && !isSubmitting) {
+      vad.start();
+    } else {
+      vad.pause();
+    }
+  }, [audioEnabled, isPlayingAudio, isSubmitting, isComplete]);
+
   useEffect(() => {
     if (!sessionId) {
       navigate(ROUTES.VIDEO_INTERVIEW, { replace: true });
@@ -130,18 +187,63 @@ export default function InterviewInterface() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!textInput.trim()) return;
-    await submitText(textInput);
+    const text = textInput.trim();
+    if (!text) return;
+    addUserMessage(text);
     setTextInput('');
+    await submitText(text);
   };
 
-  const handleEnd = async () => {
-    await endSession({ sessionFinished: true, interviewTestId: interviewTypeId });
-  };
+  const exportTranscript = useCallback(() => {
+    const lines = messages.map((m) =>
+      `[${m.timestamp.toLocaleTimeString()}] ${m.type === 'ai' ? 'Interviewer' : 'You'}: ${m.content}`
+    );
+    const blob = new Blob([lines.join('\n\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `interview-transcript-${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [messages]);
 
-  // When session ends (End button, MCQ Finish, or timer), go to feedback once
+  const toggleDevMode = useCallback(() => {
+    const next = !devMode;
+    setDevMode(next);
+    try {
+      localStorage.setItem(DEV_MODE_KEY, String(next));
+    } catch {
+      // ignore
+    }
+  }, [devMode]);
+
+  const handleEndClick = useCallback(() => {
+    setShowEndModal(true);
+  }, []);
+
+  const handleEndConfirm = useCallback(async () => {
+    waitingForFeedbackRef.current = true;
+    setIsEndingInterview(true);
+    try {
+      const taskId = await endSession({ sessionFinished: true, interviewTestId: interviewTypeId });
+      if (taskId) setEndTaskId(taskId);
+      else {
+        waitingForFeedbackRef.current = false;
+        setShowEndModal(false);
+      }
+    } catch {
+      waitingForFeedbackRef.current = false;
+      setShowEndModal(false);
+      setIsEndingInterview(false);
+      return;
+    }
+    setIsEndingInterview(false);
+  }, [endSession, interviewTypeId]);
+
+  // When session ends: if we're waiting for feedback (End button), poll effect will navigate; else navigate now
   useEffect(() => {
     if (!isComplete || !sessionId || hasNavigatedToFeedbackRef.current) return;
+    if (waitingForFeedbackRef.current || endTaskId) return; // wait for feedback poll to finish
     hasNavigatedToFeedbackRef.current = true;
     navigate(ROUTES.FEEDBACK, {
       replace: true,
@@ -151,11 +253,62 @@ export default function InterviewInterface() {
         session_type: interviewType,
       },
     });
-  }, [isComplete, sessionId, interviewType, navigate]);
+  }, [isComplete, sessionId, interviewType, endTaskId, navigate]);
+
+  // Poll feedback task after manual End until completed/failed, then navigate (loader stays on interview page)
+  useEffect(() => {
+    if (!endTaskId || !sessionId || hasNavigatedToFeedbackRef.current) return;
+    let cancelled = false;
+    let attempts = 0;
+    const poll = async () => {
+      if (cancelled || attempts >= FEEDBACK_POLL_MAX_ATTEMPTS) {
+        setEndTaskId(null);
+        setShowEndModal(false);
+        waitingForFeedbackRef.current = false;
+        hasNavigatedToFeedbackRef.current = true;
+        navigate(ROUTES.FEEDBACK, { replace: true, state: { type: 'video-interview', session_id: sessionId, session_type: interviewType } });
+        return;
+      }
+      attempts++;
+      try {
+        const res = await getInterviewFeedbackStatus(endTaskId);
+        if (res.status === 'completed' || res.status === 'failed') {
+          setEndTaskId(null);
+          setShowEndModal(false);
+          waitingForFeedbackRef.current = false;
+          hasNavigatedToFeedbackRef.current = true;
+          navigate(ROUTES.FEEDBACK, { replace: true, state: { type: 'video-interview', session_id: sessionId, session_type: interviewType } });
+          return;
+        }
+      } catch {
+        // ignore, retry
+      }
+      setTimeout(poll, FEEDBACK_POLL_INTERVAL_MS);
+    };
+    poll(); // first check immediately, then retry after interval
+    return () => { cancelled = true; };
+  }, [endTaskId, sessionId, interviewType, navigate]);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto flex flex-col gap-6 lg:flex-row">
+    <div className="flex-1 flex flex-col min-h-0 bg-gray-50">
+      <InterviewHeader
+          elapsedSeconds={elapsedSeconds}
+          devMode={devMode}
+          onToggleDevMode={toggleDevMode}
+          onExportTranscript={messages.length > 0 ? exportTranscript : undefined}
+          onEndClick={handleEndClick}
+          isEnding={isEndingInterview}
+          isComplete={isComplete}
+        />
+      <EndInterviewModal
+        open={showEndModal}
+        onClose={() => !endTaskId && setShowEndModal(false)}
+        onConfirm={handleEndConfirm}
+        isEnding={isEndingInterview}
+        isPreparingFeedback={!!endTaskId}
+      />
+      <div className="flex-1 min-h-0 overflow-auto px-2 sm:px-4 md:px-6 pb-6">
+      <div className="max-w-6xl mx-auto flex flex-col gap-6 lg:flex-row py-4">
         {/* Left: camera + status */}
         <div className="w-full lg:w-1/3 flex flex-col gap-4">
           <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -287,16 +440,13 @@ export default function InterviewInterface() {
 
           {activeTab === 'conversation' && !showCommunicationPhaseUI && (
             <>
-              <div className="flex-1 rounded-xl border border-gray-200 bg-white p-6 shadow-sm min-h-[240px] mb-4 overflow-y-auto">
-                {aiMessage ? (
-                  <div className="prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap">
-                    {aiMessage}
-                  </div>
-                ) : (
-                  <p className="text-gray-500">
-                    {status === 'connecting' ? 'Connecting…' : 'Waiting for the first question…'}
-                  </p>
-                )}
+              <div className="flex-1 min-h-0 flex flex-col mb-4">
+                <TranscriptPanel
+                  messages={messages}
+                  status={status}
+                  fallbackMessage={aiMessage || undefined}
+                  className="flex-1 min-h-[240px]"
+                />
               </div>
 
               {!isComplete && (
@@ -306,13 +456,13 @@ export default function InterviewInterface() {
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
                     placeholder="Type your response…"
-                    className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400"
+                    className="flex-1 rounded-lg border border-neutral-200 px-4 py-2 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-300"
                     disabled={isSubmitting}
                   />
                   <button
                     type="submit"
                     disabled={isSubmitting || !textInput.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+                    className="px-4 py-2 bg-neutral-800 text-white rounded-lg text-sm font-medium hover:bg-neutral-700 disabled:opacity-50"
                   >
                     {isSubmitting ? 'Sending…' : 'Send'}
                   </button>
@@ -320,27 +470,11 @@ export default function InterviewInterface() {
               )}
 
               {!isComplete && (
-                <div className="mb-4 flex items-center gap-3 text-xs text-gray-600">
-                  <button
-                    type="button"
-                    onMouseDown={startRecording}
-                    onMouseUp={stopRecording}
-                    onMouseLeave={stopRecording}
-                    onTouchStart={startRecording}
-                    onTouchEnd={stopRecording}
-                    disabled={isSubmitting}
-                    className={`px-3 py-1.5 rounded-full border text-xs font-medium ${
-                      isRecording
-                        ? 'bg-red-600 border-red-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-800 hover:bg-gray-50'
-                    }`}
-                  >
-                    {isRecording ? 'Release to send voice' : 'Hold to speak'}
-                  </button>
-                  <span className="text-[11px] text-gray-500">
-                    Your voice will be transcribed and sent as a response.
-                  </span>
-                </div>
+                <p className="mb-4 text-xs text-neutral-500">
+                  {audioEnabled
+                    ? 'Speak when the interviewer finishes — your response is sent automatically.'
+                    : 'Turn mic on to speak.'}
+                </p>
               )}
             </>
           )}
@@ -417,18 +551,9 @@ export default function InterviewInterface() {
           )}
 
           <div className="flex flex-wrap gap-3">
-            {!isComplete && (
-              <button
-                type="button"
-                onClick={handleEnd}
-                className="px-4 py-2 border border-red-300 text-red-700 rounded-lg font-medium hover:bg-red-50"
-              >
-                End interview
-              </button>
-            )}
             {isComplete && (
               <Link
-                to={ROUTES.DASHBOARD}
+                to={ROUTES.STUDENT_DASHBOARD}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
               >
                 Back to Dashboard
@@ -442,6 +567,7 @@ export default function InterviewInterface() {
             </Link>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

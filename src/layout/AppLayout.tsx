@@ -3,9 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import { ROUTES } from '../constants/routerConstants';
 import LoadingFallback from '../components/shared/LoadingFallback';
 
+const HIDE_HEADER_PATHS: string[] = [ROUTES.INTERVIEW_INTERFACE];
+
 export default function AppLayout() {
-  const { user, isLoading, role } = useAuth();
+  const { user, isLoading, role, logout } = useAuth();
   const location = useLocation();
+  const hideHeader = HIDE_HEADER_PATHS.includes(location.pathname);
 
   if (isLoading) {
     return <LoadingFallback />;
@@ -17,6 +20,7 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {!hideHeader && (
       <header className="border-b border-neutral-200 bg-white px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link
@@ -68,10 +72,18 @@ export default function AppLayout() {
             <Link to={ROUTES.ACCOUNT} className="text-neutral-600 hover:text-neutral-900">
               Account
             </Link>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="text-neutral-600 hover:text-neutral-900"
+            >
+              Logout
+            </button>
           </nav>
         </div>
       </header>
-      <main className="flex-1 p-4">
+      )}
+      <main className={hideHeader ? 'flex-1 flex flex-col min-h-0' : 'flex-1 p-4'}>
         <Outlet />
       </main>
     </div>
