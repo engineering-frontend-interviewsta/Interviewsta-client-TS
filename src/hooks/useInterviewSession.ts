@@ -289,9 +289,7 @@ export function useInterviewSession({
               setAiMessage(msg);
               addAIMessage(msg);
             }
-            if (res.interview_ai_response?.audio_base64) {
-              enqueueAudio(res.interview_ai_response.audio_base64);
-            }
+            // Do not enqueue audio here — stream already delivers the same AI response + audio; playing both causes Glee to speak twice
             const ia = res?.interview_ai_response;
             if (ia?.last_node != null) setLastNode(ia.last_node);
             if (ia) setCommunicationData((prev) => mergeCommunicationFromResponse(prev, ia));
@@ -311,7 +309,7 @@ export function useInterviewSession({
         setIsSubmitting(false);
       }
     },
-    [sessionId, isSubmitting, enqueueAudio, addUserMessage, addAIMessage]
+    [sessionId, isSubmitting, addUserMessage, addAIMessage]
   );
 
   const submitCode = useCallback(
@@ -340,9 +338,7 @@ export function useInterviewSession({
               setAiMessage(msg);
               addAIMessage(msg);
             }
-            if (res.interview_ai_response?.audio_base64) {
-              enqueueAudio(res.interview_ai_response.audio_base64);
-            }
+            // Do not enqueue audio here — stream already delivers the same AI response + audio; playing both causes Glee to speak twice
             const ia = res?.interview_ai_response;
             if (ia?.last_node != null) setLastNode(ia.last_node);
             if (ia) setCommunicationData((prev) => mergeCommunicationFromResponse(prev, ia));
@@ -362,7 +358,7 @@ export function useInterviewSession({
         setIsSubmitting(false);
       }
     },
-    [sessionId, isSubmitting, enqueueAudio, addUserMessage, addAIMessage]
+    [sessionId, isSubmitting, addUserMessage, addAIMessage]
   );
 
   const endSession = useCallback(

@@ -331,7 +331,9 @@ export default function InterviewInterface() {
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-900">Camera</h2>
               <div className="flex flex-col items-end gap-0.5">
-                <span className="text-xs text-gray-500">{status}</span>
+                {status && status !== 'waiting_for_response' && (
+                  <span className="text-xs text-gray-500">{status}</span>
+                )}
                 {planStatus?.has_time_limit && (
                   <span className="text-[11px] text-gray-400">
                     {Math.floor(elapsedSeconds / 60)}:
