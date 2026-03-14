@@ -11,6 +11,8 @@ export interface UseMediaDevicesResult extends MediaState {
   videoRef: React.RefObject<HTMLVideoElement>;
   toggleVideo: () => void;
   toggleAudio: () => void;
+  /** Returns a Promise that resolves with the microphone stream when ready (for VAD). */
+  getStream: () => Promise<MediaStream>;
 }
 
 export function useMediaDevices(): UseMediaDevicesResult {
@@ -107,11 +109,22 @@ export function useMediaDevices(): UseMediaDevicesResult {
     setState((prev) => ({ ...prev, audioEnabled: enabled }));
   }, [state.audioEnabled]);
 
+  const getStream = useCallback(async (): Promise<MediaStream> => {
+    if (streamRef.current) return streamRef.current;
+    // Wait for async setup to assign the stream (a few ticks)
+    for (let i = 0; i < 60; i++) {
+      await new Promise((r) => setTimeout(r, 50));
+      if (streamRef.current) return streamRef.current;
+    }
+    throw new Error('Microphone not ready');
+  }, []);
+
   return {
     videoRef: videoRef as React.RefObject<HTMLVideoElement>,
     ...state,
     toggleVideo,
     toggleAudio,
+    getStream,
   };
 }
 

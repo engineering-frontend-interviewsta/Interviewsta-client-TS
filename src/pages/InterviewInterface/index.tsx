@@ -59,7 +59,7 @@ export default function InterviewInterface() {
   });
 
   const [textInput, setTextInput] = useState('');
-  const { videoRef, videoEnabled, audioEnabled, micLevel, error: mediaError, toggleVideo, toggleAudio } =
+  const { videoRef, videoEnabled, audioEnabled, micLevel, error: mediaError, toggleVideo, toggleAudio, getStream } =
     useMediaDevices();
   const allowVadSendRef = useRef(true);
   const [activeTab, setActiveTab] = useState<'conversation' | 'code' | 'notes'>('conversation');
@@ -122,6 +122,10 @@ export default function InterviewInterface() {
 
   const vad = useMicVAD({
     startOnLoad: false,
+    getStream,
+    // Don't stop tracks on pause — we use the same stream for camera/mic level. VAD just disconnects.
+    pauseStream: async () => {},
+    resumeStream: async (stream: MediaStream) => stream,
     onSpeechEnd: (audio: Float32Array) => {
       if (!allowVadSendRef.current || devMode) return;
       const blob = float32ToWavBlob(audio, 16000);
@@ -135,18 +139,30 @@ export default function InterviewInterface() {
     onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/',
   });
 
-  // When AI is speaking or we're submitting, pause VAD so user doesn't speak over; when mic on and ready, start VAD
+  // Seamless conversation: mic stays on; we only pause *listening* when Glee is speaking so the user
+  // never has to click the mic. When AI audio ends, VAD starts again and we capture/send automatically.
+  // Important: only call vad.start() after VAD has finished loading (like old frontend), else start() no-ops.
   useEffect(() => {
     if (isComplete) {
       vad.pause();
       return;
     }
+    if (vad.loading) return; // Wait for model load before starting (matches old frontend)
     if (audioEnabled && !isPlayingAudio && !isSubmitting) {
-      vad.start();
+      void vad.start();
     } else {
       vad.pause();
     }
-  }, [audioEnabled, isPlayingAudio, isSubmitting, isComplete]);
+  }, [audioEnabled, isPlayingAudio, isSubmitting, isComplete, vad.loading]);
+
+  // When it's clearly the user's turn: session active, mic on, VAD ready, AI not speaking, not submitting
+  const isUserTurnToSpeak =
+    !isComplete &&
+    !vad.loading &&
+    audioEnabled &&
+    !isPlayingAudio &&
+    !isSubmitting &&
+    !isCommunicationSpeakingExercise;
 
   useEffect(() => {
     if (!sessionId) {
@@ -363,6 +379,26 @@ export default function InterviewInterface() {
                 </div>
               </div>
             </div>
+            {!isComplete && audioEnabled && (vad.loading || isUserTurnToSpeak || isPlayingAudio || isSubmitting) && (
+              <div className="mt-2 px-1 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-center">
+                {vad.loading ? (
+                  <span className="text-xs text-amber-600 flex items-center justify-center gap-1.5">
+                    <span className="inline-block w-3 h-3 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+                    Loading voice detection…
+                  </span>
+                ) : isUserTurnToSpeak ? (
+                  vad.userSpeaking ? (
+                    <span className="text-xs font-medium text-blue-600">You&apos;re speaking…</span>
+                  ) : (
+                    <span className="text-xs font-medium text-green-600">Your turn — speak now</span>
+                  )
+                ) : isPlayingAudio ? (
+                  <span className="text-xs text-slate-500">Interviewer is speaking…</span>
+                ) : (
+                  <span className="text-xs text-slate-500">Sending…</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -425,6 +461,12 @@ export default function InterviewInterface() {
             </div>
           )}
 
+          {vad.errored && (
+            <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
+              Voice detection error: {typeof vad.errored === 'string' ? vad.errored : 'Could not start microphone.'}
+            </div>
+          )}
+
           {showTimeWarning && !autoEnded && (
             <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
               You are nearing the free session limit. This interview will end automatically at 10 minutes.
@@ -445,6 +487,8 @@ export default function InterviewInterface() {
                   messages={messages}
                   status={status}
                   fallbackMessage={aiMessage || undefined}
+                  isUserTurnToSpeak={isUserTurnToSpeak}
+                  userSpeaking={vad.userSpeaking}
                   className="flex-1 min-h-[240px]"
                 />
               </div>
@@ -472,7 +516,7 @@ export default function InterviewInterface() {
               {!isComplete && (
                 <p className="mb-4 text-xs text-neutral-500">
                   {audioEnabled
-                    ? 'Speak when the interviewer finishes — your response is sent automatically.'
+                    ? 'Mic stays on. Speak when you see “Your turn — speak now”; your response is sent automatically. Don’t speak while the interviewer is talking.'
                     : 'Turn mic on to speak.'}
                 </p>
               )}
