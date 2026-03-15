@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BarChart3, FileText, GraduationCap } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   getLatestStats,
@@ -20,6 +21,7 @@ import PerformanceOverviewCards from './components/PerformanceOverviewCards';
 import PerformanceTrendChart from './components/PerformanceTrendChart';
 import PerformanceByTypeBreakdown from './components/PerformanceByTypeBreakdown';
 import { ROUTES } from '../../constants/routerConstants';
+import './Dashboard.css';
 
 /** Interview type lookup: (interviewId) => meta. Use null until we have interviewTypes data. */
 function getInterviewMeta(_interviewId: number): { title?: string; category?: string; difficulty?: string; topics?: string[] } | null {
@@ -99,50 +101,75 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
-      <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="dashboard">
+      <div className="dashboard__inner">
         <DashboardHeader displayName={user?.displayName ?? user?.email ?? null} />
         <DashboardQuickLinks />
 
         {performanceAnalysis && (
-          <div className="mb-8 space-y-6">
+          <section className="dashboard__section dashboard__section--performance" aria-labelledby="performance-heading">
+            <div className="dashboard__section-header">
+              <h2 id="performance-heading" className="dashboard__section-title">
+                <span className="dashboard__section-title-icon" aria-hidden>
+                  <BarChart3 />
+                </span>
+                Performance overview
+              </h2>
+              <p className="dashboard__section-subtitle">Your scores across interview types and over time</p>
+            </div>
             <PerformanceOverviewCards byType={performanceAnalysis.by_type} overall={performanceAnalysis.overall} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="dashboard__grid-cols-2">
               <PerformanceTrendChart trend={performanceAnalysis.overall.trend} title="Overall performance trend" />
               <PerformanceByTypeBreakdown byType={performanceAnalysis.by_type} />
             </div>
-          </div>
+          </section>
         )}
 
         {classroomStats != null && (classroomStats.classesJoined > 0 || classroomStats.upcomingSlots > 0 || classroomStats.assignments > 0) && (
-          <div className="mb-8 rounded-xl bg-white border border-gray-100 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">My Classroom</h2>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-indigo-600">{classroomStats.classesJoined}</div>
-                <div className="text-xs text-gray-600">Classes Joined</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-purple-600">{classroomStats.upcomingSlots}</div>
-                <div className="text-xs text-gray-600">Upcoming Slots</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-600">{classroomStats.assignments}</div>
-                <div className="text-xs text-gray-600">Assignments</div>
+          <section className="dashboard__section" aria-labelledby="classroom-heading">
+            <div className="dashboard__classroom">
+              <div className="dashboard__classroom-accent" aria-hidden />
+              <div className="dashboard__classroom-body">
+                <h2 id="classroom-heading" className="dashboard__classroom-title">
+                  <span className="dashboard__classroom-title-icon" aria-hidden>
+                    <GraduationCap />
+                  </span>
+                  My Classroom
+                </h2>
+                <div className="dashboard__classroom-grid">
+                  <div className="dashboard__classroom-stat-wrap">
+                    <p className="dashboard__classroom-stat">{classroomStats.classesJoined}</p>
+                    <p className="dashboard__classroom-label">Classes Joined</p>
+                  </div>
+                  <div className="dashboard__classroom-stat-wrap">
+                    <p className="dashboard__classroom-stat">{classroomStats.upcomingSlots}</p>
+                    <p className="dashboard__classroom-label">Upcoming Slots</p>
+                  </div>
+                  <div className="dashboard__classroom-stat-wrap">
+                    <p className="dashboard__classroom-stat">{classroomStats.assignments}</p>
+                    <p className="dashboard__classroom-label">Assignments</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </section>
         )}
 
-        <div className="mb-4">
-          <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-1">Past Reports & Analysis</h2>
-          <p className="text-sm text-gray-600">Review your interview performance and resume insights</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <VideoReportsCard reports={videoReports} onReportClick={handleVideoReportClick} />
-          <ResumeReportsCard reports={resumeReports} onReportClick={handleResumeReportClick} />
-        </div>
+        <section className="dashboard__section" aria-labelledby="reports-heading">
+          <div className="dashboard__section-header">
+            <h2 id="reports-heading" className="dashboard__section-title">
+              <span className="dashboard__section-title-icon" aria-hidden>
+                <FileText />
+              </span>
+              Past Reports & Analysis
+            </h2>
+            <p className="dashboard__section-subtitle">Review your interview performance and resume insights</p>
+          </div>
+          <div className="dashboard__grid-cols-2">
+            <VideoReportsCard reports={videoReports} onReportClick={handleVideoReportClick} />
+            <ResumeReportsCard reports={resumeReports} onReportClick={handleResumeReportClick} />
+          </div>
+        </section>
       </div>
     </div>
   );

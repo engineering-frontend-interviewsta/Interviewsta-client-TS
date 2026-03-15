@@ -1,0 +1,97 @@
+/* Dashboard loading skeleton – shimmer, matches dashboard layout. */
+
+.dashboard-skeleton {
+  min-height: 100vh;
+  background: linear-gradient(160deg, var(--color-surface-alt) 0%, var(--color-primary-light) 35%, var(--color-surface-alt) 100%);
+  padding: 0 0 3.5rem;
+}
+
+.dashboard-skeleton__inner {
+  width: 100%;
+}
+
+.dashboard-skeleton__header {
+  height: 5.5rem;
+  background: linear-gradient(
+    90deg,
+    var(--color-border-light) 0%,
+    var(--color-border) 45%,
+    var(--color-border-light) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--radius-xl);
+  margin-bottom: 2.25rem;
+  animation: dashboard-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.dashboard-skeleton__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+@media (min-width: 640px) {
+  .dashboard-skeleton__grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+.dashboard-skeleton__card {
+  height: 7rem;
+  background: linear-gradient(
+    90deg,
+    var(--color-border-light) 0%,
+    var(--color-border) 45%,
+    var(--color-border-light) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--radius-xl);
+  animation: dashboard-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.dashboard-skeleton__card--delay-1 { animation-delay: 0.08s; }
+.dashboard-skeleton__card--delay-2 { animation-delay: 0.16s; }
+.dashboard-skeleton__card--delay-3 { animation-delay: 0.24s; }
+
+.dashboard-skeleton__blocks {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-skeleton__blocks {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.dashboard-skeleton__block {
+  min-height: 20rem;
+  background: linear-gradient(
+    90deg,
+    var(--color-border-light) 0%,
+    var(--color-border) 45%,
+    var(--color-border-light) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--radius-xl);
+  animation: dashboard-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.dashboard-skeleton__block--delay { animation-delay: 0.12s; }
+
+@keyframes dashboard-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-skeleton__header,
+  .dashboard-skeleton__card,
+  .dashboard-skeleton__block {
+    animation: none;
+    background: var(--color-border-light);
+  }
+}

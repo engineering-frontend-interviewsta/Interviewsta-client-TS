@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Video, Search, ArrowLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { startInterview, getStartTaskStatus } from '../../services/interviewService';
 import { ROUTES } from '../../constants/routerConstants';
@@ -10,6 +11,7 @@ import {
 } from '../../data/interviewTypesData';
 import type { InterviewTypeEntry } from '../../types/interviewTypes';
 import InterviewLoadingPopup from './components/InterviewLoadingPopup';
+import './VideoInterview.css';
 
 const START_POLL_MS = 1500;
 const START_POLL_MAX = 60;
@@ -23,6 +25,13 @@ const CATEGORY_LABELS: Record<string, string> = {
   'role-wise': 'Role-based',
   'case-study-wise': 'Case study',
 };
+
+function getDifficultyClass(difficulty: string): 'easy' | 'medium' | 'hard' {
+  const d = (difficulty || '').toLowerCase();
+  if (d === 'easy') return 'easy';
+  if (d === 'hard') return 'hard';
+  return 'medium';
+}
 
 export default function VideoInterview() {
   const { user } = useAuth();
@@ -119,78 +128,113 @@ export default function VideoInterview() {
   return (
     <>
       {starting && <InterviewLoadingPopup progress={startProgress} />}
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Video Interview</h1>
-          <p className="text-gray-600 mb-4">
-            {user?.displayName ?? user?.email ?? 'User'}, choose an interview type to start.
-          </p>
+      <main className="video-interview" role="main" aria-label="Video Interview">
+        <div className="video-interview__inner">
+          <header className="video-interview__header">
+            <div className="video-interview__title-row">
+              <span className="video-interview__title-icon" aria-hidden>
+                <Video />
+              </span>
+              <h1 className="video-interview__title">Interview Library</h1>
+            </div>
+            <p className="video-interview__subtitle">
+              Explore interview types by category—company, role, DSA, case study, and more. Pick one and start your practice session.
+            </p>
+          </header>
           {startError && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">{startError}</div>
+            <div className="video-interview__error" role="alert">
+              {startError}
+            </div>
           )}
 
-          <div className="mb-4 flex flex-wrap gap-2">
-            {categories.map(({ id, label, count }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setSelectedCategory(id)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-                  selectedCategory === id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                {label} ({count})
-              </button>
-            ))}
-          </div>
-          <div className="mb-4">
-            <input
-              type="search"
-              placeholder="Search by title, company, subject, role…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full max-w-md px-3 py-2 border border-gray-200 rounded-lg text-sm"
-            />
+          <div className="video-interview__toolbar">
+            <div className="video-interview__filters" role="group" aria-label="Filter by category">
+              {categories.map(({ id, label, count }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setSelectedCategory(id)}
+                  className={`video-interview__pill ${selectedCategory === id ? 'video-interview__pill--active' : ''}`}
+                  aria-pressed={selectedCategory === id}
+                >
+                  {label} ({count})
+                </button>
+              ))}
+            </div>
+            <div className="video-interview__search-wrap">
+              <Search aria-hidden />
+              <input
+                type="search"
+                placeholder="Search by title, company, subject, role…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="video-interview__search"
+                aria-label="Search interview types"
+              />
+            </div>
           </div>
 
-          <div className="space-y-3 mb-8">
+          <div className="video-interview__list">
             {filteredOptions.length === 0 ? (
-              <p className="text-gray-500">No options match your filters.</p>
+              <div className="video-interview__empty">
+                <span className="video-interview__empty-icon" aria-hidden>
+                  <Search />
+                </span>
+                <span>No interviews match your filters.</span>
+                <span>Try a different category or search term.</span>
+              </div>
             ) : (
               filteredOptions.map((opt) => (
-                <div
+                <article
                   key={`${opt.id}-${opt.category}-${opt.title}`}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                  className="video-interview__card"
                 >
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900">{opt.title}</h3>
-                    <p className="text-sm text-gray-500">
-                      {opt.difficulty} · {opt.duration} min
-                      {opt.questions != null ? ` · ${opt.questions} questions` : ''}
-                    </p>
-                    {opt.description && (
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{opt.description}</p>
+                  <div className="video-interview__card-header" aria-hidden />
+                  <div className="video-interview__card-body">
+                    <div className="video-interview__card-tags">
+                      <span className="video-interview__card-tag video-interview__card-tag--category">
+                        {CATEGORY_LABELS[(opt.category || '').toLowerCase()] || opt.category || 'Interview'}
+                      </span>
+                      <span className={`video-interview__card-tag video-interview__card-tag--${getDifficultyClass(opt.difficulty)}`}>
+                        {opt.difficulty || 'Medium'}
+                      </span>
+                      <span className="video-interview__card-tag video-interview__card-tag--duration">
+                        {opt.duration} min
+                        {opt.questions != null ? ` · ${opt.questions} Qs` : ''}
+                      </span>
+                    </div>
+                    <h3 className="video-interview__card-title">{opt.title}</h3>
+                    {opt.description ? (
+                      <p className="video-interview__card-description">{opt.description}</p>
+                    ) : (
+                      <p className="video-interview__card-description">
+                        Practice with this interview type. Click Start to begin your session.
+                      </p>
                     )}
+                    <div className="video-interview__card-footer">
+                      <button
+                        type="button"
+                        disabled={starting}
+                        onClick={() => handleStart(opt)}
+                        className="video-interview__btn-start"
+                      >
+                        {starting ? 'Starting…' : 'Start interview'}
+                        <ChevronRight aria-hidden />
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    disabled={starting}
-                    onClick={() => handleStart(opt)}
-                    className="shrink-0 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {starting ? 'Starting…' : 'Start'}
-                  </button>
-                </div>
+                </article>
               ))
             )}
           </div>
-          <Link to={ROUTES.STUDENT_DASHBOARD} className="text-blue-600 hover:underline">
-            Back to Dashboard
-          </Link>
+          <div className="video-interview__back-wrap">
+            <Link to={ROUTES.STUDENT_DASHBOARD} className="video-interview__back">
+              <ArrowLeft aria-hidden />
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
-      </div>
+      </main>
     </>
   );
 }

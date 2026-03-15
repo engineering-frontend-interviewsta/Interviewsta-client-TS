@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { ChevronRight, VideoOff, Video as VideoIcon } from 'lucide-react';
 import type { VideoInterviewReport } from '../../../types/dashboard';
 import { ROUTES } from '../../../constants/routerConstants';
+import './VideoReportsCard.css';
 
 interface VideoReportsCardProps {
   reports: VideoInterviewReport[];
@@ -12,16 +14,21 @@ export default function VideoReportsCard({ reports, onReportClick }: VideoReport
   const displayList = reports.slice(0, 3);
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900 text-sm">Video Interview Reports</h3>
-        <Link to={viewAllPath} className="text-blue-600 hover:underline text-xs font-medium">
-          View All
-        </Link>
-      </div>
-      <div className="flex-1">
-        {displayList.length > 0 ? (
-          <ul className="space-y-2">
+    <article className="reports-card">
+      <div className="reports-card__accent" aria-hidden />
+      <div className="reports-card__body">
+        <div className="reports-card__header">
+          <div className="reports-card__title-row">
+            <span className="reports-card__title-icon" aria-hidden><VideoIcon size={18} strokeWidth={2} /></span>
+            <h3 className="reports-card__title">Video Interview Reports</h3>
+          </div>
+          <Link to={viewAllPath} className="reports-card__view-all">
+            View all
+            <span className="reports-card__view-all-arrow" aria-hidden><ChevronRight size={14} /></span>
+          </Link>
+        </div>
+      {displayList.length > 0 ? (
+          <ul className="reports-card__list">
             {displayList.map((report) => (
               <li
                 key={report.id}
@@ -29,26 +36,30 @@ export default function VideoReportsCard({ reports, onReportClick }: VideoReport
                 tabIndex={0}
                 onClick={() => onReportClick?.(report)}
                 onKeyDown={(e) => e.key === 'Enter' && onReportClick?.(report)}
-                className="border border-gray-200 rounded-md p-3 cursor-pointer hover:bg-gray-50 text-sm"
+                className="reports-card__item"
               >
-                <div className="flex justify-between gap-3">
-                  <div className="min-w-0">
-                    <h4 className="font-medium text-gray-900 truncate">{report.title}</h4>
-                    <p className="text-xs text-gray-600">
+                <div className="reports-card__item-inner">
+                  <div className="reports-card__item-content">
+                    <h4 className="reports-card__item-title">{report.title}</h4>
+                    <p className="reports-card__item-meta">
                       {report.type} · {report.date} · {report.duration} min
                     </p>
                   </div>
                   {report.score != null && (
-                    <div className="text-sm font-semibold text-gray-900 flex-shrink-0">{report.score}%</div>
+                    <span className="reports-card__item-score">{report.score}%</span>
                   )}
                 </div>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-xs text-gray-500 text-center py-6">No video interview reports yet</p>
+          <div className="reports-card__empty">
+            <span className="reports-card__empty-icon" aria-hidden><VideoOff size={32} strokeWidth={1.5} /></span>
+            <p className="reports-card__empty-text">No video interview reports yet</p>
+            <p className="reports-card__empty-hint">Complete an interview to see your report here.</p>
+          </div>
         )}
       </div>
-    </div>
+    </article>
   );
 }

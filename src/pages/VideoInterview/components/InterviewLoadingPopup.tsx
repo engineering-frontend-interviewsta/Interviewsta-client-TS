@@ -1,4 +1,5 @@
 import { Brain, CheckCircle, Loader2, Sparkles } from 'lucide-react';
+import './InterviewLoadingPopup.css';
 
 const STAGES = [
   { id: 0, progressThreshold: 10, message: 'Setting up your interview...', icon: Loader2 },
@@ -16,51 +17,63 @@ export default function InterviewLoadingPopup({ progress }: InterviewLoadingPopu
   const activeStage = activeStageIndex === -1 ? STAGES.length - 1 : activeStageIndex;
 
   return (
-    <div className="fixed inset-0 bg-gray-50 z-[60] overflow-y-auto">
-      <div className="min-h-screen flex items-center justify-center p-8">
-        <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-12 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 opacity-50" />
-          <div className="relative z-10">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4 shadow-lg">
-                <Brain className="w-10 h-10 text-white" />
+    <div
+      className="interview-loading-popup"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Preparing your interview"
+      aria-live="polite"
+    >
+      <div className="interview-loading-popup__backdrop">
+        <div className="interview-loading-popup__card">
+          <div className="interview-loading-popup__card-bg" aria-hidden="true" />
+          <div className="interview-loading-popup__content">
+            <div className="interview-loading-popup__header">
+              <div className="interview-loading-popup__icon-wrap">
+                <Brain aria-hidden="true" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Preparing Your Interview</h2>
+              <h2 className="interview-loading-popup__title">Preparing Your Interview</h2>
             </div>
-            <div className="space-y-4">
+            <div className="interview-loading-popup__stages">
               {STAGES.map((stage, index) => {
                 const isCompleted = progress >= stage.progressThreshold;
                 const isCurrent = activeStage >= 0 && index === activeStage && !isCompleted;
                 const Icon = stage.icon;
+                const stageClass =
+                  isCompleted
+                    ? 'interview-loading-popup__stage--completed'
+                    : isCurrent
+                      ? 'interview-loading-popup__stage--current'
+                      : 'interview-loading-popup__stage--pending';
+                const iconClass = isCurrent ? ' interview-loading-popup__stage-icon--spin' : '';
                 return (
                   <div
                     key={stage.id}
-                    className={`flex items-center gap-4 p-4 rounded-xl border-2 ${
-                      isCompleted
-                        ? 'bg-green-50 border-green-200'
-                        : isCurrent
-                          ? 'bg-blue-50 border-blue-200'
-                          : 'bg-gray-50 border-gray-200'
-                    }`}
+                    className={`interview-loading-popup__stage ${stageClass}`}
+                    aria-current={isCurrent ? 'step' : undefined}
                   >
-                    <div className="flex-shrink-0">
+                    <div className={`interview-loading-popup__stage-icon${iconClass}`}>
                       {isCompleted ? (
-                        <CheckCircle className="w-8 h-8 text-green-600" />
+                        <CheckCircle aria-hidden="true" />
                       ) : isCurrent ? (
-                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                        <Loader2 aria-hidden="true" />
                       ) : (
-                        <Icon className="w-8 h-8 text-gray-400" />
+                        <Icon aria-hidden="true" />
                       )}
                     </div>
-                    <span className="text-gray-700 font-medium">{stage.message}</span>
+                    <span className="interview-loading-popup__stage-message">{stage.message}</span>
                   </div>
                 );
               })}
             </div>
-            <div className="mt-6 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="interview-loading-popup__progress-wrap">
               <div
-                className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500"
+                className="interview-loading-popup__progress-bar"
                 style={{ width: `${Math.min(100, progress)}%` }}
+                role="progressbar"
+                aria-valuenow={progress}
+                aria-valuemin={0}
+                aria-valuemax={100}
               />
             </div>
           </div>

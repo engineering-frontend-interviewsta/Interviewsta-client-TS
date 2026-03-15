@@ -1,0 +1,73 @@
+/* ==========================================================================
+   Layer 2 – Landing layout (marketing: header + main + footer)
+   Matches AppLayout header style for consistency.
+   ========================================================================== */
+
+.landing-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-layout__header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-light);
+  padding: 0.75rem 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.landing-layout__header-inner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.landing-layout__brand {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.landing-layout__brand:hover {
+  color: var(--color-primary-hover);
+}
+
+.landing-layout__nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.landing-layout__nav-link {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.landing-layout__nav-link:hover {
+  color: var(--color-text);
+  background-color: var(--color-primary-light);
+}
+
+.landing-layout__nav-link--cta {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.landing-layout__nav-link--cta:hover {
+  text-decoration: underline;
+}
+
+.landing-layout__main {
+  flex: 1;
+}
