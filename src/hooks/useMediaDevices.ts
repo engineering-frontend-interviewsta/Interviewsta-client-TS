@@ -11,14 +11,30 @@ export interface UseMediaDevicesResult extends MediaState {
   videoRef: React.RefObject<HTMLVideoElement>;
   toggleVideo: () => void;
   toggleAudio: () => void;
-  /** Returns a Promise that resolves with the microphone stream when ready (for VAD). */
+  streamReady: boolean;
   getStream: () => Promise<MediaStream>;
+}
+
+function createStreamPromise(): {
+  resolve: (s: MediaStream) => void;
+  reject: (e: Error) => void;
+  promise: Promise<MediaStream>;
+} {
+  let resolve!: (s: MediaStream) => void;
+  let reject!: (e: Error) => void;
+  const promise = new Promise<MediaStream>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { resolve, reject, promise };
 }
 
 export function useMediaDevices(): UseMediaDevicesResult {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioAnalyserRef = useRef<AnalyserNode | null>(null);
+  const [streamReady, setStreamReady] = useState(false);
+  const streamReadyRef = useRef(createStreamPromise());
   const [state, setState] = useState<MediaState>({
     videoEnabled: true,
     audioEnabled: true,
@@ -35,11 +51,18 @@ export function useMediaDevices(): UseMediaDevicesResult {
           video: true,
           audio: true,
         });
+
         if (!mounted) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
+
         streamRef.current = stream;
+
+        // ✅ Resolve the promise HERE, inside setup(), where stream is defined
+        streamReadyRef.current?.resolve(stream);
+        setStreamReady(true);
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -61,13 +84,14 @@ export function useMediaDevices(): UseMediaDevicesResult {
             sum += v * v;
           }
           const rms = Math.sqrt(sum / dataArray.length);
-          const level = Math.min(1, rms / 50);
-          setState((prev) => ({ ...prev, micLevel: level }));
+          setState((prev) => ({ ...prev, micLevel: Math.min(1, rms / 50) }));
           requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to access camera or microphone.';
+        // ✅ Also reject the promise on failure so callers don't hang forever
+        streamReadyRef.current?.reject(new Error(msg));
         setState((prev) => ({ ...prev, error: msg, videoEnabled: false, audioEnabled: false }));
       }
     };
@@ -91,10 +115,7 @@ export function useMediaDevices(): UseMediaDevicesResult {
     const stream = streamRef.current;
     if (!stream) return;
     const enabled = !state.videoEnabled;
-    stream.getVideoTracks().forEach((t) => {
-      // eslint-disable-next-line no-param-reassign
-      t.enabled = enabled;
-    });
+    stream.getVideoTracks().forEach((t) => { t.enabled = enabled; });
     setState((prev) => ({ ...prev, videoEnabled: enabled }));
   }, [state.videoEnabled]);
 
@@ -102,29 +123,19 @@ export function useMediaDevices(): UseMediaDevicesResult {
     const stream = streamRef.current;
     if (!stream) return;
     const enabled = !state.audioEnabled;
-    stream.getAudioTracks().forEach((t) => {
-      // eslint-disable-next-line no-param-reassign
-      t.enabled = enabled;
-    });
+    stream.getAudioTracks().forEach((t) => { t.enabled = enabled; });
     setState((prev) => ({ ...prev, audioEnabled: enabled }));
   }, [state.audioEnabled]);
 
-  const getStream = useCallback(async (): Promise<MediaStream> => {
-    if (streamRef.current) return streamRef.current;
-    // Wait for async setup to assign the stream (a few ticks)
-    for (let i = 0; i < 60; i++) {
-      await new Promise((r) => setTimeout(r, 50));
-      if (streamRef.current) return streamRef.current;
-    }
-    throw new Error('Microphone not ready');
-  }, []);
+  // ✅ getStream returns the stable promise — resolves whenever stream is ready
+  const getStream = useCallback(() => streamReadyRef.current!.promise, []);
 
   return {
     videoRef: videoRef as React.RefObject<HTMLVideoElement>,
     ...state,
     toggleVideo,
     toggleAudio,
+    streamReady,
     getStream,
   };
 }
-

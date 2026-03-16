@@ -15,6 +15,8 @@ import type {
 const POLL_INTERVAL_MS = 1500;
 const MAX_POLL_ATTEMPTS = 120;
 
+const ERROR_LOG_PREFIX = '[useInterviewSession] setError';
+
 export interface InterviewMessage {
   id: string;
   type: 'ai' | 'user';
@@ -198,7 +200,10 @@ export function useInterviewSession({
           setIsComplete(true);
           streamCloseRef.current?.();
         },
-        onError: (msg) => setError((e) => (e ? e : msg)),
+        onError: (msg) => {
+          console.warn(ERROR_LOG_PREFIX, 'stream onError:', msg);
+          setError((e) => (e ? e : msg));
+        },
       });
       streamCloseRef.current = close;
       return () => {
@@ -206,7 +211,9 @@ export function useInterviewSession({
         streamCloseRef.current = null;
       };
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect');
+      const message = err instanceof Error ? err.message : 'Failed to connect';
+      console.warn(ERROR_LOG_PREFIX, 'connectToInterviewStream catch:', message, err);
+      setError(message);
       setStatus('error');
     }
   }, [sessionId, addAIMessage, enqueueAudio]);
@@ -224,6 +231,7 @@ export function useInterviewSession({
         let attempts = 0;
         const poll = async (): Promise<void> => {
           if (attempts >= MAX_POLL_ATTEMPTS) {
+            console.warn(ERROR_LOG_PREFIX, 'submitText poll timeout');
             setError('Response timeout');
             setIsSubmitting(false);
             return;
@@ -244,7 +252,9 @@ export function useInterviewSession({
             return;
           }
           if (res?.status === 'failed') {
-            setError(res?.error ?? 'Response failed');
+            const errMsg = res?.error ?? 'Response failed';
+            console.warn(ERROR_LOG_PREFIX, 'submitText poll failed:', errMsg, res);
+            setError(errMsg);
             setIsSubmitting(false);
             return;
           }
@@ -252,7 +262,9 @@ export function useInterviewSession({
         };
         await poll();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to submit');
+        const message = err instanceof Error ? err.message : 'Failed to submit';
+        console.warn(ERROR_LOG_PREFIX, 'submitText catch:', message, err);
+        setError(message);
         setIsSubmitting(false);
       }
     },
@@ -276,6 +288,7 @@ export function useInterviewSession({
         let attempts = 0;
         const poll = async (): Promise<void> => {
           if (attempts >= MAX_POLL_ATTEMPTS) {
+            console.warn(ERROR_LOG_PREFIX, 'submitAudio poll timeout');
             setError('Response timeout');
             setIsSubmitting(false);
             return;
@@ -297,7 +310,9 @@ export function useInterviewSession({
             return;
           }
           if (res?.status === 'failed') {
-            setError(res?.error ?? 'Response failed');
+            const errMsg = res?.error ?? 'Response failed';
+            console.warn(ERROR_LOG_PREFIX, 'submitAudio poll failed:', errMsg, res);
+            setError(errMsg);
             setIsSubmitting(false);
             return;
           }
@@ -305,7 +320,9 @@ export function useInterviewSession({
         };
         await poll();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to submit audio');
+        const message = err instanceof Error ? err.message : 'Failed to submit audio';
+        console.warn(ERROR_LOG_PREFIX, 'submitAudio catch:', message, err);
+        setError(message);
         setIsSubmitting(false);
       }
     },
@@ -325,6 +342,7 @@ export function useInterviewSession({
         let attempts = 0;
         const poll = async (): Promise<void> => {
           if (attempts >= MAX_POLL_ATTEMPTS) {
+            console.warn(ERROR_LOG_PREFIX, 'submitCode poll timeout');
             setError('Response timeout');
             setIsSubmitting(false);
             return;
@@ -346,7 +364,9 @@ export function useInterviewSession({
             return;
           }
           if (res?.status === 'failed') {
-            setError(res?.error ?? 'Response failed');
+            const errMsg = res?.error ?? 'Response failed';
+            console.warn(ERROR_LOG_PREFIX, 'submitCode poll failed:', errMsg, res);
+            setError(errMsg);
             setIsSubmitting(false);
             return;
           }
@@ -354,7 +374,9 @@ export function useInterviewSession({
         };
         await poll();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to submit code');
+        const message = err instanceof Error ? err.message : 'Failed to submit code';
+        console.warn(ERROR_LOG_PREFIX, 'submitCode catch:', message, err);
+        setError(message);
         setIsSubmitting(false);
       }
     },

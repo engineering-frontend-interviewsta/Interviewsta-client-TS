@@ -1,15 +1,12 @@
-import type { SessionHistoryResponse } from '../../../types/feedback';
+import type { InterviewFeedback } from '../../../types/feedback';
 
 interface StrengthsAndImprovementsProps {
-  data: SessionHistoryResponse;
+  data: InterviewFeedback;
 }
 
 export default function StrengthsAndImprovements({ data }: StrengthsAndImprovementsProps) {
-  const summary = data.feedback_summary;
-  if (!summary) return null;
-
-  const strengths = Array.from(new Set(summary.strengths ?? []));
-  const improvements = Array.from(new Set(summary.areas_of_improvements ?? []));
+  const strengths = Array.from(new Set(data.strengths ?? []));
+  const improvements = Array.from(new Set(data.areasForImprovements ?? []));
   if (strengths.length === 0 && improvements.length === 0) return null;
 
   return (

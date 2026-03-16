@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
 import Config from '../config';
-import { getAccessToken, clearAuthStorage } from '../utils/storage';
+import { getAccessToken, clearAuthStorage, getInterviewAccessToken } from '../utils/storage';
 import { TIMEOUTS } from '../constants/appConstants';
 
 /**
@@ -66,8 +66,11 @@ nestClient.interceptors.response.use(
   }
 );
 
+export { getInterviewAccessToken, setInterviewAccessToken, clearInterviewAccessToken } from '../utils/storage';
+
 /**
  * FastAPI client (interview service, etc.)
+ * Sends Authorization: Bearer <user JWT> and, when set, X-Interview-Access-Token: <interview JWT>.
  */
 export const fastApiClient: AxiosInstance = axios.create({
   baseURL: Config.FASTAPI_BASE_URL,
@@ -84,6 +87,10 @@ fastApiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const interviewToken = getInterviewAccessToken();
+    if (interviewToken) {
+      config.headers['X-Interview-Access-Token'] = interviewToken;
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -99,7 +106,7 @@ fastApiClient.interceptors.response.use(
       try {
         const refreshUrl = `${Config.API_URL}auth/refresh/`;
         const res = await axios.post(refreshUrl, {}, { withCredentials: true });
-        const newToken = res.data?.access;
+        const newToken = res.data?.accessToken ?? res.data?.access;
         if (newToken) {
           const { setAccessToken } = await import('../utils/storage');
           setAccessToken(newToken);

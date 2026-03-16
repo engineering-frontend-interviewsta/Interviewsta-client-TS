@@ -7,7 +7,10 @@ import {
   getInterviewTests,
   getInterviewParentTypes,
   getInterviewTestsByParentType,
+  getInterviewAccessToken,
+  InterviewAccessTokenError,
 } from '../../services/interviewService';
+import { setInterviewAccessToken, clearInterviewAccessToken } from '../../api/axiosInstance';
 import { ROUTES } from '../../constants/routerConstants';
 import type { InterviewTest, ParentInterviewType } from '../../types/interviewTest';
 import InterviewLoadingPopup from './components/InterviewLoadingPopup';
@@ -126,18 +129,19 @@ export default function VideoInterview() {
       return;
     }
     setStartError(null);
-    setStarting(true);
-    setStartProgress(0);
     const interviewType = test.parent?.type ?? 'technical';
-    const payload: Record<string, unknown> = {
-      interview_type_id: test.id,
+    const tags = (test.topics?.length ? test.topics : test.subjects) ?? [];
+    const payload = {
+      interview_test_id: test.id,
       ...(test.company && { company: test.company }),
-      ...(test.subject && { subject: test.subject }),
+      ...(tags.length > 0 && { Tags: tags }),
     };
     try {
+      const token = await getInterviewAccessToken(String(test.id));
+      setInterviewAccessToken(token);
+      setStarting(true);
+      setStartProgress(0);
       const result = await startInterview({
-        interviewType,
-        userId: user.email,
         payload,
       });
       let attempts = 0;
@@ -169,7 +173,12 @@ export default function VideoInterview() {
       };
       await poll();
     } catch (err) {
-      setStartError(err instanceof Error ? err.message : 'Failed to start interview.');
+      clearInterviewAccessToken();
+      if (err instanceof InterviewAccessTokenError) {
+        setStartError(err.message);
+      } else {
+        setStartError(err instanceof Error ? err.message : 'Failed to start interview.');
+      }
       setStarting(false);
     }
   };
