@@ -1,17 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Video,
-  BookOpen,
-  FileText,
-  Users,
-  Settings,
-  LogOut,
-  ChevronDown,
-  Sparkles,
-  GraduationCap,
-} from 'lucide-react';
+import { LayoutDashboard, Users, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ROUTES } from '../constants/routerConstants';
 import LoadingFallback from '../components/shared/LoadingFallback';
@@ -35,6 +24,9 @@ export default function AppLayout() {
   const hideHeader = HIDE_HEADER_PATHS.includes(location.pathname);
   const isAdmin = roles?.includes('admin');
   const isTeacher = roles?.includes('teacher');
+  const primaryRole = roles?.[0] ?? null;
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   if (isLoading) {
     return <LoadingFallback />;
@@ -45,14 +37,14 @@ export default function AppLayout() {
   }
 
   const dashboardPath =
-    role === 'admin'
+    primaryRole === 'admin'
       ? ROUTES.ADMIN_DASHBOARD
-      : role === 'teacher'
+      : primaryRole === 'teacher'
         ? ROUTES.TEACHER_DASHBOARD
         : ROUTES.STUDENT_DASHBOARD;
 
   /* Header "Dashboard" nav link goes to student dashboard; admin uses dropdown for Admin. */
-  const headerDashboardPath = role === 'admin' ? ROUTES.STUDENT_DASHBOARD : dashboardPath;
+  const headerDashboardPath = isAdmin ? ROUTES.STUDENT_DASHBOARD : dashboardPath;
 
   const displayName = user.displayName ?? user.email ?? 'User';
   const initial = getInitial(user.displayName ?? null, user.email ?? null);
@@ -60,55 +52,82 @@ export default function AppLayout() {
   return (
     <div className="app-layout">
       {!hideHeader && (
-      <header className="border-b border-neutral-200 bg-white px-4 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link
-            to={
-              isAdmin
-                ? ROUTES.ADMIN_DASHBOARD
-                : isTeacher
-                  ? ROUTES.TEACHER_DASHBOARD
-                  : ROUTES.STUDENT_DASHBOARD
-            }
-            className="font-semibold text-neutral-800"
-          >
-            Interviewsta
-          </Link>
-          <nav className="flex flex-wrap items-center gap-4 text-sm">
-            {isTeacher ? (
-              <Link to={ROUTES.TEACHER_DASHBOARD} className="text-neutral-600 hover:text-neutral-900">
+        <header className="app-layout__header">
+          <div className="app-layout__header-inner">
+            <Link
+              to={
+                isAdmin
+                  ? ROUTES.ADMIN_DASHBOARD
+                  : isTeacher
+                    ? ROUTES.TEACHER_DASHBOARD
+                    : ROUTES.STUDENT_DASHBOARD
+              }
+              className="app-layout__brand"
+            >
+              <span className="app-layout__brand-text">Interviewsta</span>
+            </Link>
+            <nav className="app-layout__nav">
+              <Link
+                to={headerDashboardPath}
+                className={`app-layout__nav-link ${
+                  location.pathname === headerDashboardPath ? 'app-layout__nav-link--active' : ''
+                }`}
+              >
                 Dashboard
               </Link>
               <Link
                 to={ROUTES.VIDEO_INTERVIEW}
-                className={`app-layout__nav-link ${location.pathname === ROUTES.VIDEO_INTERVIEW ? 'app-layout__nav-link--active' : ''}`}
+                className={`app-layout__nav-link ${
+                  location.pathname === ROUTES.VIDEO_INTERVIEW ? 'app-layout__nav-link--active' : ''
+                }`}
               >
-                <Video size={18} strokeWidth={2} aria-hidden />
-                <span>Video interview</span>
+                Video interview
               </Link>
-            )}
-            <Link to={ROUTES.VIDEO_INTERVIEW} className="text-neutral-600 hover:text-neutral-900">
-              Video interview
-            </Link>
-            <Link to={ROUTES.LEARNING} className="text-neutral-600 hover:text-neutral-900">
-              Learning
-            </Link>
-            <Link to={ROUTES.RESUME_ANALYSIS} className="text-neutral-600 hover:text-neutral-900">
-              Resume
-            </Link>
-            {isTeacher && (
-              <Link to={ROUTES.TEACHER_CLASSES} className="text-neutral-600 hover:text-neutral-900">
-                Classes
+              <Link
+                to={ROUTES.LEARNING}
+                className={`app-layout__nav-link ${
+                  location.pathname === ROUTES.LEARNING ? 'app-layout__nav-link--active' : ''
+                }`}
+              >
+                Learning
               </Link>
-            )}
-            {isAdmin && (
-              <>
-                <Link to={ROUTES.ADMIN_DASHBOARD} className="text-neutral-600 hover:text-neutral-900">
-                  Admin
+              <Link
+                to={ROUTES.RESUME_ANALYSIS}
+                className={`app-layout__nav-link ${
+                  location.pathname === ROUTES.RESUME_ANALYSIS ? 'app-layout__nav-link--active' : ''
+                }`}
+              >
+                Resume
+              </Link>
+              {isTeacher && (
+                <Link
+                  to={ROUTES.TEACHER_CLASSES}
+                  className={`app-layout__nav-link ${
+                    location.pathname === ROUTES.TEACHER_CLASSES ? 'app-layout__nav-link--active' : ''
+                  }`}
+                >
+                  Classes
                 </Link>
-                <Link to={ROUTES.ADMIN_USERS} className="text-neutral-600 hover:text-neutral-900">
-                  Users
-                </Link>
+              )}
+              {isAdmin && (
+                <>
+                  <Link
+                    to={ROUTES.ADMIN_DASHBOARD}
+                    className={`app-layout__nav-link ${
+                      location.pathname === ROUTES.ADMIN_DASHBOARD ? 'app-layout__nav-link--active' : ''
+                    }`}
+                  >
+                    Admin
+                  </Link>
+                  <Link
+                    to={ROUTES.ADMIN_USERS}
+                    className={`app-layout__nav-link ${
+                      location.pathname === ROUTES.ADMIN_USERS ? 'app-layout__nav-link--active' : ''
+                    }`}
+                  >
+                    Users
+                  </Link>
+                </>
               )}
             </nav>
 
@@ -140,7 +159,7 @@ export default function AppLayout() {
                     if (e.key === 'Escape') setUserMenuOpen(false);
                   }}
                 >
-                  {role === 'admin' && (
+                  {isAdmin && (
                     <>
                       <Link
                         to={ROUTES.ADMIN_DASHBOARD}

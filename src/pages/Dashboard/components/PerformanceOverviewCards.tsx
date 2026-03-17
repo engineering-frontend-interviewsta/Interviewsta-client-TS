@@ -2,13 +2,15 @@ import { Code2, Users, Briefcase, MessageCircle, MessageSquare } from 'lucide-re
 import type { PerformanceByType, PerformanceOverall } from '../../../types/dashboard';
 import './PerformanceOverviewCards.css';
 
-const TYPE_ICONS = {
+const TYPE_ICONS: Record<string, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
   technical: Code2,
-  hr: Users,
-  case_study: Briefcase,
-  communication: MessageCircle,
+  behavioral: Users,
+  'role-based': Briefcase,
+  'case-study': MessageCircle,
   debate: MessageSquare,
-} as const;
+  specialised: MessageCircle,
+  miscellaneous: MessageSquare,
+};
 
 const TYPE_CONFIG: { key: keyof PerformanceByType; label: string; sublabel: string }[] = [
   { key: 'technical', label: 'Technical', sublabel: 'Coding / System design' },
@@ -38,15 +40,12 @@ export default function PerformanceOverviewCards({ byType, overall }: Props) {
         <p className="perf-overview__hero-meta">{totalSessions} total sessions</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      <div className="perf-overview__grid">
         {TYPE_CONFIG.map((config) => {
           const data = byType?.[config.key] ?? { count: 0, avg_score: 0 };
           const Icon = TYPE_ICONS[config.key];
           return (
-            <div
-              key={String(config.key)}
-              className="border border-gray-200 rounded-lg p-4 text-sm flex flex-col justify-between"
-            >
+            <div key={String(config.key)} className="perf-overview__type-card">
               <div>
                 <span className="perf-overview__type-icon" aria-hidden>
                   {Icon && <Icon size={20} strokeWidth={2} />}

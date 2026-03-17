@@ -214,69 +214,84 @@ export default function VideoInterview() {
             </div>
           )}
 
-          <div className="mb-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedParentId(null)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-                selectedParentId === null
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              All{selectedParentId === null ? ` (${total})` : totalAll > 0 ? ` (${totalAll})` : ''}
-            </button>
-            {parentTypes.map((p) => (
+          <div className="video-interview__toolbar">
+            <div className="video-interview__filters">
               <button
-                key={p.id}
                 type="button"
-                onClick={() => setSelectedParentId(p.id)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-                  selectedParentId === p.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                onClick={() => setSelectedParentId(null)}
+                className={`video-interview__pill ${
+                  selectedParentId === null ? 'video-interview__pill--active' : ''
                 }`}
               >
-                {p.title}
+                All{selectedParentId === null ? ` (${total})` : totalAll > 0 ? ` (${totalAll})` : ''}
               </button>
-            ))}
-          </div>
-          <div className="mb-4">
-            <input
-              type="search"
-              placeholder="Search by title, company, subject, role…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full max-w-md px-3 py-2 border border-gray-200 rounded-lg text-sm"
-            />
+              {parentTypes.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setSelectedParentId(p.id)}
+                  className={`video-interview__pill ${
+                    selectedParentId === p.id ? 'video-interview__pill--active' : ''
+                  }`}
+                >
+                  {p.title}
+                </button>
+              ))}
+            </div>
+            <div className="video-interview__search-wrap">
+              <Search aria-hidden />
+              <input
+                type="search"
+                placeholder="Search by title, company, subject, role…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="video-interview__search"
+              />
+            </div>
           </div>
 
           {loading && tests.length === 0 ? (
             <p className="text-gray-500 py-8">Loading interviews…</p>
           ) : filteredTests.length === 0 ? (
-            <p className="text-gray-500 py-8">No options match your filters.</p>
+            <div className="video-interview__list">
+              <div className="video-interview__empty">
+                <p>No options match your filters.</p>
+              </div>
+            </div>
           ) : (
-            <div className="space-y-3 mb-8">
+            <div className="video-interview__list">
               {filteredTests.map((test) => (
-                <div
-                  key={test.id}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-                >
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900">{test.title}</h3>
-                    <p className="text-sm text-gray-500">
-                      {test.difficulty} · {test.duration} min
-                      {test.questions != null ? ` · ${test.questions} questions` : ''}
-                      {test.parent?.title ? ` · ${test.parent.title}` : ''}
-                    </p>
+                <article key={test.id} className="video-interview__card">
+                  <div className="video-interview__card-header" />
+                  <div className="video-interview__card-body">
+                    <div className="video-interview__card-tags">
+                      {test.parent?.title && (
+                        <span className="video-interview__card-tag video-interview__card-tag--category">
+                          {test.parent.title}
+                        </span>
+                      )}
+                      <span
+                        className={`video-interview__card-tag video-interview__card-tag--${getDifficultyClass(
+                          test.difficulty || ''
+                        )}`}
+                      >
+                        {test.difficulty || 'Medium'}
+                      </span>
+                      {test.duration && (
+                        <span className="video-interview__card-tag video-interview__card-tag--duration">
+                          {test.duration} min{test.questions != null ? ` · ${test.questions} questions` : ''}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="video-interview__card-title">{test.title}</h3>
                     {test.description && (
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{test.description}</p>
+                      <p className="video-interview__card-description">{test.description}</p>
                     )}
                     <div className="video-interview__card-footer">
                       <button
                         type="button"
                         disabled={starting}
-                        onClick={() => handleStart(opt)}
+                        onClick={() => handleStart(test)}
                         className="video-interview__btn-start"
                       >
                         {starting ? 'Starting…' : 'Start interview'}
@@ -284,24 +299,19 @@ export default function VideoInterview() {
                       </button>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    disabled={starting}
-                    onClick={() => handleStart(test)}
-                    className="shrink-0 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {starting ? 'Starting…' : 'Start'}
-                  </button>
-                </div>
+                </article>
               ))}
               <div ref={sentinelRef} className="h-4 flex items-center justify-center">
                 {loadingMore && <span className="text-sm text-gray-500">Loading more…</span>}
               </div>
             </div>
           )}
-          <Link to={ROUTES.STUDENT_DASHBOARD} className="text-blue-600 hover:underline">
-            Back to Dashboard
-          </Link>
+          <div className="video-interview__back-wrap">
+            <Link to={ROUTES.STUDENT_DASHBOARD} className="video-interview__back">
+              <ArrowLeft aria-hidden />
+              Back to dashboard
+            </Link>
+          </div>
         </div>
       </main>
     </>
