@@ -13,6 +13,7 @@ import InterviewHeader from './components/InterviewHeader';
 import EndInterviewModal from './components/EndInterviewModal';
 import TranscriptPanel from './components/TranscriptPanel';
 import { ROUTES } from '../../constants/routerConstants';
+import './InterviewInterface.css';
 
 const FEEDBACK_POLL_INTERVAL_MS = 2000;
 const FEEDBACK_POLL_MAX_ATTEMPTS = 45;
@@ -306,7 +307,7 @@ export default function InterviewInterface() {
   }, [endTaskId, sessionId, interviewType, navigate]);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-gray-50">
+    <div className="interview-interface">
       <InterviewHeader
           elapsedSeconds={elapsedSeconds}
           devMode={devMode}
@@ -323,164 +324,107 @@ export default function InterviewInterface() {
         isEnding={isEndingInterview}
         isPreparingFeedback={!!endTaskId}
       />
-      <div className="flex-1 min-h-0 overflow-auto px-2 sm:px-4 md:px-6 pb-6">
-      <div className="max-w-6xl mx-auto flex flex-col gap-6 lg:flex-row py-4">
-        {/* Left: camera + status */}
-        <div className="w-full lg:w-1/3 flex flex-col gap-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-900">Camera</h2>
-              <div className="flex flex-col items-end gap-0.5">
-                {status && status !== 'waiting_for_response' && (
-                  <span className="text-xs text-gray-500">{status}</span>
-                )}
+      <div className="interview-interface__content">
+        <div className="interview-interface__main">
+          <aside className="interview-interface__aside">
+            <div className="interview-interface__panel">
+              <div className="interview-interface__card">
+                <div className="interview-interface__card-header">
+                  <h2 className="interview-interface__card-title">Camera</h2>
+              <div className="interview-interface__card-meta">
+                {status && status !== 'waiting_for_response' && <span>{status}</span>}
                 {planStatus?.has_time_limit && (
-                  <span className="text-[11px] text-gray-400">
+                  <span>
                     {Math.floor(elapsedSeconds / 60)}:
                     {(elapsedSeconds % 60).toString().padStart(2, '0')} / 10:00
                   </span>
                 )}
               </div>
             </div>
-            <div className="aspect-video w-full rounded-lg bg-black overflow-hidden mb-3">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="h-full w-full object-cover"
-              />
+            <div className="interview-interface__video-wrap">
+              <video ref={videoRef} autoPlay playsInline muted />
             </div>
-            {mediaError && (
-              <p className="text-xs text-red-600 mb-2">{mediaError}</p>
-            )}
-            <div className="flex items-center justify-between text-xs text-gray-600">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={toggleVideo}
-                  className="px-2 py-1 rounded border border-gray-200 hover:bg-gray-50"
-                >
+            {mediaError && <p className="interview-interface__media-error">{mediaError}</p>}
+            <div className="interview-interface__controls">
+              <div className="interview-interface__control-btns">
+                <button type="button" onClick={toggleVideo} className="interview-interface__btn-control">
                   {videoEnabled ? 'Turn camera off' : 'Turn camera on'}
                 </button>
-                <button
-                  type="button"
-                  onClick={toggleAudio}
-                  className="px-2 py-1 rounded border border-gray-200 hover:bg-gray-50"
-                >
+                <button type="button" onClick={toggleAudio} className="interview-interface__btn-control">
                   {audioEnabled ? 'Mute mic' : 'Unmute mic'}
                 </button>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-[11px] text-gray-500">Mic level</span>
-                <div className="h-1.5 w-16 rounded-full bg-gray-200 overflow-hidden">
-                  <div
-                    className="h-full bg-green-500 transition-all"
-                    style={{ width: `${Math.round(micLevel * 100)}%` }}
-                  />
+              <div className="interview-interface__mic-level">
+                <span className="interview-interface__mic-level-label">Mic level</span>
+                <div className="interview-interface__mic-level-bar">
+                  <div className="interview-interface__mic-level-fill" style={{ width: `${Math.round(micLevel * 100)}%` }} />
                 </div>
               </div>
             </div>
             {!isComplete && audioEnabled && (vad.loading || isUserTurnToSpeak || isPlayingAudio || isSubmitting) && (
-              <div className="mt-2 px-1 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-center">
+              <div className={`interview-interface__vad-status ${
+                vad.loading ? 'interview-interface__vad-status--loading' :
+                isUserTurnToSpeak ? (vad.userSpeaking ? 'interview-interface__vad-status--speaking' : 'interview-interface__vad-status--your-turn') :
+                'interview-interface__vad-status--muted'
+              }`}>
                 {vad.loading ? (
-                  <span className="text-xs text-amber-600 flex items-center justify-center gap-1.5">
-                    <span className="inline-block w-3 h-3 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+                  <>
+                    <span className="interview-interface__vad-spinner" />
                     Loading voice detection…
-                  </span>
+                  </>
                 ) : isUserTurnToSpeak ? (
-                  vad.userSpeaking ? (
-                    <span className="text-xs font-medium text-blue-600">You&apos;re speaking…</span>
-                  ) : (
-                    <span className="text-xs font-medium text-green-600">Your turn — speak now</span>
-                  )
-                ) : isPlayingAudio ? (
-                  <span className="text-xs text-slate-500">Interviewer is speaking…</span>
-                ) : (
-                  <span className="text-xs text-slate-500">Sending…</span>
-                )}
+                  vad.userSpeaking ? "You're speaking…" : 'Your turn — speak now'
+                ) : isPlayingAudio ? 'Interviewer is speaking…' : 'Sending…'}
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Right: conversation / code */}
-        <div className="w-full lg:w-2/3 flex flex-col">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-gray-900">Interview</h1>
-              <span className="text-xs text-gray-500">{interviewType}</span>
+              </div>
             </div>
-            {isCodeInterview && (
-              <div className="flex gap-1 text-xs bg-gray-100 rounded-full p-1">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('conversation')}
-                  className={`px-3 py-1 rounded-full ${
-                    activeTab === 'conversation' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
-                  }`}
-                >
-                  Conversation
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('code')}
-                  className={`px-3 py-1 rounded-full ${
-                    activeTab === 'code' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
-                  }`}
-                >
-                  Code
-                </button>
+          </aside>
+
+          <div className="interview-interface__body">
+            <div className="interview-interface__body-header">
+              <div className="interview-interface__body-title-row">
+                <h1 className="interview-interface__body-title">Interview</h1>
+                <span className="interview-interface__body-type">{interviewType}</span>
+              </div>
+              {isCodeInterview && (
+                <div className="interview-interface__tabs">
+                  <button type="button" onClick={() => setActiveTab('conversation')} className={`interview-interface__tab ${activeTab === 'conversation' ? 'interview-interface__tab--active' : ''}`}>
+                    Conversation
+                  </button>
+                  <button type="button" onClick={() => setActiveTab('code')} className={`interview-interface__tab ${activeTab === 'code' ? 'interview-interface__tab--active' : ''}`}>
+                    Code
+                  </button>
+                </div>
+              )}
+              {isCaseStudy && (
+                <div className="interview-interface__tabs">
+                  <button type="button" onClick={() => setActiveTab('conversation')} className={`interview-interface__tab ${activeTab === 'conversation' ? 'interview-interface__tab--active' : ''}`}>
+                    Conversation
+                  </button>
+                  <button type="button" onClick={() => setActiveTab('notes')} className={`interview-interface__tab ${activeTab === 'notes' ? 'interview-interface__tab--active' : ''}`}>
+                    Notes & Question
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {error && <div className="interview-interface__error" role="alert">{error}</div>}
+            {vad.errored && (
+              <div className="interview-interface__error" role="alert">
+                Voice detection error: {typeof vad.errored === 'string' ? vad.errored : 'Could not start microphone.'}
               </div>
             )}
-            {isCaseStudy && (
-              <div className="flex gap-1 text-xs bg-gray-100 rounded-full p-1">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('conversation')}
-                  className={`px-3 py-1 rounded-full ${
-                    activeTab === 'conversation' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
-                  }`}
-                >
-                  Conversation
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('notes')}
-                  className={`px-3 py-1 rounded-full ${
-                    activeTab === 'notes' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
-                  }`}
-                >
-                  Notes & Question
-                </button>
+            {showTimeWarning && !autoEnded && (
+              <div className="interview-interface__warning">
+                You are nearing the free session limit. This interview will end automatically at 10 minutes.
               </div>
             )}
-          </div>
-
-          {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
-              {error}
-            </div>
-          )}
-
-          {vad.errored && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
-              Voice detection error: {typeof vad.errored === 'string' ? vad.errored : 'Could not start microphone.'}
-            </div>
-          )}
-
-          {showTimeWarning && !autoEnded && (
-            <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
-              You are nearing the free session limit. This interview will end automatically at 10 minutes.
-            </div>
-          )}
-
-          {autoEnded && (
-            <div className="mb-3 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-800">
-              Free session limit reached. You can review feedback from the dashboard or upgrade your plan in
-              the Account page.
-            </div>
-          )}
+            {autoEnded && (
+              <div className="interview-interface__info">
+                Free session limit reached. You can review feedback from the dashboard or upgrade your plan in the Account page.
+              </div>
+            )}
 
           {activeTab === 'conversation' && !showCommunicationPhaseUI && (
             <>
@@ -496,27 +440,23 @@ export default function InterviewInterface() {
               </div>
 
               {!isComplete && (
-                <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
+                <form onSubmit={handleSubmit} className="interview-interface__form">
                   <input
                     type="text"
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
                     placeholder="Type your response…"
-                    className="flex-1 rounded-lg border border-neutral-200 px-4 py-2 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-300"
+                    className="interview-interface__input"
                     disabled={isSubmitting}
                   />
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !textInput.trim()}
-                    className="px-4 py-2 bg-neutral-800 text-white rounded-lg text-sm font-medium hover:bg-neutral-700 disabled:opacity-50"
-                  >
+                  <button type="submit" disabled={isSubmitting || !textInput.trim()} className="interview-interface__btn-send">
                     {isSubmitting ? 'Sending…' : 'Send'}
                   </button>
                 </form>
               )}
 
               {!isComplete && (
-                <p className="mb-4 text-xs text-neutral-500">
+                <p className="interview-interface__hint">
                   {audioEnabled
                     ? 'Mic stays on. Speak when you see “Your turn — speak now”; your response is sent automatically. Don’t speak while the interviewer is talking.'
                     : 'Turn mic on to speak.'}
@@ -596,24 +536,18 @@ export default function InterviewInterface() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3">
+          <div className="interview-interface__actions">
             {isComplete && (
-              <Link
-                to={ROUTES.STUDENT_DASHBOARD}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
-              >
+              <Link to={ROUTES.STUDENT_DASHBOARD} className="interview-interface__btn-primary">
                 Back to Dashboard
               </Link>
             )}
-            <Link
-              to={ROUTES.VIDEO_INTERVIEW}
-              className="px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-100"
-            >
+            <Link to={ROUTES.VIDEO_INTERVIEW} className="interview-interface__btn-secondary">
               Back to Video Interview
             </Link>
           </div>
         </div>
-      </div>
+        </div>
       </div>
     </div>
   );

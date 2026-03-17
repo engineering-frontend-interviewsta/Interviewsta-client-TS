@@ -28,61 +28,44 @@ export default function InterviewHeader({
   isComplete,
 }: InterviewHeaderProps) {
   return (
-    <header className="border-b border-neutral-200 bg-white px-4 py-3 shrink-0">
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-4">
-          <Link
-            to={ROUTES.STUDENT_DASHBOARD}
-            className="font-semibold text-neutral-800 hover:text-neutral-600"
-          >
+    <header className="interview-header">
+      <div className="interview-header__inner">
+        <div className="interview-header__left">
+          <Link to={ROUTES.STUDENT_DASHBOARD} className="interview-header__brand">
             Interviewsta
           </Link>
           {!isComplete && (
             <>
-              <span className="text-neutral-400">|</span>
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                <span className="text-sm text-neutral-600">Live</span>
+              <span className="interview-header__sep" aria-hidden>|</span>
+              <div className="interview-header__live">
+                <span className="interview-header__live-dot" />
+                <span className="interview-header__live-label">Live</span>
               </div>
-              <span className="text-neutral-400 hidden sm:inline">|</span>
-              <div className="hidden sm:flex items-center gap-1.5 text-sm text-neutral-600">
-                <Clock className="h-3.5 w-3.5" />
-                <span className="font-mono tabular-nums">{formatTime(elapsedSeconds)}</span>
+              <span className="interview-header__sep interview-header__sep--sm" aria-hidden>|</span>
+              <div className="interview-header__timer">
+                <Clock aria-hidden />
+                <span className="interview-header__timer-value">{formatTime(elapsedSeconds)}</span>
               </div>
             </>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="interview-header__right">
           {onExportTranscript && (
-            <button
-              type="button"
-              onClick={onExportTranscript}
-              className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
-              title="Export transcript"
-            >
-              <Download className="h-4 w-4" />
+            <button type="button" onClick={onExportTranscript} className="interview-header__icon-btn" title="Export transcript">
+              <Download aria-hidden />
             </button>
           )}
           <button
             type="button"
             onClick={onToggleDevMode}
-            className={`p-2 rounded-lg transition-colors ${
-              devMode
-                ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-                : 'text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100'
-            }`}
+            className={`interview-header__icon-btn interview-header__icon-btn--dev ${devMode ? 'interview-header__icon-btn--dev-active' : ''}`}
             title={devMode ? 'Dev mode: ON' : 'Dev mode: OFF'}
           >
-            <Zap className="h-4 w-4" />
+            <Zap aria-hidden />
           </button>
           {!isComplete && (
-            <button
-              type="button"
-              onClick={onEndClick}
-              disabled={isEnding}
-              className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-neutral-800 text-white hover:bg-neutral-700"
-            >
-              <Square className="h-3.5 w-3.5" />
+            <button type="button" onClick={onEndClick} disabled={isEnding} className="interview-header__end-btn">
+              <Square aria-hidden />
               End Interview
             </button>
           )}

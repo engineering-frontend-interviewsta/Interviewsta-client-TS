@@ -1,0 +1,304 @@
+/* ==========================================================================
+   Account – Overview, Usage, Billing, Developer. Tabs, cards, table. Purple theme.
+   ========================================================================== */
+
+.account {
+  min-height: 100vh;
+  background: var(--color-surface-alt);
+  padding: 2rem 1.25rem 3rem;
+}
+
+@media (min-width: 768px) {
+  .account {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .account {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+.account__inner {
+  width: 100%;
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+.account__title {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 1rem;
+  letter-spacing: -0.02em;
+}
+
+.account__error {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  font-size: var(--text-sm);
+  color: #b91c1c;
+}
+
+.account__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.account__tab {
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  font-family: var(--font-sans);
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.account__tab:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary-muted);
+  color: var(--color-primary-dark);
+}
+
+.account__tab--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.account__tab--active:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: white;
+}
+
+.account__tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.account__content {
+  margin-top: 0.5rem;
+}
+
+.account__card {
+  padding: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1rem;
+}
+
+.account__card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.account__card-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.account__card-row:last-child {
+  margin-bottom: 0;
+}
+
+.account__avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-muted) 100%);
+  color: white;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.account__label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 0 0 0.25rem;
+}
+
+.account__value {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.account__card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.account__card-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.account__table {
+  width: 100%;
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  border-collapse: collapse;
+}
+
+.account__table th {
+  text-align: left;
+  padding: 0.5rem 0;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.account__table td {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.account__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.account__pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--text-xs);
+}
+
+.account__pagination button {
+  padding: 0.25rem 0.5rem;
+  font-size: var(--text-xs);
+  font-family: var(--font-sans);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.account__pagination button:hover:not(:disabled) {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary-muted);
+}
+
+.account__pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.account__empty {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.account__input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--text-xs);
+  font-family: var(--font-sans);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+}
+
+.account__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.account__btn {
+  padding: 0.375rem 0.75rem;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  font-family: var(--font-sans);
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.account__btn--primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.account__btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.account__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.account__loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-alt);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.account__unavailable {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.account__key-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.account__key-item {
+  padding: 0.5rem 0.75rem;
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.25rem;
+}
+
+.account__key-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}

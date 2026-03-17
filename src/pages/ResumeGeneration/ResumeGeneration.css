@@ -1,0 +1,61 @@
+/* ==========================================================================
+   Resume Generation – placeholder / future. Purple theme.
+   ========================================================================== */
+
+.resume-generation {
+  min-height: 100vh;
+  background: var(--color-surface-alt);
+  padding: 2rem 1.25rem 3rem;
+}
+
+@media (min-width: 768px) {
+  .resume-generation {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .resume-generation {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+.resume-generation__inner {
+  width: 100%;
+  max-width: 36rem;
+  margin: 0 auto;
+}
+
+.resume-generation__title {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.02em;
+}
+
+.resume-generation__subtitle {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  margin: 0 0 1.5rem;
+}
+
+.resume-generation__back {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.resume-generation__back:hover {
+  color: var(--color-primary-hover);
+}
+
+.resume-generation__back:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}

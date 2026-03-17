@@ -1,0 +1,145 @@
+/* ==========================================================================
+   Learning – Topic list. Purple theme, card grid, back link.
+   ========================================================================== */
+
+.learning {
+  min-height: 100vh;
+  background: var(--color-surface-alt);
+  padding: 2rem 1.25rem 3rem;
+}
+
+@media (min-width: 768px) {
+  .learning {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .learning {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+.learning__inner {
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.learning__header {
+  margin-bottom: 1.5rem;
+}
+
+.learning__title {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.02em;
+}
+
+.learning__subtitle {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: var(--leading-snug);
+}
+
+.learning__grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.learning__card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow var(--duration-normal) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out);
+}
+
+.learning__card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border);
+  transform: translateY(-2px);
+}
+
+.learning__card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.learning__card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.learning__card-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.learning__card-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 0.25rem;
+}
+
+.learning__card-description {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: var(--leading-snug);
+}
+
+.learning__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.learning__back svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.learning__back:hover {
+  color: var(--color-primary-hover);
+}
+
+.learning__back:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learning__card:hover {
+    transform: none;
+  }
+}

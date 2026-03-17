@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { ROUTES } from '../../../constants/routerConstants';
+import '../Auth.css';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -142,26 +143,22 @@ export default function Login() {
             {isSubmitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-        <div className="mt-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex-1 h-px bg-neutral-200" />
-            <span className="text-xs text-neutral-500 uppercase tracking-wide">or continue with</span>
-            <div className="flex-1 h-px bg-neutral-200" />
-          </div>
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            className="w-full flex items-center justify-center gap-2 border border-neutral-300 rounded-lg py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-50"
-          >
-            <span className="text-lg">G</span>
-            <span>Continue with Google</span>
-          </button>
+        <div className="auth-divider">
+          <span className="auth-divider-line" aria-hidden />
+          <span className="auth-divider-text">or continue with</span>
+          <span className="auth-divider-line" aria-hidden />
         </div>
-        <p className="mt-4 text-center text-neutral-600 text-sm">
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          className="auth-btn-secondary"
+        >
+          <span className="text-lg" aria-hidden>G</span>
+          <span>Continue with Google</span>
+        </button>
+        <p className="auth-footer">
           Don’t have an account?{' '}
-          <Link to={ROUTES.SIGNUP} className="text-blue-600 font-medium hover:underline">
-            Sign up
-          </Link>
+          <Link to={ROUTES.SIGNUP} className="auth-link">Sign up</Link>
         </p>
       </div>
     </div>

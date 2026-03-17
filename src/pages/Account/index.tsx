@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import './Account.css';
 import {
   getApiKeys,
   getBillingAccount,
@@ -108,47 +109,33 @@ export default function Account() {
   };
 
   const renderOverview = () => (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-gray-200 bg-white p-5 flex items-center gap-4">
-        <div className="h-12 w-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-semibold">
-          {fullName.charAt(0).toUpperCase()}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-900">{fullName}</p>
-          <p className="text-xs text-gray-600">{accountUser?.email ?? user?.email}</p>
-          {joinDate && (
-            <p className="text-xs text-gray-400 mt-1">Member since {joinDate}</p>
-          )}
+    <div>
+      <div className="account__card">
+        <div className="account__card-row">
+          <div className="account__avatar" aria-hidden>
+            {fullName.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="account__value">{fullName}</p>
+            <p className="account__label">{accountUser?.email ?? user?.email}</p>
+            {joinDate && <p className="account__label">Member since {joinDate}</p>}
+          </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Plan</p>
-          <p className="font-medium text-gray-900">{plan?.tier_name ?? 'Free'}</p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Billing cycle</p>
-          <p className="font-medium text-gray-900">
-            {plan?.billing_cycle ? plan.billing_cycle : 'monthly'}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Total credits</p>
-          <p className="font-medium text-gray-900">{plan?.total_credits ?? 0}</p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Credits remaining</p>
-          <p className="font-medium text-gray-900">
-            {plan?.remaining_credits === -1 ? 'Unlimited' : plan?.remaining_credits ?? 0}
-          </p>
+      <div className="account__card">
+        <div className="account__card-grid">
+          <div><p className="account__label">Plan</p><p className="account__value">{plan?.tier_name ?? 'Free'}</p></div>
+          <div><p className="account__label">Billing cycle</p><p className="account__value">{plan?.billing_cycle ? plan.billing_cycle : 'monthly'}</p></div>
+          <div><p className="account__label">Total credits</p><p className="account__value">{plan?.total_credits ?? 0}</p></div>
+          <div><p className="account__label">Credits remaining</p><p className="account__value">{plan?.remaining_credits === -1 ? 'Unlimited' : plan?.remaining_credits ?? 0}</p></div>
         </div>
       </div>
 
       {feedbackAccess && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm">
-          <p className="text-xs text-gray-500 mb-1">Feedback access</p>
-          <p className="font-medium text-gray-900">
+        <div className="account__card">
+          <p className="account__label">Feedback access</p>
+          <p className="account__value">
             {feedbackAccess.can_access_full_feedback ? 'Full feedback enabled' : 'Basic feedback'}
           </p>
         </div>
@@ -157,74 +144,53 @@ export default function Account() {
   );
 
   const renderUsage = () => (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm">
-        <p className="text-xs text-gray-500 mb-1">Interview credits used</p>
-        <p className="font-medium text-gray-900">
-          {plan?.used_interview_credits ?? 0} credits (~{usedInterviews} interviews)
-        </p>
+    <div>
+      <div className="account__card">
+        <p className="account__label">Interview credits used</p>
+        <p className="account__value">{plan?.used_interview_credits ?? 0} credits (~{usedInterviews} interviews)</p>
       </div>
-      <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm">
-        <p className="text-xs text-gray-500 mb-1">Resume credits used</p>
-        <p className="font-medium text-gray-900">
-          {plan?.used_resume_credits ?? 0} credits
-        </p>
+      <div className="account__card">
+        <p className="account__label">Resume credits used</p>
+        <p className="account__value">{plan?.used_resume_credits ?? 0} credits</p>
       </div>
       {plan?.month_reset_date && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5 text-xs text-gray-600">
-          Credits reset monthly. Next reset:{' '}
-          {new Date(plan.month_reset_date).toLocaleDateString()}
+        <div className="account__card">
+          <p className="account__value" style={{ fontWeight: 400, fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+            Credits reset monthly. Next reset: {new Date(plan.month_reset_date).toLocaleDateString()}
+          </p>
         </div>
       )}
     </div>
   );
 
   const renderBilling = () => (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-gray-900">Transactions</p>
-          <div className="flex items-center gap-2 text-xs">
-            <button
-              type="button"
-              disabled={page === 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-2 py-1 border border-gray-200 rounded disabled:opacity-50"
-            >
-              Prev
-            </button>
-            <span className="text-gray-500">Page {page}</span>
-            <button
-              type="button"
-              disabled={!hasMore}
-              onClick={() => setPage((p) => p + 1)}
-              className="px-2 py-1 border border-gray-200 rounded disabled:opacity-50"
-            >
-              Next
-            </button>
+    <div>
+      <div className="account__card">
+        <div className="account__card-header">
+          <p className="account__card-title">Transactions</p>
+          <div className="account__pagination">
+            <button type="button" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</button>
+            <span className="account__label" style={{ margin: 0 }}>Page {page}</span>
+            <button type="button" disabled={!hasMore} onClick={() => setPage((p) => p + 1)}>Next</button>
           </div>
         </div>
         {transactions.length === 0 ? (
-          <p className="text-xs text-gray-500">No transactions found.</p>
+          <p className="account__empty">No transactions found.</p>
         ) : (
-          <table className="w-full text-xs text-gray-700">
+          <table className="account__table">
             <thead>
-              <tr className="border-b border-gray-100 text-gray-500">
-                <th className="py-2 text-left">Date</th>
-                <th className="py-2 text-left">Amount</th>
-                <th className="py-2 text-left">Status</th>
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {transactions.map((tx) => (
-                <tr key={tx.id} className="border-b border-gray-50">
-                  <td className="py-2">
-                    {tx.created_at ? new Date(tx.created_at).toLocaleString() : '—'}
-                  </td>
-                  <td className="py-2">
-                    {tx.amount != null ? `${tx.amount / 100} ${tx.currency ?? 'INR'}` : '—'}
-                  </td>
-                  <td className="py-2 capitalize">{tx.status ?? '—'}</td>
+                <tr key={tx.id}>
+                  <td>{tx.created_at ? new Date(tx.created_at).toLocaleString() : '—'}</td>
+                  <td>{tx.amount != null ? `${tx.amount / 100} ${tx.currency ?? 'INR'}` : '—'}</td>
+                  <td style={{ textTransform: 'capitalize' }}>{tx.status ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -235,34 +201,32 @@ export default function Account() {
   );
 
   const renderDeveloper = () => (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm">
-        <p className="font-medium text-gray-900 mb-2">API keys</p>
+    <div>
+      <div className="account__card">
+        <p className="account__card-title">API keys</p>
         {apiKeys.length === 0 ? (
-          <p className="text-xs text-gray-500 mb-3">No API keys yet.</p>
+          <p className="account__empty">No API keys yet.</p>
         ) : (
-          <ul className="mb-3 space-y-1 text-xs text-gray-700">
+          <ul className="account__key-list">
             {apiKeys.map((k, idx) => (
               // eslint-disable-next-line react/no-array-index-key
-              <li key={idx} className="border border-gray-100 rounded px-2 py-1">
-                {JSON.stringify(k)}
-              </li>
+              <li key={idx} className="account__key-item">{JSON.stringify(k)}</li>
             ))}
           </ul>
         )}
-        <div className="flex gap-2">
+        <div className="account__key-actions">
           <input
             type="text"
             value={newKeyLabel}
             onChange={(e) => setNewKeyLabel(e.target.value)}
             placeholder="New key label"
-            className="flex-1 border border-gray-200 rounded px-2 py-1 text-xs"
+            className="account__input"
           />
           <button
             type="button"
             disabled={creatingKey || !newKeyLabel.trim()}
             onClick={handleCreateKey}
-            className="px-3 py-1 rounded bg-blue-600 text-white text-xs disabled:opacity-50"
+            className="account__btn account__btn--primary"
           >
             Create
           </button>
@@ -272,24 +236,16 @@ export default function Account() {
   );
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-sm text-gray-600">Loading account…</div>
-      </div>
-    );
+    return <div className="account__loading">Loading account…</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Account</h1>
-        {error && (
-          <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-            {error}
-          </div>
-        )}
+    <div className="account">
+      <div className="account__inner">
+        <h1 className="account__title">Account</h1>
+        {error && <div className="account__error" role="alert">{error}</div>}
 
-        <div className="mb-4 flex gap-2 text-xs">
+        <div className="account__tabs" role="tablist" aria-label="Account sections">
           {(
             [
               { id: 'overview', label: 'Overview' },
@@ -301,12 +257,10 @@ export default function Account() {
             <button
               key={tab.id}
               type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-1.5 rounded-full border text-xs ${
-                activeTab === tab.id
-                  ? 'bg-white border-gray-300 text-gray-900'
-                  : 'bg-gray-100 border-gray-200 text-gray-600'
-              }`}
+              className={`account__tab ${activeTab === tab.id ? 'account__tab--active' : ''}`}
             >
               {tab.label}
             </button>
@@ -314,13 +268,13 @@ export default function Account() {
         </div>
 
         {!account && (
-          <p className="text-xs text-gray-500">
+          <p className="account__unavailable">
             Account information is not available yet. Please try again later.
           </p>
         )}
 
         {account && (
-          <div className="mt-2">
+          <div className="account__content">
             {activeTab === 'overview' && renderOverview()}
             {activeTab === 'usage' && renderUsage()}
             {activeTab === 'billing' && renderBilling()}

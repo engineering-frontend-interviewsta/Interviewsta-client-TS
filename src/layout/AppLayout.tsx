@@ -62,6 +62,9 @@ export default function AppLayout() {
         ? ROUTES.TEACHER_DASHBOARD
         : ROUTES.STUDENT_DASHBOARD;
 
+  /* Header "Dashboard" nav link goes to student dashboard; admin uses dropdown for Admin. */
+  const headerDashboardPath = role === 'admin' ? ROUTES.STUDENT_DASHBOARD : dashboardPath;
+
   const displayName = user.displayName ?? user.email ?? 'User';
   const initial = getInitial(user.displayName ?? null, user.email ?? null);
 
@@ -79,8 +82,8 @@ export default function AppLayout() {
 
             <nav className="app-layout__nav" aria-label="Main">
               <Link
-                to={dashboardPath}
-                className={`app-layout__nav-link ${location.pathname === dashboardPath ? 'app-layout__nav-link--active' : ''}`}
+                to={headerDashboardPath}
+                className={`app-layout__nav-link ${location.pathname === headerDashboardPath ? 'app-layout__nav-link--active' : ''}`}
               >
                 <LayoutDashboard size={18} strokeWidth={2} aria-hidden />
                 <span>Dashboard</span>

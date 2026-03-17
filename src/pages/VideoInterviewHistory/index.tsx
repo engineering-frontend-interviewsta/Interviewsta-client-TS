@@ -5,6 +5,7 @@ import { getLatestStats, mapVideoReport } from '../../services/dashboardService'
 import type { VideoInterviewReport } from '../../types/dashboard';
 import { ROUTES } from '../../constants/routerConstants';
 import { ALL_INTERVIEW_OPTIONS } from '../../data/interviewTypesData';
+import './VideoInterviewHistory.css';
 
 function lookupInterviewMeta(interviewId: number) {
   const entry = ALL_INTERVIEW_OPTIONS.find((e) => e.id === interviewId);
@@ -68,111 +69,73 @@ export default function VideoInterviewHistory() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-sm text-gray-600">Loading interview history…</div>
-      </div>
-    );
+    return <div className="video-history__loading">Loading interview history…</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="mb-6 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
-        >
-          <ArrowLeft className="h-4 w-4" />
+    <div className="video-history">
+      <div className="video-history__inner">
+        <button type="button" onClick={handleBack} className="video-history__back">
+          <ArrowLeft aria-hidden />
           <span>Back to dashboard</span>
         </button>
-        <div className="flex items-center justify-between mb-4">
+        <header className="video-history__header">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Video interview history</h1>
-            <p className="text-gray-600 text-sm mt-1">
+            <h1 className="video-history__title">Video interview history</h1>
+            <p className="video-history__subtitle">
               Review your past practice sessions and open detailed feedback.
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-gray-500">Total interviews</p>
-            <p className="text-2xl font-bold text-gray-900">{sortedReports.length}</p>
+          <div className="video-history__count-wrap">
+            <p className="video-history__count-label">Total interviews</p>
+            <p className="video-history__count-value">{sortedReports.length}</p>
           </div>
-        </div>
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <PlayCircle className="h-5 w-5 text-blue-600" />
-              <h2 className="text-sm font-semibold text-gray-900">All sessions</h2>
+        </header>
+        {error && <div className="video-history__error" role="alert">{error}</div>}
+        <div className="video-history__card">
+          <div className="video-history__card-header">
+            <div className="video-history__card-title-row">
+              <PlayCircle aria-hidden />
+              <h2 className="video-history__card-heading">All sessions</h2>
             </div>
-            <p className="text-xs text-gray-600">
-              Showing {pagedReports.length} of {sortedReports.length}
-            </p>
+            <p className="video-history__card-meta">Showing {pagedReports.length} of {sortedReports.length}</p>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+          <div className="video-history__table-wrap">
+            <table className="video-history__table">
+              <thead>
                 <tr>
-                  <th className="py-3 px-4 sm:px-6 text-left font-semibold">Title</th>
-                  <th className="py-3 px-4 sm:px-6 text-left font-semibold">Type</th>
-                  <th className="py-3 px-4 sm:px-6 text-left font-semibold">Date</th>
-                  <th className="py-3 px-4 sm:px-6 text-left font-semibold">Duration</th>
-                  <th className="py-3 px-4 sm:px-6 text-left font-semibold">Difficulty</th>
-                  <th className="py-3 px-4 sm:px-6 text-left font-semibold">Score</th>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Date</th>
+                  <th>Duration</th>
+                  <th>Difficulty</th>
+                  <th>Score</th>
                 </tr>
               </thead>
               <tbody>
                 {pagedReports.map((report) => (
-                  <tr
-                    key={report.id}
-                    className="border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer"
-                    onClick={() => handleRowClick(report)}
-                  >
-                    <td className="py-3 px-4 sm:px-6 font-medium text-gray-900">{report.title}</td>
-                    <td className="py-3 px-4 sm:px-6 text-gray-700">{report.type}</td>
-                    <td className="py-3 px-4 sm:px-6 text-gray-700">{report.date}</td>
-                    <td className="py-3 px-4 sm:px-6 text-gray-700">{report.duration} min</td>
-                    <td className="py-3 px-4 sm:px-6 text-gray-700">{report.difficulty ?? '—'}</td>
-                    <td className="py-3 px-4 sm:px-6 text-gray-900 font-semibold">
-                      {report.score != null ? `${report.score}%` : '—'}
-                    </td>
+                  <tr key={report.id} onClick={() => handleRowClick(report)}>
+                    <td className="video-history__cell-title">{report.title}</td>
+                    <td>{report.type}</td>
+                    <td>{report.date}</td>
+                    <td>{report.duration} min</td>
+                    <td>{report.difficulty ?? '—'}</td>
+                    <td className="video-history__cell-score">{report.score != null ? `${report.score}%` : '—'}</td>
                   </tr>
                 ))}
                 {pagedReports.length === 0 && (
                   <tr>
-                    <td className="py-6 px-4 sm:px-6 text-center text-gray-500" colSpan={6}>
-                      No video interview reports yet.
-                    </td>
+                    <td className="video-history__empty" colSpan={6}>No video interview reports yet.</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-t border-gray-100 text-xs text-gray-600">
-              <button
-                type="button"
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="px-2 py-1 rounded border border-gray-200 disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span>
-                Page {page} of {totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={page === totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="px-2 py-1 rounded border border-gray-200 disabled:opacity-50"
-              >
-                Next
-              </button>
+            <div className="video-history__pagination">
+              <button type="button" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</button>
+              <span>Page {page} of {totalPages}</span>
+              <button type="button" disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</button>
             </div>
           )}
         </div>

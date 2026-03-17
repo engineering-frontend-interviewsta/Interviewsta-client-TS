@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
+import { ArrowLeft, BookOpen } from 'lucide-react';
 import { ROUTES } from '../../constants/routerConstants';
-import { BookOpen } from 'lucide-react';
+import './Learning.css';
 
 const TOPICS = [
   { to: ROUTES.LEARNING_ARRAYS, title: 'Arrays', description: 'Two pointers, sliding window, prefix sum' },
@@ -8,30 +9,29 @@ const TOPICS = [
 
 export default function Learning() {
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Learning</h1>
-        <p className="text-gray-600 mb-6">
-          Concepts, practice, and video solutions for interview prep.
-        </p>
-        <div className="grid gap-4 mb-6">
+    <div className="learning">
+      <div className="learning__inner">
+        <header className="learning__header">
+          <h1 className="learning__title">Learning</h1>
+          <p className="learning__subtitle">
+            Concepts, practice, and video solutions for interview prep.
+          </p>
+        </header>
+        <div className="learning__grid">
           {TOPICS.map((t) => (
-            <Link
-              key={t.to}
-              to={t.to}
-              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md flex items-center gap-4"
-            >
-              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                <BookOpen className="h-5 w-5 text-blue-600" />
-              </div>
+            <Link key={t.to} to={t.to} className="learning__card">
+              <span className="learning__card-icon" aria-hidden>
+                <BookOpen />
+              </span>
               <div>
-                <h3 className="font-semibold text-gray-900">{t.title}</h3>
-                <p className="text-sm text-gray-600">{t.description}</p>
+                <h2 className="learning__card-title">{t.title}</h2>
+                <p className="learning__card-description">{t.description}</p>
               </div>
             </Link>
           ))}
         </div>
-        <Link to={ROUTES.DASHBOARD} className="text-blue-600 hover:underline">
+        <Link to={ROUTES.STUDENT_DASHBOARD} className="learning__back">
+          <ArrowLeft aria-hidden />
           Back to Dashboard
         </Link>
       </div>

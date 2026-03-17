@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { ROUTES } from '../../../constants/routerConstants';
 import { VALIDATION } from '../../../constants/appConstants';
+import '../Auth.css';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -87,120 +88,95 @@ export default function Signup() {
   if (isLoading || user) return null;
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center text-neutral-800 mb-6">Sign up</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="signup-first" className="block text-sm font-medium text-neutral-700 mb-1">
-                First name
-              </label>
+    <div className="auth-page">
+      <div className="auth-card">
+        <h1 className="auth-title">Sign up</h1>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="auth-fields-row">
+            <div className="auth-field">
+              <label htmlFor="signup-first" className="auth-label">First name</label>
               <input
                 id="signup-first"
                 type="text"
                 autoComplete="given-name"
                 value={formData.firstName}
                 onChange={(e) => handleChange('firstName', e.target.value)}
-                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="auth-input"
               />
             </div>
-            <div>
-              <label htmlFor="signup-last" className="block text-sm font-medium text-neutral-700 mb-1">
-                Last name
-              </label>
+            <div className="auth-field">
+              <label htmlFor="signup-last" className="auth-label">Last name</label>
               <input
                 id="signup-last"
                 type="text"
                 autoComplete="family-name"
                 value={formData.lastName}
                 onChange={(e) => handleChange('lastName', e.target.value)}
-                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="auth-input"
               />
             </div>
           </div>
-          <div>
-            <label htmlFor="signup-email" className="block text-sm font-medium text-neutral-700 mb-1">
-              Email
-            </label>
+          <div className="auth-field">
+            <label htmlFor="signup-email" className="auth-label">Email</label>
             <input
               id="signup-email"
               type="email"
               autoComplete="email"
               value={formData.email}
               onChange={(e) => handleChange('email', e.target.value)}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="auth-input"
               placeholder="you@example.com"
             />
           </div>
-          <div>
-            <label htmlFor="signup-role" className="block text-sm font-medium text-neutral-700 mb-1">
-              Role
-            </label>
+          <div className="auth-field">
+            <label htmlFor="signup-role" className="auth-label">Role</label>
             <select
               id="signup-role"
               value={formData.role}
               onChange={(e) => handleChange('role', e.target.value)}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="auth-select"
             >
               <option value="student">Student</option>
               <option value="teacher">Teacher</option>
               <option value="admin">Admin</option>
             </select>
           </div>
-          <div>
-            <label htmlFor="signup-password" className="block text-sm font-medium text-neutral-700 mb-1">
-              Password
-            </label>
+          <div className="auth-field">
+            <label htmlFor="signup-password" className="auth-label">Password</label>
             <input
               id="signup-password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
               value={formData.password}
               onChange={(e) => handleChange('password', e.target.value)}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="auth-input"
               placeholder={`At least ${VALIDATION.MIN_PASSWORD_LENGTH} characters`}
             />
           </div>
-          <div>
-            <label htmlFor="signup-confirm" className="block text-sm font-medium text-neutral-700 mb-1">
-              Confirm password
-            </label>
+          <div className="auth-field">
+            <label htmlFor="signup-confirm" className="auth-label">Confirm password</label>
             <input
               id="signup-confirm"
               type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
               value={formData.confirmPassword}
               onChange={(e) => handleChange('confirmPassword', e.target.value)}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="auth-input"
               placeholder="Repeat password"
             />
           </div>
-          <button
-            type="button"
-            onClick={() => setShowPassword((p) => !p)}
-            className="text-sm text-neutral-600 hover:text-neutral-800"
-          >
-            {showPassword ? 'Hide' : 'Show'} passwords
-          </button>
-          {error && (
-            <p className="text-sm text-red-600" role="alert">
-              {error}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <div className="auth-toggle-wrap">
+            <button type="button" onClick={() => setShowPassword((p) => !p)} className="auth-toggle-btn">
+              {showPassword ? 'Hide' : 'Show'} passwords
+            </button>
+          </div>
+          {error && <p className="auth-error" role="alert">{error}</p>}
+          <button type="submit" disabled={isSubmitting} className="auth-btn-primary">
             {isSubmitting ? 'Creating account…' : 'Create account'}
           </button>
         </form>
-        <p className="mt-4 text-center text-neutral-600 text-sm">
-          Already have an account?{' '}
-          <Link to={ROUTES.LOGIN} className="text-blue-600 font-medium hover:underline">
-            Log in
-          </Link>
+        <p className="auth-footer">
+          Already have an account? <Link to={ROUTES.LOGIN} className="auth-link">Log in</Link>
         </p>
       </div>
     </div>
