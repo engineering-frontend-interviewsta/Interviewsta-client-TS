@@ -11,11 +11,13 @@ const TYPE_ICONS = {
 } as const;
 
 const TYPE_CONFIG: { key: keyof PerformanceByType; label: string; sublabel: string }[] = [
-  { key: 'technical', label: 'Technical', sublabel: 'Coding / Company / Subject' },
-  { key: 'hr', label: 'HR', sublabel: 'Behavioral & fit' },
-  { key: 'case_study', label: 'Case Study', sublabel: 'Analytical & business' },
-  { key: 'communication', label: 'Communication', sublabel: 'Speaking & comprehension' },
-  { key: 'debate', label: 'Debate', sublabel: 'Argumentation & persuasion' },
+  { key: 'technical', label: 'Technical', sublabel: 'Coding / System design' },
+  { key: 'behavioral', label: 'Behavioral', sublabel: 'HR & fit' },
+  { key: 'role-based', label: 'Role-based', sublabel: 'Job-specific' },
+  { key: 'case-study', label: 'Case Study', sublabel: 'Analytical & business' },
+  { key: 'debate', label: 'Debate', sublabel: 'Argumentation' },
+  { key: 'specialised', label: 'Specialised', sublabel: 'Niche topics' },
+  { key: 'miscellaneous', label: 'Miscellaneous', sublabel: 'Other' },
 ];
 
 interface Props {
@@ -35,15 +37,15 @@ export default function PerformanceOverviewCards({ byType, overall }: Props) {
         <p className="perf-overview__hero-value">{overallAvg}%</p>
         <p className="perf-overview__hero-meta">{totalSessions} total sessions</p>
       </div>
-      <div className="perf-overview__grid">
-        {TYPE_CONFIG.map((config, index) => {
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {TYPE_CONFIG.map((config) => {
           const data = byType?.[config.key] ?? { count: 0, avg_score: 0 };
           const Icon = TYPE_ICONS[config.key];
           return (
             <div
-              key={config.key as string}
-              className="perf-overview__type-card"
-              style={{ animationDelay: `${index * 50}ms` }}
+              key={String(config.key)}
+              className="border border-gray-200 rounded-lg p-4 text-sm flex flex-col justify-between"
             >
               <div>
                 <span className="perf-overview__type-icon" aria-hidden>
@@ -63,4 +65,3 @@ export default function PerformanceOverviewCards({ byType, overall }: Props) {
     </div>
   );
 }
-

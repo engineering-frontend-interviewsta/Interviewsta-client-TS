@@ -15,42 +15,36 @@ export default function ResumeReportsCard({ reports, onReportClick }: ResumeRepo
   const displayList = reports.slice(0, 3);
 
   return (
-    <article className="reports-card">
-      <div className="reports-card__accent" aria-hidden />
-      <div className="reports-card__body">
-        <div className="reports-card__header">
-          <div className="reports-card__title-row">
-            <span className="reports-card__title-icon" aria-hidden><FileText size={18} strokeWidth={2} /></span>
-            <h3 className="reports-card__title">Resume Analysis Reports</h3>
-          </div>
-          <Link to={viewAllPath} className="reports-card__view-all">
-            View all
-            <span className="reports-card__view-all-arrow" aria-hidden><ChevronRight size={14} /></span>
-          </Link>
-        </div>
-      {displayList.length > 0 ? (
-        <ul className="reports-card__list">
-          {displayList.map((report) => (
-            <li
-              key={report.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => onReportClick?.(report)}
-              onKeyDown={(e) => e.key === 'Enter' && onReportClick?.(report)}
-              className="reports-card__item"
-            >
-              <div className="reports-card__item-inner">
-                <div className="reports-card__item-content">
-                  <h4 className="reports-card__item-title">{report.fileName}</h4>
-                  <p className="reports-card__item-meta">
-                    {report.date}
-                    {report.targetRole ? ` · ${report.targetRole}` : ''}
-                    {report.company ? ` · ${report.company}` : ''}
-                  </p>
-                </div>
-                <div className="resume-card__item-scores">
-                  <span>Overall: <strong>{report.overallScore ?? '—'}%</strong></span>
-                  <span>Match: <strong>{report.jobMatchScore ?? '—'}%</strong></span>
+    <div className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-gray-900 text-sm">Resume Analysis Reports</h3>
+        <Link to={viewAllPath} className="text-purple-600 hover:underline text-xs font-medium">
+          View All
+        </Link>
+      </div>
+      <div className="flex-1">
+        {displayList.length > 0 ? (
+          <ul className="space-y-2">
+            {displayList.map((report) => (
+              <li
+                key={report.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => onReportClick?.(report)}
+                onKeyDown={(e) => e.key === 'Enter' && onReportClick?.(report)}
+                className="border border-gray-200 rounded-md p-3 cursor-pointer hover:bg-gray-50 text-sm"
+              >
+                <div className="flex justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="font-medium text-gray-900 truncate">{report.fileName}</h4>
+                    <p className="text-xs text-gray-600">
+                      {[report.date, report.targetRole, report.company].filter(Boolean).join(' · ') || '—'}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end text-xs text-gray-700 flex-shrink-0">
+                    <span>Score: {report.overallScore ?? '—'}%</span>
+                    {report.jobMatchScore != null && <span>Match: {report.jobMatchScore}%</span>}
+                  </div>
                 </div>
               </div>
             </li>

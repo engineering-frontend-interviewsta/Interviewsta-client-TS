@@ -9,7 +9,10 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function redirectByRole(navigate: (path: string, opts?: { replace: boolean }) => void, role: string | null) {
   if (role === 'teacher') navigate(ROUTES.TEACHER_DASHBOARD, { replace: true });
   else if (role === 'admin') navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-  else navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
+  else {
+    console.log('[DEBUG]redirectByRole', role);
+    navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
+  }
 }
 
 export default function Login() {
@@ -18,12 +21,12 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user, role, isLoading, login } = useAuth();
+  const { user, roles, isLoading, login } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && user && role) redirectByRole(navigate, role);
-  }, [isLoading, user, role, navigate]);
+    if (!isLoading && user && roles?.length) redirectByRole(navigate, roles[0] ?? null);
+  }, [isLoading, user, roles, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +51,7 @@ export default function Login() {
         setError(result.error ?? 'Login failed.');
         return;
       }
-      redirectByRole(navigate, result.role ?? null);
+      redirectByRole(navigate, result.roles?.[0] ?? result.role ?? null);
     } catch {
       setError('Invalid email or password.');
     } finally {

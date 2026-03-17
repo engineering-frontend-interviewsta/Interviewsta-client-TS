@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { getSessionHistory } from '../../services/feedbackService';
 import { ROUTES } from '../../constants/routerConstants';
-import type { SessionHistoryResponse } from '../../types/feedback';
+import type { InterviewFeedback } from '../../types/feedback';
 import { ArrowLeft } from 'lucide-react';
 import ScoreBreakdown from './components/ScoreBreakdown';
 import StrengthsAndImprovements from './components/StrengthsAndImprovements';
@@ -40,8 +40,7 @@ export default function Feedback() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [videoFeedback, setVideoFeedback] = useState<SessionHistoryResponse | null>(null);
-  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [videoFeedback, setVideoFeedback] = useState<InterviewFeedback | null>(null);
 
   const backPath = state?.back ?? ROUTES.DASHBOARD;
 
@@ -61,21 +60,21 @@ export default function Feedback() {
 
     const fetchFeedback = () => {
       if (hasSessionParams && videoState) {
+        // Coming from a just-finished interview: use sessionId
         return getSessionHistory({
-          session_id: videoState.session_id!,
-          session_type: videoState.session_type!,
+          sessionId: videoState.session_id!,
         });
       }
       if (hasInterviewId && videoState) {
+        // Opening existing feedback/report by id coming from location state
         return getSessionHistory({
-          interview_id: videoState.interview_id!,
-          interview_type: videoState.interview_type ?? 'Technical Interview',
+          feedbackId: videoState.interview_id!,
         });
       }
       if (hasInterviewIdFromParams) {
+        // Opening existing feedback/report by id coming from route params
         return getSessionHistory({
-          interview_id: interviewIdFromParams,
-          interview_type: videoState?.interview_type ?? 'Technical Interview',
+          feedbackId: interviewIdFromParams,
         });
       }
       return Promise.reject(new Error('Missing session or interview params'));
@@ -92,53 +91,6 @@ export default function Feedback() {
       })
       .finally(() => setLoading(false));
   }, [state, navigate, params.interviewId]);
-
-  // Poll when feedback is pending (e.g. just ended interview)
-  useEffect(() => {
-    if (!videoFeedback || videoFeedback.status !== 'pending') return;
-
-    const videoState = state?.type === 'video-interview' ? state : null;
-    const hasSessionParams = videoState?.session_id && videoState?.session_type;
-    const hasInterviewId = videoState?.interview_id != null;
-    const interviewIdFromParams = params.interviewId ? Number(params.interviewId) : null;
-
-    const fetchAgain = () => {
-      let promise: Promise<SessionHistoryResponse>;
-      if (hasSessionParams && videoState) {
-        promise = getSessionHistory({
-          session_id: videoState.session_id,
-          session_type: videoState.session_type,
-        });
-      } else if (hasInterviewId && videoState) {
-        promise = getSessionHistory({
-          interview_id: videoState.interview_id!,
-          interview_type: videoState.interview_type ?? 'Technical Interview',
-        });
-      } else if (interviewIdFromParams != null) {
-        promise = getSessionHistory({
-          interview_id: interviewIdFromParams,
-          interview_type: videoState?.interview_type ?? 'Technical Interview',
-        });
-      } else {
-        return;
-      }
-      promise
-        .then((data) => {
-          setVideoFeedback(data);
-          if (data.status === 'pending') {
-            pollTimeoutRef.current = setTimeout(fetchAgain, 3000);
-          }
-        })
-        .catch(() => {
-          pollTimeoutRef.current = setTimeout(fetchAgain, 3000);
-        });
-    };
-
-    pollTimeoutRef.current = setTimeout(fetchAgain, 3000);
-    return () => {
-      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
-    };
-  }, [videoFeedback?.status, state, params.interviewId]);
 
   const effectiveState: FeedbackLocationState | null =
     state && state.type
@@ -157,12 +109,10 @@ export default function Feedback() {
 
   // Derive a simple, robust interview type label for technical feedback
   const resolvedInterviewType =
-    (videoFeedback?.interview_test_details?.interview_mode as string | undefined) ||
     (state && state.type === 'video-interview' && (state.session_type ?? state.interview_type)) ||
     'Technical Interview';
 
   const headerTitle =
-    (videoFeedback?.interview_test_details?.interview_title as string | undefined) ||
     (state && 'title' in state ? (state as FeedbackLocationState & { title?: string }).title : undefined) ||
     (effectiveState.type === 'resume-analysis' && state && 'fileName' in state
       ? (state as FeedbackLocationState & { fileName?: string }).fileName
@@ -170,7 +120,7 @@ export default function Feedback() {
     (effectiveState.type === 'resume-analysis' ? 'Resume Analysis Feedback' : 'Interview Feedback');
 
   const headerDate =
-    (videoFeedback?.interview_test_details?.created_at as string | undefined) ||
+    videoFeedback?.savedAt ||
     (state && 'date' in state ? (state as FeedbackLocationState & { date?: string }).date : undefined);
 
   return (
@@ -197,15 +147,13 @@ export default function Feedback() {
         {error && <div className="feedback-page__error" role="alert">{error}</div>}
 
         {effectiveState.type === 'video-interview' && videoFeedback && !error && (
-          <div className="feedback-page__content">
-            {videoFeedback.status === 'pending' && (
-              <p className="feedback-page__pending">Feedback is still being generated. Check back shortly.</p>
-            )}
-
-            {videoFeedback.overall_score != null && (
-              <div className="feedback-page__section">
-                <h2 className="feedback-page__section-title">Overall score</h2>
-                <p className="feedback-page__overall-score">{Math.round(videoFeedback.overall_score)}%</p>
+          <div className="space-y-5">
+            {videoFeedback.overallScore != null && videoFeedback.overallScore >= 0 && (
+              <div className="rounded-xl bg-white border border-gray-100 p-5 shadow-sm">
+                <h2 className="text-sm font-medium text-gray-700 mb-1">Overall score</h2>
+                <p className="text-3xl font-bold text-blue-600">
+                  {Math.round(videoFeedback.overallScore)}%
+                </p>
               </div>
             )}
 

@@ -30,22 +30,11 @@ function getInitial(name: string | null | undefined, email: string | null | unde
 }
 
 export default function AppLayout() {
-  const { user, isLoading, role, logout } = useAuth();
+  const { user, isLoading, roles, logout } = useAuth();
   const location = useLocation();
   const hideHeader = HIDE_HEADER_PATHS.includes(location.pathname);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!userMenuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setUserMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [userMenuOpen]);
+  const isAdmin = roles?.includes('admin');
+  const isTeacher = roles?.includes('teacher');
 
   if (isLoading) {
     return <LoadingFallback />;
@@ -71,22 +60,24 @@ export default function AppLayout() {
   return (
     <div className="app-layout">
       {!hideHeader && (
-        <header className="app-layout__header">
-          <div className="app-layout__header-inner">
-            <Link to={dashboardPath} className="app-layout__brand">
-              <span className="app-layout__brand-icon" aria-hidden>
-                <Sparkles size={20} strokeWidth={2} />
-              </span>
-              <span className="app-layout__brand-text">Interviewsta</span>
-            </Link>
-
-            <nav className="app-layout__nav" aria-label="Main">
-              <Link
-                to={headerDashboardPath}
-                className={`app-layout__nav-link ${location.pathname === headerDashboardPath ? 'app-layout__nav-link--active' : ''}`}
-              >
-                <LayoutDashboard size={18} strokeWidth={2} aria-hidden />
-                <span>Dashboard</span>
+      <header className="border-b border-neutral-200 bg-white px-4 py-3">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <Link
+            to={
+              isAdmin
+                ? ROUTES.ADMIN_DASHBOARD
+                : isTeacher
+                  ? ROUTES.TEACHER_DASHBOARD
+                  : ROUTES.STUDENT_DASHBOARD
+            }
+            className="font-semibold text-neutral-800"
+          >
+            Interviewsta
+          </Link>
+          <nav className="flex flex-wrap items-center gap-4 text-sm">
+            {isTeacher ? (
+              <Link to={ROUTES.TEACHER_DASHBOARD} className="text-neutral-600 hover:text-neutral-900">
+                Dashboard
               </Link>
               <Link
                 to={ROUTES.VIDEO_INTERVIEW}
@@ -95,27 +86,28 @@ export default function AppLayout() {
                 <Video size={18} strokeWidth={2} aria-hidden />
                 <span>Video interview</span>
               </Link>
-              <Link
-                to={ROUTES.LEARNING}
-                className={`app-layout__nav-link ${location.pathname.startsWith(ROUTES.LEARNING) ? 'app-layout__nav-link--active' : ''}`}
-              >
-                <BookOpen size={18} strokeWidth={2} aria-hidden />
-                <span>Learning</span>
+            )}
+            <Link to={ROUTES.VIDEO_INTERVIEW} className="text-neutral-600 hover:text-neutral-900">
+              Video interview
+            </Link>
+            <Link to={ROUTES.LEARNING} className="text-neutral-600 hover:text-neutral-900">
+              Learning
+            </Link>
+            <Link to={ROUTES.RESUME_ANALYSIS} className="text-neutral-600 hover:text-neutral-900">
+              Resume
+            </Link>
+            {isTeacher && (
+              <Link to={ROUTES.TEACHER_CLASSES} className="text-neutral-600 hover:text-neutral-900">
+                Classes
               </Link>
-              <Link
-                to={ROUTES.RESUME_ANALYSIS}
-                className={`app-layout__nav-link ${location.pathname === ROUTES.RESUME_ANALYSIS ? 'app-layout__nav-link--active' : ''}`}
-              >
-                <FileText size={18} strokeWidth={2} aria-hidden />
-                <span>Resume</span>
-              </Link>
-              {role === 'teacher' && (
-                <Link
-                  to={ROUTES.TEACHER_CLASSES}
-                  className={`app-layout__nav-link ${location.pathname.startsWith(ROUTES.TEACHER_CLASSES) ? 'app-layout__nav-link--active' : ''}`}
-                >
-                  <GraduationCap size={18} strokeWidth={2} aria-hidden />
-                  <span>Classes</span>
+            )}
+            {isAdmin && (
+              <>
+                <Link to={ROUTES.ADMIN_DASHBOARD} className="text-neutral-600 hover:text-neutral-900">
+                  Admin
+                </Link>
+                <Link to={ROUTES.ADMIN_USERS} className="text-neutral-600 hover:text-neutral-900">
+                  Users
                 </Link>
               )}
             </nav>

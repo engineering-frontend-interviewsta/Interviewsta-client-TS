@@ -47,16 +47,18 @@ export default function OAuthCallback() {
           return;
         }
 
-        if (result.success && result.user && result.role) {
+        const hasRoles = (result.roles?.length ?? 0) > 0 || !!result.role;
+        if (result.success && result.user && hasRoles) {
           const hasPhone = !!result.user.phone?.trim();
           const hasCountry = !!result.user.country?.trim();
           if (!hasPhone || !hasCountry) {
             navigate(ROUTES.COMPLETE_PROFILE, { replace: true });
             return;
           }
-          if (result.role === 'teacher') {
+          const primaryRole = result.roles?.[0] ?? result.role;
+          if (primaryRole === 'teacher') {
             navigate(ROUTES.TEACHER_CLASSES, { replace: true });
-          } else if (result.role === 'admin') {
+          } else if (primaryRole === 'admin') {
             navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
           } else {
             navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });

@@ -4,14 +4,15 @@ import { BarChart3, FileText, GraduationCap } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   getLatestStats,
-  getResumeProgress,
-  getPerformanceAnalysis,
-  getClassroomStats,
+  getResumeSessions,
+  getInterviewSessions,
+  getPerformance,
   clearDashboardCache,
   mapVideoReport,
   mapResumeReport,
+  buildPerformanceAnalysis,
 } from '../../services/dashboardService';
-import type { VideoInterviewReport, ResumeReport, PerformanceAnalysis } from '../../types/dashboard';
+import type { VideoInterviewReport, ResumeReport, PerformanceAnalysis, PerformanceResponse } from '../../types/dashboard';
 import DashboardHeader from './components/DashboardHeader';
 import DashboardQuickLinks from './components/DashboardQuickLinks';
 import DashboardSkeleton from './components/DashboardSkeleton';
@@ -23,19 +24,14 @@ import PerformanceByTypeBreakdown from './components/PerformanceByTypeBreakdown'
 import { ROUTES } from '../../constants/routerConstants';
 import './Dashboard.css';
 
-/** Interview type lookup: (interviewId) => meta. Use null until we have interviewTypes data. */
-function getInterviewMeta(_interviewId: number): { title?: string; category?: string; difficulty?: string; topics?: string[] } | null {
-  return null;
-}
-
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [videoReports, setVideoReports] = useState<VideoInterviewReport[]>([]);
   const [resumeReports, setResumeReports] = useState<ResumeReport[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [performanceAnalysis, setPerformanceAnalysis] = useState<PerformanceAnalysis | null>(null);
-  const [classroomStats, setClassroomStats] = useState<{ classesJoined: number; upcomingSlots: number; assignments: number } | null>(null);
+  const [performanceByType, setPerformanceByType] = useState<PerformanceResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -45,16 +41,22 @@ export default function Dashboard() {
       sessionStorage.removeItem('refreshDashboard');
     }
     try {
-      const [videoRaw, resumeRaw, perf, classroom] = await Promise.all([
-        getLatestStats(),
-        getResumeProgress(),
-        getPerformanceAnalysis().catch(() => null),
-        getClassroomStats().catch(() => null),
+      const [latestRes, resumeRes, interviewRes, performanceRes] = await Promise.all([
+        getLatestStats().catch(() => null),
+        getResumeSessions(),
+        getInterviewSessions(),
+        getPerformance(),
       ]);
-      setVideoReports(videoRaw.map((item) => mapVideoReport(item, getInterviewMeta)));
-      setResumeReports(resumeRaw.map(mapResumeReport));
-      setPerformanceAnalysis(perf);
-      setClassroomStats(classroom ?? null);
+
+      const analysis = buildPerformanceAnalysis(latestRes, performanceRes ?? null);
+      setPerformanceAnalysis(analysis);
+      setPerformanceByType(performanceRes ?? null);
+
+      const interviewSessions = interviewRes?.sessions ?? [];
+      setVideoReports(interviewSessions.map((s) => mapVideoReport(s)));
+
+      const resumeSessions = resumeRes?.sessions ?? [];
+      setResumeReports(resumeSessions.map(mapResumeReport));
     } catch {
       navigate(ROUTES.HOME);
     } finally {
@@ -120,37 +122,7 @@ export default function Dashboard() {
             <PerformanceOverviewCards byType={performanceAnalysis.by_type} overall={performanceAnalysis.overall} />
             <div className="dashboard__grid-cols-2">
               <PerformanceTrendChart trend={performanceAnalysis.overall.trend} title="Overall performance trend" />
-              <PerformanceByTypeBreakdown byType={performanceAnalysis.by_type} />
-            </div>
-          </section>
-        )}
-
-        {classroomStats != null && (classroomStats.classesJoined > 0 || classroomStats.upcomingSlots > 0 || classroomStats.assignments > 0) && (
-          <section className="dashboard__section" aria-labelledby="classroom-heading">
-            <div className="dashboard__classroom">
-              <div className="dashboard__classroom-accent" aria-hidden />
-              <div className="dashboard__classroom-body">
-                <h2 id="classroom-heading" className="dashboard__classroom-title">
-                  <span className="dashboard__classroom-title-icon" aria-hidden>
-                    <GraduationCap />
-                  </span>
-                  My Classroom
-                </h2>
-                <div className="dashboard__classroom-grid">
-                  <div className="dashboard__classroom-stat-wrap">
-                    <p className="dashboard__classroom-stat">{classroomStats.classesJoined}</p>
-                    <p className="dashboard__classroom-label">Classes Joined</p>
-                  </div>
-                  <div className="dashboard__classroom-stat-wrap">
-                    <p className="dashboard__classroom-stat">{classroomStats.upcomingSlots}</p>
-                    <p className="dashboard__classroom-label">Upcoming Slots</p>
-                  </div>
-                  <div className="dashboard__classroom-stat-wrap">
-                    <p className="dashboard__classroom-stat">{classroomStats.assignments}</p>
-                    <p className="dashboard__classroom-label">Assignments</p>
-                  </div>
-                </div>
-              </div>
+              <PerformanceByTypeBreakdown performance={performanceByType} />
             </div>
           </section>
         )}

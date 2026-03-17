@@ -1,30 +1,25 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Video, Search, ArrowLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { startInterview, getStartTaskStatus } from '../../services/interviewService';
-import { ROUTES } from '../../constants/routerConstants';
 import {
-  ALL_INTERVIEW_OPTIONS,
-  getBackendInterviewType,
-  getBackendPayload,
-} from '../../data/interviewTypesData';
-import type { InterviewTypeEntry } from '../../types/interviewTypes';
+  startInterview,
+  getStartTaskStatus,
+  getInterviewTests,
+  getInterviewParentTypes,
+  getInterviewTestsByParentType,
+  getInterviewAccessToken,
+  InterviewAccessTokenError,
+} from '../../services/interviewService';
+import { setInterviewAccessToken, clearInterviewAccessToken } from '../../api/axiosInstance';
+import { ROUTES } from '../../constants/routerConstants';
+import type { InterviewTest, ParentInterviewType } from '../../types/interviewTest';
 import InterviewLoadingPopup from './components/InterviewLoadingPopup';
 import './VideoInterview.css';
 
 const START_POLL_MS = 1500;
 const START_POLL_MAX = 60;
-
-const CATEGORY_LABELS: Record<string, string> = {
-  all: 'All',
-  'interview-type': 'Interview type',
-  'company-wise': 'Company wise',
-  'subject-wise': 'DSA / Subject',
-  'topic-wise': 'Subjects / Topic',
-  'role-wise': 'Role-based',
-  'case-study-wise': 'Case study',
-};
+const PAGE_SIZE = 10;
 
 function getDifficultyClass(difficulty: string): 'easy' | 'medium' | 'hard' {
   const d = (difficulty || '').toLowerCase();
@@ -36,59 +31,126 @@ function getDifficultyClass(difficulty: string): 'easy' | 'medium' | 'hard' {
 export default function VideoInterview() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [parentTypes, setParentTypes] = useState<ParentInterviewType[]>([]);
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+  const [tests, setTests] = useState<InterviewTest[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [totalAll, setTotalAll] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [starting, setStarting] = useState(false);
   const [startProgress, setStartProgress] = useState(0);
   const [startError, setStartError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const filteredOptions = useMemo(() => {
-    let list = ALL_INTERVIEW_OPTIONS;
-    if (selectedCategory !== 'all') {
-      list = list.filter((e) => (e.category || '').toLowerCase() === selectedCategory.toLowerCase());
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (e) =>
-          (e.title || '').toLowerCase().includes(q) ||
-          (e.company || '').toLowerCase().includes(q) ||
-          (e.subject || '').toLowerCase().includes(q) ||
-          (e.role || '').toLowerCase().includes(q) ||
-          (e.description || '').toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [selectedCategory, searchQuery]);
+  const hasMore = page < totalPages;
 
-  const categories = useMemo(() => {
-    const counts: Record<string, number> = { all: ALL_INTERVIEW_OPTIONS.length };
-    for (const e of ALL_INTERVIEW_OPTIONS) {
-      const c = (e.category || '').toLowerCase() || 'other';
-      counts[c] = (counts[c] || 0) + 1;
+  const loadParentTypes = useCallback(async () => {
+    try {
+      const list = await getInterviewParentTypes();
+      setParentTypes(list);
+    } catch {
+      setParentTypes([]);
     }
-    return Object.entries(counts).map(([id, count]) => ({
-      id,
-      label: CATEGORY_LABELS[id] || id,
-      count,
-    }));
   }, []);
 
-  const handleStart = async (entry: InterviewTypeEntry) => {
+  const loadTests = useCallback(
+    async (pageNum: number, append: boolean) => {
+      const isLoadMore = pageNum > 1;
+      if (isLoadMore) setLoadingMore(true);
+      else setLoading(true);
+      try {
+        if (selectedParentId == null) {
+          const res = await getInterviewTests({ page: pageNum, limit: PAGE_SIZE });
+          setTests((prev) => (append ? [...prev, ...res.data] : res.data));
+          setTotalPages(res.totalPages);
+          setTotal(res.total);
+          setTotalAll(res.total);
+        } else {
+          const res = await getInterviewTestsByParentType(selectedParentId, {
+            page: pageNum,
+            limit: PAGE_SIZE,
+          });
+          setTests((prev) => (append ? [...prev, ...res.data] : res.data));
+          setTotalPages(res.totalPages);
+          setTotal(res.total);
+        }
+      } catch {
+        if (!append) setTests([]);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [selectedParentId]
+  );
+
+  useEffect(() => {
+    void loadParentTypes();
+  }, [loadParentTypes]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [selectedParentId]);
+
+  useEffect(() => {
+    if (page < 1) return;
+    void loadTests(page, page > 1);
+  }, [page, selectedParentId, loadTests]);
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setPage((p) => p + 1);
+  }, [loadingMore, hasMore]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !loadingMore && !loading) loadMore();
+      },
+      { rootMargin: '200px', threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, loadMore]);
+
+  const filteredTests = useMemo(() => {
+    if (!searchQuery.trim()) return tests;
+    const q = searchQuery.toLowerCase();
+    return tests.filter(
+      (t) =>
+        (t.title || '').toLowerCase().includes(q) ||
+        (t.company || '').toLowerCase().includes(q) ||
+        (t.subject || '').toLowerCase().includes(q) ||
+        (t.parent?.title || '').toLowerCase().includes(q) ||
+        (t.description || '').toLowerCase().includes(q)
+    );
+  }, [tests, searchQuery]);
+
+  const handleStart = async (test: InterviewTest) => {
     if (!user?.email) {
       setStartError('Please sign in to start an interview.');
       return;
     }
     setStartError(null);
-    setStarting(true);
-    setStartProgress(0);
-    const interviewType = getBackendInterviewType(entry);
-    const payload = getBackendPayload(entry);
+    const interviewType = test.parent?.type ?? 'technical';
+    const tags = (test.topics?.length ? test.topics : test.subjects) ?? [];
+    const payload = {
+      interview_test_id: test.id,
+      ...(test.company && { company: test.company }),
+      ...(tags.length > 0 && { Tags: tags }),
+    };
     try {
-      const userId = user.email;
+      const token = await getInterviewAccessToken(String(test.id));
+      setInterviewAccessToken(token);
+      setStarting(true);
+      setStartProgress(0);
       const result = await startInterview({
-        interviewType,
-        userId,
         payload,
       });
       let attempts = 0;
@@ -107,7 +169,7 @@ export default function VideoInterview() {
           setStartProgress(100);
           setStarting(false);
           navigate(ROUTES.INTERVIEW_INTERFACE, {
-            state: { sessionId: result.sessionId, interviewType, interviewTypeId: entry.id },
+            state: { sessionId: result.sessionId, interviewType, interviewTypeId: test.id },
           });
           return;
         }
@@ -120,7 +182,12 @@ export default function VideoInterview() {
       };
       await poll();
     } catch (err) {
-      setStartError(err instanceof Error ? err.message : 'Failed to start interview.');
+      clearInterviewAccessToken();
+      if (err instanceof InterviewAccessTokenError) {
+        setStartError(err.message);
+      } else {
+        setStartError(err instanceof Error ? err.message : 'Failed to start interview.');
+      }
       setStarting(false);
     }
   };
@@ -147,69 +214,63 @@ export default function VideoInterview() {
             </div>
           )}
 
-          <div className="video-interview__toolbar">
-            <div className="video-interview__filters" role="group" aria-label="Filter by category">
-              {categories.map(({ id, label, count }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setSelectedCategory(id)}
-                  className={`video-interview__pill ${selectedCategory === id ? 'video-interview__pill--active' : ''}`}
-                  aria-pressed={selectedCategory === id}
-                >
-                  {label} ({count})
-                </button>
-              ))}
-            </div>
-            <div className="video-interview__search-wrap">
-              <Search aria-hidden />
-              <input
-                type="search"
-                placeholder="Search by title, company, subject, role…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="video-interview__search"
-                aria-label="Search interview types"
-              />
-            </div>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedParentId(null)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                selectedParentId === null
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              All{selectedParentId === null ? ` (${total})` : totalAll > 0 ? ` (${totalAll})` : ''}
+            </button>
+            {parentTypes.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setSelectedParentId(p.id)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                  selectedParentId === p.id
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {p.title}
+              </button>
+            ))}
+          </div>
+          <div className="mb-4">
+            <input
+              type="search"
+              placeholder="Search by title, company, subject, role…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full max-w-md px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            />
           </div>
 
-          <div className="video-interview__list">
-            {filteredOptions.length === 0 ? (
-              <div className="video-interview__empty">
-                <span className="video-interview__empty-icon" aria-hidden>
-                  <Search />
-                </span>
-                <span>No interviews match your filters.</span>
-                <span>Try a different category or search term.</span>
-              </div>
-            ) : (
-              filteredOptions.map((opt) => (
-                <article
-                  key={`${opt.id}-${opt.category}-${opt.title}`}
-                  className="video-interview__card"
+          {loading && tests.length === 0 ? (
+            <p className="text-gray-500 py-8">Loading interviews…</p>
+          ) : filteredTests.length === 0 ? (
+            <p className="text-gray-500 py-8">No options match your filters.</p>
+          ) : (
+            <div className="space-y-3 mb-8">
+              {filteredTests.map((test) => (
+                <div
+                  key={test.id}
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
                 >
-                  <div className="video-interview__card-header" aria-hidden />
-                  <div className="video-interview__card-body">
-                    <div className="video-interview__card-tags">
-                      <span className="video-interview__card-tag video-interview__card-tag--category">
-                        {CATEGORY_LABELS[(opt.category || '').toLowerCase()] || opt.category || 'Interview'}
-                      </span>
-                      <span className={`video-interview__card-tag video-interview__card-tag--${getDifficultyClass(opt.difficulty)}`}>
-                        {opt.difficulty || 'Medium'}
-                      </span>
-                      <span className="video-interview__card-tag video-interview__card-tag--duration">
-                        {opt.duration} min
-                        {opt.questions != null ? ` · ${opt.questions} Qs` : ''}
-                      </span>
-                    </div>
-                    <h3 className="video-interview__card-title">{opt.title}</h3>
-                    {opt.description ? (
-                      <p className="video-interview__card-description">{opt.description}</p>
-                    ) : (
-                      <p className="video-interview__card-description">
-                        Practice with this interview type. Click Start to begin your session.
-                      </p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900">{test.title}</h3>
+                    <p className="text-sm text-gray-500">
+                      {test.difficulty} · {test.duration} min
+                      {test.questions != null ? ` · ${test.questions} questions` : ''}
+                      {test.parent?.title ? ` · ${test.parent.title}` : ''}
+                    </p>
+                    {test.description && (
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{test.description}</p>
                     )}
                     <div className="video-interview__card-footer">
                       <button
@@ -223,16 +284,24 @@ export default function VideoInterview() {
                       </button>
                     </div>
                   </div>
-                </article>
-              ))
-            )}
-          </div>
-          <div className="video-interview__back-wrap">
-            <Link to={ROUTES.STUDENT_DASHBOARD} className="video-interview__back">
-              <ArrowLeft aria-hidden />
-              Back to Dashboard
-            </Link>
-          </div>
+                  <button
+                    type="button"
+                    disabled={starting}
+                    onClick={() => handleStart(test)}
+                    className="shrink-0 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {starting ? 'Starting…' : 'Start'}
+                  </button>
+                </div>
+              ))}
+              <div ref={sentinelRef} className="h-4 flex items-center justify-center">
+                {loadingMore && <span className="text-sm text-gray-500">Loading more…</span>}
+              </div>
+            </div>
+          )}
+          <Link to={ROUTES.STUDENT_DASHBOARD} className="text-blue-600 hover:underline">
+            Back to Dashboard
+          </Link>
         </div>
       </main>
     </>

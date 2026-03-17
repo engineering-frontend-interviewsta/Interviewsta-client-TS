@@ -8,13 +8,16 @@ export interface User {
 
 /** Backend auth response (login, register, google, github) */
 export interface AuthApiResponse {
-  access: string;
+  accessToken: string;
   user: {
     email: string;
     name: string;
     phone?: string;
     country?: string;
-    role: string;
+    /** @deprecated Prefer roles */
+    role?: string;
+    roles?: string[];
+    avatarUrl?: string;
   };
 }
 
@@ -22,7 +25,9 @@ export interface AuthApiResponse {
 export interface AuthResult {
   success: boolean;
   user?: User;
+  /** First role for redirect/backward compat */
   role?: string;
+  roles?: string[];
   error?: string;
 }
 

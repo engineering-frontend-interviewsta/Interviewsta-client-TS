@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { clearInterviewAccessToken } from '../../api/axiosInstance';
 import { useInterviewSession } from '../../hooks/useInterviewSession';
 import { useMediaDevices } from '../../hooks/useMediaDevices';
 import { usePlanStatus } from '../../hooks/usePlanStatus';
@@ -34,6 +35,11 @@ export default function InterviewInterface() {
 
   const [devMode, setDevMode] = useState(() => typeof localStorage !== 'undefined' && localStorage.getItem(DEV_MODE_KEY) === 'true');
   const [showEndModal, setShowEndModal] = useState(false);
+
+  useEffect(() => { 
+    
+    return () => clearInterviewAccessToken()}, []);
+  
   const [isEndingInterview, setIsEndingInterview] = useState(false);
   const [endTaskId, setEndTaskId] = useState<string | null>(null);
 
@@ -60,7 +66,7 @@ export default function InterviewInterface() {
   });
 
   const [textInput, setTextInput] = useState('');
-  const { videoRef, videoEnabled, audioEnabled, micLevel, error: mediaError, toggleVideo, toggleAudio, getStream } =
+  const { videoRef, videoEnabled, audioEnabled, micLevel, error: mediaError, toggleVideo, toggleAudio, getStream, streamReady } =
     useMediaDevices();
   const allowVadSendRef = useRef(true);
   const [activeTab, setActiveTab] = useState<'conversation' | 'code' | 'notes'>('conversation');
@@ -75,14 +81,14 @@ export default function InterviewInterface() {
   const waitingForFeedbackRef = useRef(false);
 
   const isCodeInterview =
-    interviewType === 'Technical' ||
-    interviewType === 'Coding' ||
-    interviewType === 'Role-Based Interview' ||
-    interviewType === 'Company' ||
-    interviewType === 'Subject';
+    interviewType === 'technical' ||
+    interviewType === 'coding' ||
+    interviewType === 'role-based' ||
+    interviewType === 'company' ||
+    interviewType === 'subject';
 
-  const isCaseStudy = interviewType === 'Case Study Interview';
-  const isCommunication = interviewType === 'Communication Interview';
+  const isCaseStudy = interviewType === 'case-study';
+  const isCommunication = interviewType === 'miscellaneous'; // TODO: This is a temporary solution due to the backend setup and avoiding tampering a lot of apis, will fix this later as this is an issue avoiding us to add any further miscellaneous interview types.
 
   // Capture case study question when AI sends it (lastNode === 'CaseStudy')
   useEffect(() => {
@@ -123,7 +129,8 @@ export default function InterviewInterface() {
 
   const vad = useMicVAD({
     startOnLoad: false,
-    getStream,
+    getStream: streamReady ? 
+              getStream : () => Promise.resolve(new MediaStream()),
     // Don't stop tracks on pause — we use the same stream for camera/mic level. VAD just disconnects.
     pauseStream: async () => {},
     resumeStream: async (stream: MediaStream) => stream,
@@ -142,7 +149,7 @@ export default function InterviewInterface() {
 
   // Seamless conversation: mic stays on; we only pause *listening* when Glee is speaking so the user
   // never has to click the mic. When AI audio ends, VAD starts again and we capture/send automatically.
-  // Important: only call vad.start() after VAD has finished loading (like old frontend), else start() no-ops.
+  // Important: only call vad.start() after VAD has finished loading and we have an active mic stream.
   useEffect(() => {
     if (isComplete) {
       vad.pause();
@@ -150,11 +157,15 @@ export default function InterviewInterface() {
     }
     if (vad.loading) return; // Wait for model load before starting (matches old frontend)
     if (audioEnabled && !isPlayingAudio && !isSubmitting) {
-      void vad.start();
+      getStream()
+        .then((stream) => {
+          if (stream?.active) void vad.start();
+        })
+        .catch(() => {});
     } else {
       vad.pause();
     }
-  }, [audioEnabled, isPlayingAudio, isSubmitting, isComplete, vad.loading]);
+  }, [audioEnabled, isPlayingAudio, isSubmitting, isComplete, vad.loading, getStream]);
 
   // When it's clearly the user's turn: session active, mic on, VAD ready, AI not speaking, not submitting
   const isUserTurnToSpeak =

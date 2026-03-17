@@ -10,6 +10,22 @@ export type InterviewType =
   | 'Communication'
   | 'Debate';
 
+/** Payload for POST /interview/start (body.payload) */
+export interface StartInterviewPayload {
+  resume?: string;
+  /** Backend may accept number or string (e.g. UUID) */
+  interview_test_id: number | string;
+  Tags?: string[];
+  company?: string;
+  QuestionResearch?: string;
+}
+
+/** Params for starting an interview session */
+export interface StartInterviewParams {
+  sessionId?: string;
+  payload: StartInterviewPayload;
+}
+
 /** Result of POST /interview/start */
 export interface StartInterviewResult {
   sessionId: string;

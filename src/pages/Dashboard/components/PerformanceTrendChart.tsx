@@ -29,18 +29,24 @@ export default function PerformanceTrendChart({ trend, title = 'Overall performa
     );
   }
 
-  const chartData = trend.map(({ date, score }, index) => ({
-    index,
-    dateLabel: date
-      ? new Date(date).toLocaleDateString(undefined, {
+  const chartData = trend.map(({ date, score }, index) => {
+    const isValidDate = date && !Number.isNaN(new Date(date).getTime());
+    const dateLabel = isValidDate
+      ? new Date(date!).toLocaleDateString(undefined, {
           month: 'short',
           day: 'numeric',
           year: '2-digit',
         })
-      : '',
-    score: Number(score),
-    fullDate: date,
-  }));
+      : index === 0
+        ? 'Prev week'
+        : 'This week';
+    return {
+      index,
+      dateLabel,
+      score: Number(score),
+      fullDate: date,
+    };
+  });
 
   return (
     <div className="perf-chart">
@@ -72,10 +78,13 @@ export default function PerformanceTrendChart({ trend, title = 'Overall performa
             }}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: any) => [`${value}%`, 'Score']}
-            labelFormatter={(_, payload) =>
-              payload[0]?.payload?.fullDate ? new Date(payload[0].payload.fullDate).toLocaleDateString() : ''
-            }
-            cursor={{ stroke: CHART_PRIMARY, strokeWidth: 1, strokeDasharray: '3 3' }}
+            labelFormatter={(_, payload) => {
+              const d = payload[0]?.payload?.fullDate;
+              return d && !Number.isNaN(new Date(d).getTime())
+                ? new Date(d).toLocaleDateString()
+                : payload[0]?.payload?.dateLabel ?? '';
+            }}
+            cursor={{ stroke: '#8b5cf6', strokeWidth: 1, strokeDasharray: '3 3' }}
           />
           <Area
             type="monotone"

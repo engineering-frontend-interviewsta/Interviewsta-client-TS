@@ -20,6 +20,7 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refreshToken',
   USER: 'user',
   ROLE: 'role',
+  INTERVIEW_ACCESS_TOKEN: 'interview_access_token',
 } as const;
 
 export const VALIDATION = {

@@ -1,34 +1,36 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import type { PerformanceByType } from '../../../types/dashboard';
-import './PerformanceCharts.css';
+import type { PerformanceResponse } from '../../../types/dashboard';
 
 const TYPE_LABELS: Record<string, string> = {
   technical: 'Technical',
-  hr: 'HR',
-  case_study: 'Case Study',
-  communication: 'Communication',
+  behavioral: 'Behavioral',
+  'role-based': 'Role-based',
+  'case-study': 'Case Study',
   debate: 'Debate',
+  specialised: 'Specialised',
+  miscellaneous: 'Miscellaneous',
 };
 
 const CHART_PRIMARY = '#6d28d9';
 const CHART_GRID = '#f3f0f7';
 
 interface Props {
-  byType: PerformanceByType;
+  /** Data from the performance endpoint (average score per interview type) */
+  performance: PerformanceResponse | null;
 }
 
-export default function PerformanceByTypeBreakdown({ byType }: Props) {
+export default function PerformanceByTypeBreakdown({ performance }: Props) {
   const data =
-    byType != null
-      ? Object.entries(byType).map(([key, val]) => ({
+    performance != null
+      ? Object.entries(performance).map(([key, val]) => ({
           name: TYPE_LABELS[key] || key,
           type: key,
-          avg: val?.avg_score ?? 0,
-          count: val?.count ?? 0,
+          avg: val?.averageScore ?? 0,
+          count: val?.totalSessions ?? 0,
         }))
       : [];
 
-  if (!data.length || data.every((d) => d.count === 0)) {
+  if (!data.length) {
     return (
       <div className="perf-chart">
         <div className="perf-chart__accent" aria-hidden />
@@ -72,4 +74,3 @@ export default function PerformanceByTypeBreakdown({ byType }: Props) {
     </div>
   );
 }
-

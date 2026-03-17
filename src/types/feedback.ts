@@ -1,49 +1,38 @@
-/** Video interview session history / feedback (get-session-history) */
+export interface FeedbackInteractionLog {
+  question?: string;
+  answer?: string;
+  timestamp?: string;
+}
+
+export interface FeedbackInteractionStatusLog {
+  status?: string;
+  comment?: string;
+}
+
+export type FeedbackItems = Record<string, Record<string, number>>;
+
+/** Core interview feedback payload returned under `feedback` */
+export interface InterviewFeedback {
+  id: string;
+  sessionId: string;
+  userId: string;
+  interviewTestId: string;
+  strengths?: string[];
+  areasForImprovements?: string[];
+  interactionLogs?: FeedbackInteractionLog[];
+  interactionStatusLogs?: FeedbackInteractionStatusLog[];
+  items?: FeedbackItems;
+  /** Pre-computed score per sleeve (sleeve name → score). Use when present. */
+  sleeveScore?: Record<string, number>;
+  /** Overall score (may be -1 when not computed) */
+  overallScore?: number;
+  duration?: string;
+  savedAt?: string;
+  updatedAt?: string;
+}
+
+/** Raw API response from /interview-feedback/ */
 export interface SessionHistoryResponse {
-  status?: 'pending' | 'completed' | 'failed';
-  overall_score?: number;
-  detailed_scores?: Record<string, { score?: number; breakdown?: Record<string, number> }>;
-  /** Optional per-category percentiles, when backend provides them */
-  sub_scores?: Record<string, { percentile?: number; total_participants?: number }>;
-  feedback_summary?: {
-    strengths?: string[];
-    areas_of_improvements?: string[];
-    areas_of_improvement?: string[];
-  };
-  skills_scores?: { name: string; score: number }[];
-  interaction_log?: {
-    question?: string;
-    answer?: string;
-    timestamp?: string;
-  }[];
-  interview_test_details?: Record<string, unknown> & { interview_mode?: string };
-  speech_summary?: unknown;
-  /** Optional soft-skill summary (e.g. confidence score) */
-  soft_skill_summary?: {
-    confidence?: number;
-    gaze?: number;
-    nervousness?: number;
-    engagement?: number;
-    distraction?: number;
-    [key: string]: unknown;
-  };
-  allScores?: {
-    percentile?: number;
-    total_participants?: number;
-    all_scores?: number[];
-  };
-  big5_profile?: {
-    A?: number;
-    C?: number;
-    E?: number;
-    N?: number;
-    O?: number;
-  };
-  big5_features?: {
-    openness?: number;
-    conscientiousness?: number;
-    extraversion?: number;
-    agreeableness?: number;
-    neuroticism?: number;
-  };
+  message?: string;
+  feedback?: InterviewFeedback;
 }

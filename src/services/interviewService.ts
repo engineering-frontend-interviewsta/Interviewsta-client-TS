@@ -1,31 +1,108 @@
 import Config from '../config';
-import { fastApiClient } from '../api/axiosInstance';
+import { nestClient, fastApiClient, getInterviewAccessToken as getStoredInterviewAccessToken } from '../api/axiosInstance';
 import { INTERVIEW_ENDPOINTS } from '../constants/apiEndpoints';
 import { getAuthToken } from '../utils/auth';
+import { setInterviewAccessToken } from '../utils/storage';
 import type {
   StartInterviewResult,
+  StartInterviewParams,
   StartTaskStatusResult,
   SubmitResponseResult,
   PollStatusResult,
   AIResponseData,
   InterviewStreamCallbacks,
 } from '../types/interview';
+import type {
+  InterviewTestsPaginatedResponse,
+  ParentInterviewType,
+} from '../types/interviewTest';
+
+const DEFAULT_PAGE_SIZE = 10;
+
+/** Fetch paginated interview tests (All interviews). */
+export async function getInterviewTests(params: {
+  page?: number;
+  limit?: number;
+}): Promise<InterviewTestsPaginatedResponse> {
+  const page = params.page ?? 1;
+  const limit = params.limit ?? DEFAULT_PAGE_SIZE;
+  const response = await nestClient.get<InterviewTestsPaginatedResponse>(
+    INTERVIEW_ENDPOINTS.INTERVIEW_TESTS(String(page), String(limit))
+  );
+  return response.data;
+}
+
+/** Fetch all parent interview types (for tabs). */
+export async function getInterviewParentTypes(): Promise<ParentInterviewType[]> {
+  const response = await nestClient.get<ParentInterviewType[]>(INTERVIEW_ENDPOINTS.PARENT_INTERVIEW_TYPES);
+  const data = response.data;
+  return Array.isArray(data) ? data : [];
+}
+
+/** Fetch paginated interview tests for a given parent type. */
+export async function getInterviewTestsByParentType(
+  parentTypeId: string,
+  params: { page?: number; limit?: number }
+): Promise<InterviewTestsPaginatedResponse> {
+  const page = params.page ?? 1;
+  const limit = params.limit ?? DEFAULT_PAGE_SIZE;
+  const response = await nestClient.get<InterviewTestsPaginatedResponse>(
+    INTERVIEW_ENDPOINTS.BY_PARENT_TYPE(parentTypeId, String(page), String(limit))
+  );
+  return response.data;
+}
+
+/** Error when GET_TOKEN fails (credits, not found, or bad request). */
+export class InterviewAccessTokenError extends Error {
+  code: 400 | 403 | 404;
+  constructor(message: string, code: 400 | 403 | 404) {
+    super(message);
+    this.name = 'InterviewAccessTokenError';
+    this.code = code;
+  }
+}
+
+const GET_TOKEN_ERROR_MESSAGES: Record<number, string> = {
+  400: 'interview_type_id required',
+  403: 'Insufficient credits',
+  404: 'Interview type not found',
+};
+
+/**
+ * Get interview access token (checks credits, returns JWT for interview contract).
+ * Persists the token to sessionStorage so the interview interface can use it for the stream.
+ * @throws {InterviewAccessTokenError} on 400, 403, 404 with server message or default
+ */
+export async function getInterviewAccessToken(interviewTestId: string): Promise<string> {
+  try {
+    const response = await nestClient.get<{ token: string }>(INTERVIEW_ENDPOINTS.GET_TOKEN(interviewTestId));
+    const token = response.data?.token;
+    if (!token) throw new InterviewAccessTokenError('Invalid token response', 400);
+    setInterviewAccessToken(token);
+    return token;
+  } catch (err: unknown) {
+    const status = err && typeof err === 'object' && 'response' in err
+      ? (err as { response?: { status?: number; data?: { message?: string } } }).response?.status
+      : undefined;
+    const message =
+      err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+        : undefined;
+    const code = status === 403 ? 403 : status === 404 ? 404 : 400;
+    const fallback = GET_TOKEN_ERROR_MESSAGES[code] ?? 'Could not get interview access';
+    throw new InterviewAccessTokenError(message ?? fallback, code);
+  }
+}
 
 /**
  * Start a new interview session.
+ * Request body: { session_id, payload: { resume?, interview_test_id, Tags?, company?, QuestionResearch? } }
  */
-export async function startInterview(params: {
-  interviewType: string;
-  userId: string;
-  payload: Record<string, unknown>;
-  sessionId?: string;
-}): Promise<StartInterviewResult> {
+export async function startInterview(params: StartInterviewParams): Promise<StartInterviewResult> {
   const finalSessionId = params.sessionId ?? crypto.randomUUID();
   const response = await fastApiClient.post(INTERVIEW_ENDPOINTS.START, {
-    interview_type: params.interviewType,
     session_id: finalSessionId,
-    user_id: params.userId,
-    payload: params.payload ?? {},
+    payload: params.payload,
   });
   const data = response.data as {
     session_id?: string;
@@ -207,13 +284,18 @@ export async function getInterviewFeedbackStatus(taskId: string): Promise<{
 }
 
 /**
- * Build SSE stream URL with token (Config is the only place that knows base URL).
+ * Build SSE stream URL per API spec:
+ * GET /api/v1/interview/{session_id}/stream?token={bearer_jwt}&interview_access_token={interview_contract_jwt}
  */
-function getStreamUrl(sessionId: string, token: string): string {
+function getStreamUrl(sessionId: string, bearerJwt: string, interviewContractJwt: string): string {
   const base = Config.FASTAPI_BASE_URL;
   const path = INTERVIEW_ENDPOINTS.STREAM(sessionId);
   const full = base.endsWith('/') ? `${base.slice(0, -1)}${path}` : `${base}${path}`;
-  return `${full}?token=${encodeURIComponent(token)}`;
+  const params = new URLSearchParams({
+    token: bearerJwt,
+    interview_access_token: interviewContractJwt,
+  });
+  return `${full}?${params.toString()}`;
 }
 
 function processAIResponse(data: {
@@ -237,13 +319,19 @@ function processAIResponse(data: {
 
 /**
  * Connect to interview SSE stream. Returns { close } to disconnect.
+ * Requires interview access token to be set (set before start, cleared on leave).
  */
 export function connectToInterviewStream(
   sessionId: string,
   callbacks: InterviewStreamCallbacks
 ): { close: () => void } {
-  const token = getAuthToken();
-  const url = getStreamUrl(sessionId, token);
+  const bearerJwt = getAuthToken();
+  const interviewContractJwt = getStoredInterviewAccessToken();
+  if (!interviewContractJwt) {
+    callbacks.onError?.('Interview session token missing. Please start the interview again.');
+    return { close: () => {} };
+  }
+  const url = getStreamUrl(sessionId, bearerJwt, interviewContractJwt);
   let eventSource: EventSource | null = new EventSource(url);
   let reconnectAttempts = 0;
   const maxReconnectAttempts = 10;

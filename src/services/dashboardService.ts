@@ -1,123 +1,152 @@
-import { djangoClient } from '../api/axiosInstance';
+import { nestClient } from '../api/axiosInstance';
 import { DASHBOARD_ENDPOINTS } from '../constants/apiEndpoints';
 import type {
-  VideoInterviewReportRaw,
-  ResumeReportRaw,
+  LatestStatsResponse,
+  PerformanceResponse,
+  RecentResumeSessionsResponse,
+  RecentInterviewSessionsResponse,
+  InterviewSessionRaw,
+  ResumeSessionRaw,
   VideoInterviewReport,
   ResumeReport,
-  RecentActivityItem,
-  ClassroomStats,
   PerformanceAnalysis,
+  PerformanceTrendPoint,
+  PerformanceByType,
+  InterviewTypeKey,
+  RecentActivityItem,
 } from '../types/dashboard';
 
-// Dashboard data is lightweight; always fetch fresh for simplicity.
 export function clearDashboardCache(): void {
-  // no-op now that we always fetch fresh data
+  // no-op
 }
 
-/** Fetch latest video interview stats (always hits API) */
-export async function getLatestStats(): Promise<VideoInterviewReportRaw[]> {
-  const res = await djangoClient.get(DASHBOARD_ENDPOINTS.LATEST_STATS);
-  return Array.isArray(res.data) ? res.data : [];
+/** Fetch latest-stats (performance trend: this week vs last week) */
+export async function getLatestStats(): Promise<LatestStatsResponse> {
+  const res = await nestClient.get<LatestStatsResponse>(DASHBOARD_ENDPOINTS.LATEST_STATS);
+  return res.data;
 }
 
-/** Fetch resume progress / reports (always hits API) */
-export async function getResumeProgress(): Promise<ResumeReportRaw[]> {
-  const res = await djangoClient.get(DASHBOARD_ENDPOINTS.RESUME_PROGRESS);
-  return Array.isArray(res.data) ? res.data : [];
+/** Fetch recent-resume-sessions */
+export async function getResumeSessions(): Promise<RecentResumeSessionsResponse> {
+  const res = await nestClient.get<RecentResumeSessionsResponse>(DASHBOARD_ENDPOINTS.RESUME_SESSIONS);
+  return res.data;
 }
 
-/** Student performance analysis */
-export async function getPerformanceAnalysis(): Promise<PerformanceAnalysis | null> {
-  const res = await djangoClient.get(DASHBOARD_ENDPOINTS.PERFORMANCE_ANALYSIS).catch(() => ({ data: null }));
-  const data = res?.data;
-  if (!data) return null;
-  return data as PerformanceAnalysis;
+/** Fetch performance (overall per interview type) */
+export async function getPerformance(): Promise<PerformanceResponse | null> {
+  const res = await nestClient.get<PerformanceResponse>(DASHBOARD_ENDPOINTS.PERFORMANCE).catch(() => ({ data: null }));
+  return res?.data ?? null;
 }
 
-/** Classroom stats (classes, time slots, assignments) */
-export async function getClassroomStats(): Promise<ClassroomStats> {
-  const [classesRes, slotsRes, assignRes] = await Promise.all([
-    djangoClient.get(DASHBOARD_ENDPOINTS.CLASSES),
-    djangoClient.get(DASHBOARD_ENDPOINTS.TIME_SLOTS),
-    djangoClient.get(DASHBOARD_ENDPOINTS.ASSIGNMENTS),
-  ]);
-  const classes = (classesRes.data as { results?: unknown[] })?.results ?? (Array.isArray(classesRes.data) ? classesRes.data : []);
-  const slots = (slotsRes.data as { results?: unknown[] })?.results ?? (Array.isArray(slotsRes.data) ? slotsRes.data : []);
-  const assignments = (assignRes.data as { results?: unknown[] })?.results ?? (Array.isArray(assignRes.data) ? assignRes.data : []);
-  const enrolledClasses = Array.isArray(classes) ? classes.filter((c: { is_student?: boolean }) => c.is_student) : [];
-  const upcomingSlots = Array.isArray(slots) ? slots.filter((s: { status?: string }) => s.status === 'available') : [];
+/** Fetch recent-interview-sessions */
+export async function getInterviewSessions(): Promise<RecentInterviewSessionsResponse | null> {
+  const res = await nestClient
+    .get<RecentInterviewSessionsResponse>(DASHBOARD_ENDPOINTS.INTERVIEW_SESSIONS)
+    .catch(() => ({ data: null }));
+  return res?.data ?? null;
+}
+
+/** Build trend array from latest-stats diffLastWeek (this week vs last week) */
+function buildTrendFromLatestStats(latest: LatestStatsResponse): PerformanceTrendPoint[] {
+  const { currentWeek, prevWeek } = latest.diffLastWeek ?? { currentWeek: {}, prevWeek: {} };
+  const keys = Object.keys(currentWeek || {}) as InterviewTypeKey[];
+  const prevAvg =
+    keys.length > 0
+      ? keys.reduce((s, k) => s + (prevWeek?.[k]?.score ?? 0), 0) / keys.length
+      : 0;
+  const currAvg =
+    keys.length > 0
+      ? keys.reduce((s, k) => s + (currentWeek?.[k]?.score ?? 0), 0) / keys.length
+      : 0;
+  const prevDate = latest.prevWeekStartDate ?? null;
+  const currDate = latest.currentWeekStartDate ?? null;
+  return [
+    { date: prevDate, score: Math.round(prevAvg) },
+    { date: currDate, score: Math.round(currAvg) },
+  ];
+}
+
+/** Build PerformanceAnalysis from latest-stats + performance responses */
+export function buildPerformanceAnalysis(
+  latest: LatestStatsResponse | null,
+  performance: PerformanceResponse | null
+): PerformanceAnalysis | null {
+  const by_type: PerformanceByType = {};
+  if (performance) {
+    (Object.keys(performance) as InterviewTypeKey[]).forEach((key) => {
+      const p = performance[key];
+      if (p) by_type[key] = { count: p.totalSessions, avg_score: p.averageScore };
+    });
+  }
+  const trend = latest ? buildTrendFromLatestStats(latest) : [];
   return {
-    classesJoined: enrolledClasses.length,
-    upcomingSlots: upcomingSlots.length,
-    assignments: assignments.length,
+    by_type,
+    overall: {
+      total_sessions: latest?.totalSessions ?? 0,
+      overall_avg: latest?.overallAvg ?? 0,
+      final_rank: latest?.finalRank,
+      trend,
+    },
   };
 }
 
-/** Map raw video report to UI shape. Caller can pass interviewTypeLookup for title/difficulty/topics. */
+/** Map interview session (recent-interview-sessions) to UI VideoInterviewReport */
 export function mapVideoReport(
-  item: VideoInterviewReportRaw,
-  interviewTypeLookup?: (interviewId: number) => { title?: string; category?: string; difficulty?: string; topics?: string[] } | null
+  item: InterviewSessionRaw,
+  _interviewTypeLookup?: (interviewId: number) => { title?: string; category?: string; difficulty?: string; topics?: string[] } | null
 ): VideoInterviewReport {
-  const interviewId = item.interview_id ?? item.id;
-  const meta = interviewTypeLookup?.(interviewId);
-  const typeLabel = item.company ?? item.subject ?? item.interview_type ?? meta?.category ?? 'Interview';
-  return {
-    id: interviewId,
-    type: typeLabel,
-    title: item.title ?? meta?.title ?? 'Interview',
-    date: new Date(item.created_at).toLocaleDateString(),
-    duration: item.duration ?? 0,
-    score: item.overall_score,
-    status: 'completed',
-    difficulty: meta?.difficulty,
-    topics: meta?.topics,
-    interviewType: item.interview_type,
-    company: item.company,
-    subject: item.subject,
-    sessionId: item.session_id,
-    rank: item.rank,
-  };
-}
-
-/** Map raw resume report to UI shape */
-export function mapResumeReport(item: ResumeReportRaw): ResumeReport {
+  const test = item.interviewTest ?? {};
+  const parent = item.parentInterviewType ?? {};
   return {
     id: item.id,
-    fileName: item.resume_name ?? 'Resume',
-    date: new Date(item.created_at).toLocaleDateString(),
-    overallScore: item.overall_score,
-    jobMatchScore: item.job_match_score,
-    targetRole: item.role,
-    company: item.company,
-    keyStrengths: item.strengths,
-    improvements: item.weaknesses,
+    type: parent.type ?? test.company ?? test.subject ?? 'Interview',
+    title: test.title ?? 'Interview',
+    date: item.savedAt ? new Date(item.savedAt).toLocaleDateString() : '',
+    duration: test.duration ?? 0,
+    score: item.overallScore,
+    status: 'completed',
+    difficulty: test.difficulty,
+    topics: test.topics,
+    interviewType: parent.type,
+    company: test.company ?? undefined,
+    subject: test.subject ?? undefined,
+    sessionId: item.id,
   };
 }
 
-/** Build recent activity list (combined and sorted by date, then slice). */
+/** Map resume session (recent-resume-sessions) to UI ResumeReport */
+export function mapResumeReport(item: ResumeSessionRaw): ResumeReport {
+  return {
+    id: item.id,
+    fileName: item.resumeName ?? 'Resume',
+    date: '', // API doesn't provide date; could use sessionId or leave empty
+    overallScore: item.score,
+    jobMatchScore: undefined,
+    targetRole: item.role || undefined,
+    company: item.company || undefined,
+    keyStrengths: item.foundKeywords?.length ? item.foundKeywords : undefined,
+    improvements: item.notFoundKeywords?.length ? item.notFoundKeywords : undefined,
+  };
+}
+
+/** Build recent activity list (combined and sorted). Uses new session shapes. */
 export function buildRecentActivity(
-  videoRaw: VideoInterviewReportRaw[],
-  resumeRaw: ResumeReportRaw[],
-  interviewTypeLookup: (interviewId: number) => { title?: string; questions?: number; duration?: number; difficulty?: string } | null,
+  interviewSessions: InterviewSessionRaw[],
+  resumeSessions: ResumeSessionRaw[],
   limit: number
 ): RecentActivityItem[] {
-  const combined: { created_at: string; interview_id?: number; resume_name?: string; overall_score?: number }[] = [
-    ...videoRaw,
-    ...resumeRaw,
+  const withDate = [
+    ...interviewSessions.map((s) => ({ at: s.savedAt, title: s.interviewTest?.title ?? 'Interview', score: s.overallScore })),
+    ...resumeSessions.map((s) => ({ at: '', title: s.resumeName, score: s.score })),
   ];
-  combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  return combined.slice(0, limit).map((item, index) => {
-    const hasInterview = 'interview_id' in item && item.interview_id != null;
-    const meta = hasInterview ? interviewTypeLookup(item.interview_id!) : null;
-    return {
-      id: index,
-      title: meta?.title ?? (item as ResumeReportRaw).resume_name ?? 'Activity',
-      questions: meta?.questions ?? null,
-      difficulty: meta?.difficulty ?? null,
-      score: item.overall_score,
-      duration: meta?.duration ?? null,
-      completedAt: new Date(item.created_at).toLocaleDateString(),
-    };
-  });
+  withDate.sort((a, b) => (b.at ? new Date(b.at).getTime() : 0) - (a.at ? new Date(a.at).getTime() : 0));
+  return withDate.slice(0, limit).map((item, index) => ({
+    id: index,
+    title: item.title ?? 'Activity',
+    questions: null,
+    difficulty: null,
+    score: item.score,
+    duration: null,
+    completedAt: item.at ? new Date(item.at).toLocaleDateString() : '',
+  }));
 }

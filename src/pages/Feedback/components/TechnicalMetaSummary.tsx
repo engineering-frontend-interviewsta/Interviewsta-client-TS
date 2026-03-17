@@ -1,43 +1,23 @@
-import type { SessionHistoryResponse } from '../../../types/feedback';
+import type { InterviewFeedback } from '../../../types/feedback';
 
 interface TechnicalMetaSummaryProps {
-  data: SessionHistoryResponse;
+  data: InterviewFeedback;
 }
 
 export default function TechnicalMetaSummary({ data }: TechnicalMetaSummaryProps) {
-  const overall = Math.trunc(data.overall_score ?? 0);
+  const baseOverall = data.overallScore ?? 0;
+  const overall = baseOverall < 0 ? 0 : Math.trunc(baseOverall);
 
-  // Soft-skill derived scores (fallback to overall)
-  const soft = (data as any).soft_skill_summary as
-    | { confidence?: number }
-    | undefined;
-  const confidence = Math.round(soft?.confidence ?? overall);
+  // Simple derived meta scores from overall
+  const confidence = Math.round(overall);
   const hiringReadiness = Math.min(overall + 10, 95);
   const technicalReadiness = Math.min(overall + 5, 90);
-
-  // Percentiles from sub_scores if present
-  const subScores = (data as any).sub_scores as
-    | Record<string, { percentile?: number; total_participants?: number }>
-    | undefined;
-
-  const techPercentile = Math.round(
-    subScores?.Technical?.percentile ??
-      subScores?.['Technical Skills']?.percentile ??
-      0
-  );
-  const psPercentile = Math.round(
-    subScores?.['Problem Solving']?.percentile ??
-      subScores?.['Problem Solving Skills']?.percentile ??
-      0
-  );
 
   const hasAnyMeta =
     overall > 0 ||
     confidence > 0 ||
     hiringReadiness > 0 ||
-    technicalReadiness > 0 ||
-    techPercentile > 0 ||
-    psPercentile > 0;
+    technicalReadiness > 0;
 
   if (!hasAnyMeta) return null;
 
@@ -46,27 +26,11 @@ export default function TechnicalMetaSummary({ data }: TechnicalMetaSummaryProps
       <h2 className="text-sm font-medium text-gray-800 mb-4">
         Technical performance summary
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-1">
         <Metric label="Interview confidence" value={confidence} />
         <Metric label="Hiring readiness" value={hiringReadiness} />
         <Metric label="Technical readiness" value={technicalReadiness} />
       </div>
-      {(techPercentile > 0 || psPercentile > 0) && (
-        <div className="flex flex-wrap gap-4 text-xs text-gray-600">
-          {techPercentile > 0 && (
-            <span>
-              Technical skills: top <span className="font-semibold">{techPercentile}%</span>{' '}
-              of candidates
-            </span>
-          )}
-          {psPercentile > 0 && (
-            <span>
-              Problem solving: top{' '}
-              <span className="font-semibold">{psPercentile}%</span> of candidates
-            </span>
-          )}
-        </div>
-      )}
     </div>
   );
 }
