@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as authService from '../services/authService';
-import { setAccessToken, setRole, clearAuthStorage } from '../utils/storage';
+import { setAccessToken, setRefreshToken, setRole, clearAuthStorage } from '../utils/storage';
 import type { AuthResult, User } from '../types/auth';
 import { ROUTES } from '../constants/routerConstants';
 
@@ -87,7 +87,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const refreshResponse = await authService.refresh();
         const token = refreshResponse.data.accessToken;
+        const refreshToken = (refreshResponse.data as { refreshToken?: string }).refreshToken ?? null;
         setAccessToken(token);
+        setRefreshToken(refreshToken);
         const meResponse = await authService.me();
         const userData = meResponse.data;
         const roles = toRoles(userData);
@@ -112,8 +114,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = useCallback(async (email: string, password: string): Promise<AuthResult> => {
     try {
       const response = await authService.login(email, password);
-      const { accessToken, user: u } = response.data;
+      const { accessToken, refreshToken, user: u } = response.data;
       setAccessToken(accessToken);
+      setRefreshToken(refreshToken ?? null);
       const roles = toRoles(u);
       setRole(roles?.[0] ?? null);
       const user = authService.toUser(u);
@@ -139,12 +142,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     ): Promise<AuthResult> => {
       try {
         const response = await authService.register(name, email, password, roles, phone, country);
-        const { accessToken, user: u } = response.data;
-        const cookie =
-          (response as { headers?: { 'set-cookie'?: string | string[] } }).headers?.['set-cookie'] ??
-          (response.data as { cookie?: string }).cookie;
-        console.log('[DEBUG] register response', { cookie, data: response.data });
+        const { accessToken, refreshToken, user: u } = response.data;
         setAccessToken(accessToken);
+        setRefreshToken(refreshToken ?? null);
         const roleList = toRoles(u);
         setRole(roleList?.[0] ?? null);
         const user = authService.toUser(u);
@@ -168,8 +168,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const redirectUri =
           typeof window !== 'undefined' ? `${window.location.origin}${ROUTES.AUTH_CALLBACK}` : '';
         const response = await authService.googleLogin(code, redirectUri, role);
-        const { accessToken, user: u } = response.data;
+        const { accessToken, refreshToken, user: u } = response.data;
         setAccessToken(accessToken);
+        setRefreshToken(refreshToken ?? null);
         const roleList = toRoles(u);
         setRole(roleList?.[0] ?? null);
         const user = authService.toUser(u);
@@ -197,8 +198,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const redirectUri =
           typeof window !== 'undefined' ? `${window.location.origin}${ROUTES.AUTH_CALLBACK}` : '';
         const response = await authService.githubLogin(code, redirectUri, role);
-        const { accessToken, user: u } = response.data;
+        const { accessToken, refreshToken, user: u } = response.data;
         setAccessToken(accessToken);
+        setRefreshToken(refreshToken ?? null);
         const roleList = toRoles(u);
         setRole(roleList?.[0] ?? null);
         const user = authService.toUser(u);

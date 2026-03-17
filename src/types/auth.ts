@@ -9,6 +9,8 @@ export interface User {
 /** Backend auth response (login, register, google, github) */
 export interface AuthApiResponse {
   accessToken: string;
+  /** Optional refresh token (present on login/register/refresh when supported by backend) */
+  refreshToken?: string;
   user: {
     email: string;
     name: string;

@@ -38,8 +38,8 @@ export async function logout(): Promise<void> {
   await nestClient.post(AUTH_ENDPOINTS.LOGOUT);
 }
 
-export async function refresh(): Promise<{ data: { accessToken: string } }> {
-  return nestClient.post<{ accessToken: string }>(AUTH_ENDPOINTS.REFRESH);
+export async function refresh(): Promise<{ data: { accessToken: string; refreshToken?: string } }> {
+  return nestClient.post<{ accessToken: string; refreshToken?: string }>(AUTH_ENDPOINTS.REFRESH);
 }
 
 export async function me(): Promise<{ data: AuthApiResponse['user'] }> {
