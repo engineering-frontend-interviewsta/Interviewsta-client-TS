@@ -1,0 +1,45 @@
+/* Resume reports card – same pattern as VideoReportsCard, scores layout + empty CTA. */
+
+.resume-card__item-scores {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.resume-card__item-scores span {
+  margin: 0.125rem 0;
+}
+
+.resume-card__item-scores strong {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.reports-card__empty-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: white;
+  background: var(--color-primary);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.reports-card__empty-cta:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.reports-card__empty-cta:hover {
+  background: var(--color-primary-muted);
+  color: white;
+}

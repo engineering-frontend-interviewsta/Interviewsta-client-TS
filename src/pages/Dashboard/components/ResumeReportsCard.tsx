@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import { ChevronRight, FileUp, FileText } from 'lucide-react';
 import type { ResumeReport } from '../../../types/dashboard';
 import { ROUTES } from '../../../constants/routerConstants';
+import './VideoReportsCard.css';
+import './ResumeReportsCard.css';
 
 interface ResumeReportsCardProps {
   reports: ResumeReport[];
@@ -43,13 +46,20 @@ export default function ResumeReportsCard({ reports, onReportClick }: ResumeRepo
                     {report.jobMatchScore != null && <span>Match: {report.jobMatchScore}%</span>}
                   </div>
                 </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-xs text-gray-500 text-center py-6">No resume analysis reports yet</p>
-        )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="reports-card__empty">
+          <span className="reports-card__empty-icon" aria-hidden><FileUp size={32} strokeWidth={1.5} /></span>
+          <p className="reports-card__empty-text">No resume analysis reports yet</p>
+          <Link to={ROUTES.RESUME_ANALYSIS} className="reports-card__empty-cta">
+            Upload your first resume
+          </Link>
+        </div>
+      )}
       </div>
-    </div>
+    </article>
   );
 }

@@ -1,4 +1,14 @@
+import { Code2, Users, Briefcase, MessageCircle, MessageSquare } from 'lucide-react';
 import type { PerformanceByType, PerformanceOverall } from '../../../types/dashboard';
+import './PerformanceOverviewCards.css';
+
+const TYPE_ICONS = {
+  technical: Code2,
+  hr: Users,
+  case_study: Briefcase,
+  communication: MessageCircle,
+  debate: MessageSquare,
+} as const;
 
 const TYPE_CONFIG: { key: keyof PerformanceByType; label: string; sublabel: string }[] = [
   { key: 'technical', label: 'Technical', sublabel: 'Coding / System design' },
@@ -20,29 +30,33 @@ export default function PerformanceOverviewCards({ byType, overall }: Props) {
   const overallAvg = overall?.overall_avg ?? 0;
 
   return (
-    <div className="space-y-4">
-      <div className="border border-gray-200 rounded-lg p-4">
-        <h3 className="font-semibold text-gray-900 mb-1">Overall performance</h3>
-        <p className="text-sm text-gray-600 mb-2">Across all interview types</p>
-        <p className="text-2xl font-bold text-gray-900">{overallAvg}%</p>
-        <p className="text-xs text-gray-500 mt-1">{totalSessions} total sessions</p>
+    <div className="perf-overview">
+      <div className="perf-overview__hero">
+        <h3 className="perf-overview__hero-title">Overall performance</h3>
+        <p className="perf-overview__hero-subtitle">Across all interview types</p>
+        <p className="perf-overview__hero-value">{overallAvg}%</p>
+        <p className="perf-overview__hero-meta">{totalSessions} total sessions</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {TYPE_CONFIG.map((config) => {
           const data = byType?.[config.key] ?? { count: 0, avg_score: 0 };
+          const Icon = TYPE_ICONS[config.key];
           return (
             <div
               key={String(config.key)}
               className="border border-gray-200 rounded-lg p-4 text-sm flex flex-col justify-between"
             >
               <div>
-                <h4 className="font-semibold text-gray-900">{config.label}</h4>
-                <p className="text-xs text-gray-500">{config.sublabel}</p>
+                <span className="perf-overview__type-icon" aria-hidden>
+                  {Icon && <Icon size={20} strokeWidth={2} />}
+                </span>
+                <h4 className="perf-overview__type-label">{config.label}</h4>
+                <p className="perf-overview__type-sublabel">{config.sublabel}</p>
               </div>
-              <div className="flex justify-between items-baseline">
-                <span className="text-xl font-bold text-gray-900">{data.avg_score}%</span>
-                <span className="text-xs text-gray-600">{data.count} sessions</span>
+              <div className="perf-overview__type-row">
+                <span className="perf-overview__type-value">{data.avg_score}%</span>
+                <span className="perf-overview__type-meta">{data.count} sessions</span>
               </div>
             </div>
           );

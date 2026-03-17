@@ -11,6 +11,9 @@ const TYPE_LABELS: Record<string, string> = {
   miscellaneous: 'Miscellaneous',
 };
 
+const CHART_PRIMARY = '#6d28d9';
+const CHART_GRID = '#f3f0f7';
+
 interface Props {
   /** Data from the performance endpoint (average score per interview type) */
   performance: PerformanceResponse | null;
@@ -29,32 +32,45 @@ export default function PerformanceByTypeBreakdown({ performance }: Props) {
 
   if (!data.length) {
     return (
-      <div className="border border-gray-200 rounded-lg p-4 text-center text-sm text-gray-500">
-        <p className="text-gray-500 font-medium">No breakdown yet</p>
-        <p className="text-gray-400 text-sm mt-1">Your average per interview type will appear here.</p>
+      <div className="perf-chart">
+        <div className="perf-chart__accent" aria-hidden />
+        <div className="perf-chart__inner">
+          <h3 className="perf-chart__title">Average score by type</h3>
+          <div className="perf-chart__empty">
+            <p className="perf-chart__empty-title">No breakdown yet</p>
+            <p className="perf-chart__empty-text">Your average per interview type will appear here.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4">
-      <h3 className="font-semibold text-gray-900 mb-3 text-sm">Average score by type</h3>
+    <div className="perf-chart">
+      <div className="perf-chart__accent" aria-hidden />
+      <div className="perf-chart__inner">
+        <h3 className="perf-chart__title">Average score by type</h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
           <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
           <YAxis type="category" dataKey="name" width={75} tick={{ fontSize: 12, fontWeight: 600 }} />
           <Tooltip
-            contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb' }}
+            contentStyle={{
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--color-border-light)',
+              fontFamily: 'var(--font-sans)',
+            }}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: any, _name, props: any) => {
               const count = props?.payload?.count ?? 0;
               return [`${value}% avg · ${count} sessions`, 'Score'];
             }}
           />
-          <Bar dataKey="avg" fill="#8b5cf6" radius={[0, 6, 6, 0]} name="Average" />
+          <Bar dataKey="avg" fill={CHART_PRIMARY} radius={[0, 6, 6, 0]} name="Average" />
         </BarChart>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 }

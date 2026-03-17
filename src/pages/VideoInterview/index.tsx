@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Video, Search, ArrowLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   startInterview,
@@ -14,10 +15,18 @@ import { setInterviewAccessToken, clearInterviewAccessToken } from '../../api/ax
 import { ROUTES } from '../../constants/routerConstants';
 import type { InterviewTest, ParentInterviewType } from '../../types/interviewTest';
 import InterviewLoadingPopup from './components/InterviewLoadingPopup';
+import './VideoInterview.css';
 
 const START_POLL_MS = 1500;
 const START_POLL_MAX = 60;
 const PAGE_SIZE = 10;
+
+function getDifficultyClass(difficulty: string): 'easy' | 'medium' | 'hard' {
+  const d = (difficulty || '').toLowerCase();
+  if (d === 'easy') return 'easy';
+  if (d === 'hard') return 'hard';
+  return 'medium';
+}
 
 export default function VideoInterview() {
   const { user } = useAuth();
@@ -186,14 +195,23 @@ export default function VideoInterview() {
   return (
     <>
       {starting && <InterviewLoadingPopup progress={startProgress} />}
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Video Interview</h1>
-          <p className="text-gray-600 mb-4">
-            {user?.displayName ?? user?.email ?? 'User'}, choose an interview type to start.
-          </p>
+      <main className="video-interview" role="main" aria-label="Video Interview">
+        <div className="video-interview__inner">
+          <header className="video-interview__header">
+            <div className="video-interview__title-row">
+              <span className="video-interview__title-icon" aria-hidden>
+                <Video />
+              </span>
+              <h1 className="video-interview__title">Interview Library</h1>
+            </div>
+            <p className="video-interview__subtitle">
+              Explore interview types by category—company, role, DSA, case study, and more. Pick one and start your practice session.
+            </p>
+          </header>
           {startError && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">{startError}</div>
+            <div className="video-interview__error" role="alert">
+              {startError}
+            </div>
           )}
 
           <div className="mb-4 flex flex-wrap gap-2">
@@ -254,6 +272,17 @@ export default function VideoInterview() {
                     {test.description && (
                       <p className="text-sm text-gray-600 mt-1 line-clamp-2">{test.description}</p>
                     )}
+                    <div className="video-interview__card-footer">
+                      <button
+                        type="button"
+                        disabled={starting}
+                        onClick={() => handleStart(opt)}
+                        className="video-interview__btn-start"
+                      >
+                        {starting ? 'Starting…' : 'Start interview'}
+                        <ChevronRight aria-hidden />
+                      </button>
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -274,7 +303,7 @@ export default function VideoInterview() {
             Back to Dashboard
           </Link>
         </div>
-      </div>
+      </main>
     </>
   );
 }

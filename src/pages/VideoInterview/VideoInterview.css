@@ -1,0 +1,442 @@
+/* ==========================================================================
+   Video Interview – Interview Library style
+   Hero, toolbar (filters + search), grid of premium cards. Purple theme.
+   ========================================================================== */
+
+.video-interview {
+  min-height: 100vh;
+  background: var(--color-surface-alt);
+  padding: 2rem 1.25rem 3.5rem;
+}
+
+@media (min-width: 768px) {
+  .video-interview {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .video-interview {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+.video-interview__inner {
+  width: 100%;
+}
+
+/* ----- Hero / Page header ----- */
+.video-interview__header {
+  margin-bottom: 2rem;
+}
+
+.video-interview__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.video-interview__title-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.video-interview__title-icon svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.video-interview__title {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.video-interview__subtitle {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  margin: 0;
+  max-width: 36rem;
+  line-height: var(--leading-snug);
+}
+
+/* ----- Error ----- */
+.video-interview__error {
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  font-size: var(--text-sm);
+  color: #b91c1c;
+}
+
+/* ----- Toolbar: filters + search ----- */
+.video-interview__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.video-interview__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.video-interview__pill {
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.video-interview__pill:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary-muted);
+  color: var(--color-primary-dark);
+}
+
+.video-interview__pill:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.video-interview__pill--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.video-interview__pill--active:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: white;
+}
+
+/* Search in toolbar */
+.video-interview__search-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 20rem;
+}
+
+.video-interview__search-wrap svg {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--color-text-subtle);
+  pointer-events: none;
+}
+
+.video-interview__search {
+  width: 100%;
+  padding: 0.625rem 1rem 0.625rem 2.75rem;
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.video-interview__search::placeholder {
+  color: var(--color-text-subtle);
+}
+
+.video-interview__search:hover {
+  border-color: var(--color-border);
+}
+
+.video-interview__search:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+/* ----- Grid of cards ----- */
+.video-interview__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+@media (min-width: 640px) {
+  .video-interview__list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .video-interview__list {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+.video-interview__empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  border: 1px dashed var(--color-border);
+}
+
+.video-interview__empty-icon {
+  color: var(--color-text-subtle);
+}
+
+.video-interview__empty-icon svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+/* ----- Interview card (premium) ----- */
+.video-interview__card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.video-interview__card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border);
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-interview__card {
+    transition: none;
+  }
+  .video-interview__card:hover {
+    transform: none;
+  }
+}
+
+/* Card header strip (gradient accent) */
+.video-interview__card-header {
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary) 0%,
+    var(--color-primary-muted) 100%
+  );
+  flex-shrink: 0;
+}
+
+.video-interview__card-body {
+  padding: 1.25rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Tags row: category + difficulty + duration */
+.video-interview__card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.video-interview__card-tag {
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.video-interview__card-tag--category {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.video-interview__card-tag--easy {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.video-interview__card-tag--medium {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.video-interview__card-tag--hard {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.video-interview__card-tag--duration {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  font-weight: 500;
+  text-transform: none;
+}
+
+.video-interview__card-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.01em;
+  line-height: var(--leading-tight);
+}
+
+.video-interview__card-description {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: var(--leading-snug);
+  flex: 1;
+}
+
+.video-interview__card-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-light);
+  flex-shrink: 0;
+}
+
+.video-interview__btn-start {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  font-family: var(--font-sans);
+  color: white;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+.video-interview__btn-start:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.video-interview__btn-start:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.video-interview__btn-start:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.video-interview__btn-start svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* ----- Back link ----- */
+.video-interview__back-wrap {
+  margin-top: 0.5rem;
+}
+
+.video-interview__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.video-interview__back:hover {
+  color: var(--color-primary-hover);
+}
+
+.video-interview__back:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.video-interview__back svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ----- Staggered entrance ----- */
+.video-interview__card {
+  animation: slide-up var(--duration-slow) var(--ease-out) backwards;
+}
+
+.video-interview__card:nth-child(1) { animation-delay: 0ms; }
+.video-interview__card:nth-child(2) { animation-delay: 50ms; }
+.video-interview__card:nth-child(3) { animation-delay: 100ms; }
+.video-interview__card:nth-child(4) { animation-delay: 150ms; }
+.video-interview__card:nth-child(5) { animation-delay: 200ms; }
+.video-interview__card:nth-child(6) { animation-delay: 250ms; }
+.video-interview__card:nth-child(7) { animation-delay: 300ms; }
+.video-interview__card:nth-child(8) { animation-delay: 350ms; }
+.video-interview__card:nth-child(9) { animation-delay: 400ms; }
+.video-interview__card:nth-child(n+10) { animation-delay: 450ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .video-interview__card {
+    animation: none;
+  }
+}

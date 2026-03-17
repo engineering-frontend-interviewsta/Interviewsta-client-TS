@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BarChart3, FileText, GraduationCap } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   getLatestStats,
@@ -21,6 +22,7 @@ import PerformanceOverviewCards from './components/PerformanceOverviewCards';
 import PerformanceTrendChart from './components/PerformanceTrendChart';
 import PerformanceByTypeBreakdown from './components/PerformanceByTypeBreakdown';
 import { ROUTES } from '../../constants/routerConstants';
+import './Dashboard.css';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -101,30 +103,45 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
-      <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="dashboard">
+      <div className="dashboard__inner">
         <DashboardHeader displayName={user?.displayName ?? user?.email ?? null} />
         <DashboardQuickLinks />
 
         {performanceAnalysis && (
-          <div className="mb-8 space-y-6">
+          <section className="dashboard__section dashboard__section--performance" aria-labelledby="performance-heading">
+            <div className="dashboard__section-header">
+              <h2 id="performance-heading" className="dashboard__section-title">
+                <span className="dashboard__section-title-icon" aria-hidden>
+                  <BarChart3 />
+                </span>
+                Performance overview
+              </h2>
+              <p className="dashboard__section-subtitle">Your scores across interview types and over time</p>
+            </div>
             <PerformanceOverviewCards byType={performanceAnalysis.by_type} overall={performanceAnalysis.overall} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="dashboard__grid-cols-2">
               <PerformanceTrendChart trend={performanceAnalysis.overall.trend} title="Overall performance trend" />
               <PerformanceByTypeBreakdown performance={performanceByType} />
             </div>
-          </div>
+          </section>
         )}
 
-        <div className="mb-4">
-          <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-1">Past Reports & Analysis</h2>
-          <p className="text-sm text-gray-600">Review your interview performance and resume insights</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <VideoReportsCard reports={videoReports} onReportClick={handleVideoReportClick} />
-          <ResumeReportsCard reports={resumeReports} onReportClick={handleResumeReportClick} />
-        </div>
+        <section className="dashboard__section" aria-labelledby="reports-heading">
+          <div className="dashboard__section-header">
+            <h2 id="reports-heading" className="dashboard__section-title">
+              <span className="dashboard__section-title-icon" aria-hidden>
+                <FileText />
+              </span>
+              Past Reports & Analysis
+            </h2>
+            <p className="dashboard__section-subtitle">Review your interview performance and resume insights</p>
+          </div>
+          <div className="dashboard__grid-cols-2">
+            <VideoReportsCard reports={videoReports} onReportClick={handleVideoReportClick} />
+            <ResumeReportsCard reports={resumeReports} onReportClick={handleResumeReportClick} />
+          </div>
+        </section>
       </div>
     </div>
   );
