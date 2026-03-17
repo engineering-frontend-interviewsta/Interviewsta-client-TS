@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../../constants/routerConstants';
+import './StudentInterviewHistory.css';
 
 export default function StudentInterviewHistory() {
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Interview History</h1>
-        <p className="text-gray-600 mb-6">Past video interviews and reports. (To be migrated.)</p>
-        <Link to={ROUTES.DASHBOARD} className="text-blue-600 hover:underline">
+    <div className="student-interview-history">
+      <div className="student-interview-history__inner">
+        <h1 className="student-interview-history__title">Interview History</h1>
+        <p className="student-interview-history__subtitle">Past video interviews and reports. (To be migrated.)</p>
+        <Link to={ROUTES.DASHBOARD} className="student-interview-history__back">
           Back to Dashboard
         </Link>
       </div>

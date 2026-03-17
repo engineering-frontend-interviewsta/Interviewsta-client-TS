@@ -4,6 +4,7 @@ import { submitResumeForAnalysis } from '../../services/resumeService';
 import type { ResumeAnalysisResult } from '../../services/resumeService';
 import { ROUTES } from '../../constants/routerConstants';
 import { Upload } from 'lucide-react';
+import './ResumeAnalysisFlow.css';
 
 export default function ResumeAnalysisFlow() {
   const [file, setFile] = useState<File | null>(null);
@@ -38,54 +39,50 @@ export default function ResumeAnalysisFlow() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Resume Analysis</h1>
-        <p className="text-gray-600 mb-6">
+    <div className="resume-flow">
+      <div className="resume-flow__inner">
+        <h1 className="resume-flow__title">Resume Analysis</h1>
+        <p className="resume-flow__subtitle">
           Upload your resume to get AI-powered feedback and job-fit insights.
         </p>
         {!result ? (
           <>
-            <form onSubmit={handleSubmit} className="space-y-4 mb-6">
-              <div className="rounded-xl border-2 border-dashed border-gray-200 bg-white p-8 text-center">
-                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <label className="block">
-                  <span className="text-blue-600 hover:underline cursor-pointer font-medium">
-                    Choose file
-                  </span>
+            <form onSubmit={handleSubmit}>
+              <div className="resume-flow__dropzone">
+                <div className="resume-flow__dropzone-icon">
+                  <Upload aria-hidden />
+                </div>
+                <label className="resume-flow__dropzone-label">
+                  Choose file
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx"
-                    className="hidden"
+                    className="resume-flow__file-input"
                     onChange={handleFileChange}
                   />
                 </label>
-                {file && <p className="mt-2 text-sm text-gray-600">{file.name}</p>}
+                {file && <p className="resume-flow__dropzone-file">{file.name}</p>}
               </div>
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              <button
-                type="submit"
-                disabled={loading || !file}
-                className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
+              {error && <p className="resume-flow__error" role="alert">{error}</p>}
+              <button type="submit" disabled={loading || !file} className="resume-flow__btn-primary">
                 {loading ? 'Analyzing…' : 'Analyze resume'}
               </button>
             </form>
           </>
         ) : (
-          <div className="space-y-6">
-            <div className="rounded-xl bg-white border border-gray-100 p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Results</h2>
+          <div>
+            <div className="resume-flow__results">
+              <h2 className="resume-flow__results-title">Results</h2>
               {result.overall_score != null && (
-                <p className="text-2xl font-bold text-blue-600 mb-4">{result.overall_score}% overall</p>
+                <p className="resume-flow__results-score">{result.overall_score}% overall</p>
               )}
               {result.job_match_score != null && (
-                <p className="text-gray-600 mb-4">Job match: {result.job_match_score}%</p>
+                <p className="resume-flow__results-meta">Job match: {result.job_match_score}%</p>
               )}
               {result.strengths && result.strengths.length > 0 && (
-                <div className="mb-4">
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Strengths</h3>
-                  <ul className="list-disc list-inside text-gray-600 text-sm">
+                <div className="resume-flow__results-section">
+                  <h3 className="resume-flow__results-section-title">Strengths</h3>
+                  <ul className="resume-flow__results-list">
                     {result.strengths.map((s, i) => (
                       <li key={i}>{s}</li>
                     ))}
@@ -93,9 +90,9 @@ export default function ResumeAnalysisFlow() {
                 </div>
               )}
               {result.weaknesses && result.weaknesses.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Areas to improve</h3>
-                  <ul className="list-disc list-inside text-gray-600 text-sm">
+                <div className="resume-flow__results-section">
+                  <h3 className="resume-flow__results-section-title">Areas to improve</h3>
+                  <ul className="resume-flow__results-list">
                     {result.weaknesses.map((s, i) => (
                       <li key={i}>{s}</li>
                     ))}
@@ -106,13 +103,13 @@ export default function ResumeAnalysisFlow() {
             <button
               type="button"
               onClick={() => { setResult(null); setFile(null); }}
-              className="px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-100"
+              className="resume-flow__btn-secondary"
             >
               Analyze another
             </button>
           </div>
         )}
-        <Link to={ROUTES.DASHBOARD} className="text-blue-600 hover:underline block mt-6">
+        <Link to={ROUTES.DASHBOARD} className="resume-flow__back">
           Back to Dashboard
         </Link>
       </div>

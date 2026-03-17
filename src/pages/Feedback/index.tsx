@@ -8,6 +8,7 @@ import ScoreBreakdown from './components/ScoreBreakdown';
 import StrengthsAndImprovements from './components/StrengthsAndImprovements';
 import TechnicalMetaSummary from './components/TechnicalMetaSummary';
 import TechnicalExtras from './components/TechnicalExtras';
+import './Feedback.css';
 
 export type FeedbackLocationState = {
   type: 'video-interview' | 'resume-analysis';
@@ -99,19 +100,11 @@ export default function Feedback() {
         : null;
 
   if (!effectiveState?.type) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Redirecting…</p>
-      </div>
-    );
+    return <div className="feedback-page__redirect">Redirecting…</div>;
   }
 
   if (loading && effectiveState.type === 'video-interview') {
-    return (
-      <div className="min-h-screen bg-gray-50 py-10 px-4 flex items-center justify-center">
-        <div className="text-gray-600">Loading feedback…</div>
-      </div>
-    );
+    return <div className="feedback-page__loading">Loading feedback…</div>;
   }
 
   // Derive a simple, robust interview type label for technical feedback
@@ -131,38 +124,27 @@ export default function Feedback() {
     (state && 'date' in state ? (state as FeedbackLocationState & { date?: string }).date : undefined);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-4xl mx-auto">
-        <Link
-          to={backPath}
-          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" />
+    <div className="feedback-page">
+      <div className="feedback-page__inner">
+        <Link to={backPath} className="feedback-page__back">
+          <ArrowLeft aria-hidden />
           Back
         </Link>
 
-        <div className="mb-6 rounded-xl bg-white border border-gray-100 p-5 shadow-sm">
-          <h1 className="text-xl font-semibold text-gray-900 mb-1">{headerTitle}</h1>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+        <div className="feedback-page__header-card">
+          <h1 className="feedback-page__header-title">{headerTitle}</h1>
+          <div className="feedback-page__header-meta">
             {headerDate && <span>{new Date(headerDate).toLocaleString()}</span>}
             {effectiveState.type === 'video-interview' && (
-              <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-medium text-blue-700">
-                {resolvedInterviewType}
-              </span>
+              <span className="feedback-page__badge feedback-page__badge--video">{resolvedInterviewType}</span>
             )}
             {effectiveState.type === 'resume-analysis' && (
-              <span className="inline-flex items-center rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-[11px] font-medium text-purple-700">
-                Resume Analysis
-              </span>
+              <span className="feedback-page__badge feedback-page__badge--resume">Resume Analysis</span>
             )}
           </div>
         </div>
 
-        {error && (
-          <div className="rounded-lg bg-red-50 text-red-700 p-4 mb-6 text-sm">
-            {error}
-          </div>
-        )}
+        {error && <div className="feedback-page__error" role="alert">{error}</div>}
 
         {effectiveState.type === 'video-interview' && videoFeedback && !error && (
           <div className="space-y-5">
@@ -183,8 +165,8 @@ export default function Feedback() {
         )}
 
         {effectiveState.type === 'resume-analysis' && (
-          <div className="rounded-xl bg-white border border-gray-100 p-6 shadow-sm">
-            <p className="text-sm text-gray-600">
+          <div className="feedback-page__section">
+            <p className="feedback-page__pending" style={{ margin: 0 }}>
               Resume analysis feedback view can be expanded here (e.g. fetch by resume_id).
             </p>
           </div>

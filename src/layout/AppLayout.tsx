@@ -51,6 +51,9 @@ export default function AppLayout() {
         ? ROUTES.TEACHER_DASHBOARD
         : ROUTES.STUDENT_DASHBOARD;
 
+  /* Header "Dashboard" nav link goes to student dashboard; admin uses dropdown for Admin. */
+  const headerDashboardPath = role === 'admin' ? ROUTES.STUDENT_DASHBOARD : dashboardPath;
+
   const displayName = user.displayName ?? user.email ?? 'User';
   const initial = getInitial(user.displayName ?? null, user.email ?? null);
 

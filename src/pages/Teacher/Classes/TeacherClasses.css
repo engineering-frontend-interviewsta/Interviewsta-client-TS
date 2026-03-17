@@ -1,0 +1,108 @@
+/* ==========================================================================
+   Teacher Classes – list of classes. Purple theme.
+   ========================================================================== */
+
+.teacher-classes {
+  min-height: 100vh;
+  background: var(--color-surface-alt);
+  padding: 2rem 1.25rem 3rem;
+}
+
+@media (min-width: 768px) {
+  .teacher-classes {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .teacher-classes {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+.teacher-classes__inner {
+  width: 100%;
+  max-width: 36rem;
+  margin: 0 auto;
+}
+
+.teacher-classes__title {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.02em;
+}
+
+.teacher-classes__subtitle {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  margin: 0 0 1.5rem;
+}
+
+.teacher-classes__error {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  font-size: var(--text-sm);
+  color: #b91c1c;
+}
+
+.teacher-classes__empty {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0 0 1.5rem;
+}
+
+.teacher-classes__list {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.teacher-classes__card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.teacher-classes__card-name {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.teacher-classes__card-code {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-left: auto;
+}
+
+.teacher-classes__back {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.teacher-classes__back:hover {
+  color: var(--color-primary-hover);
+}
+
+.teacher-classes__back:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
