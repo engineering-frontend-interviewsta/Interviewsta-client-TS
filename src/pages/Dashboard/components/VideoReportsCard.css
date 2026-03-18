@@ -4,10 +4,10 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  background: var(--color-surface);
+  background: #ffffff;
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-border-light);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   min-height: 12rem;
   overflow: hidden;
   transition: box-shadow var(--duration-fast) var(--ease-out),
@@ -15,14 +15,12 @@
 }
 
 .reports-card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   border-color: var(--color-border);
 }
 
 .reports-card__accent {
-  height: 4px;
-  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-muted) 100%);
-  flex-shrink: 0;
+  display: none;
 }
 
 .reports-card__body {

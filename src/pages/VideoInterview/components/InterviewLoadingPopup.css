@@ -14,7 +14,7 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: var(--color-surface-alt);
+  background: #ffffff;
   overflow-y: auto;
   animation: fade-in var(--duration-normal) var(--ease-out) forwards;
 }
@@ -38,10 +38,10 @@
   width: 100%;
   max-width: 32rem;
   padding: 3rem;
-  background: var(--color-surface);
+  background: #ffffff;
   border-radius: var(--radius-2xl);
   border: 1px solid var(--color-border-light);
-  box-shadow: var(--shadow-lg);
+  box-shadow: none;
   overflow: hidden;
   animation: slide-up var(--duration-slow) var(--ease-out) backwards;
   animation-delay: 50ms;
@@ -56,12 +56,8 @@
 .interview-loading-popup__card-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    160deg,
-    var(--color-primary-light) 0%,
-    var(--color-surface) 60%
-  );
-  opacity: 0.6;
+  background: transparent;
+  opacity: 0;
   pointer-events: none;
 }
 
@@ -82,13 +78,10 @@
   width: 5rem;
   height: 5rem;
   margin-bottom: 1rem;
-  background: linear-gradient(
-    135deg,
-    var(--color-primary) 0%,
-    var(--color-primary-muted) 100%
-  );
+  background: #ffffff;
+  border: 1px solid var(--color-border-light);
   border-radius: 50%;
-  box-shadow: var(--shadow-md);
+  box-shadow: none;
 }
 
 .interview-loading-popup__icon-wrap svg {
@@ -118,15 +111,15 @@
   gap: 1rem;
   padding: 1rem 1.25rem;
   border-radius: var(--radius-xl);
-  border: 2px solid var(--color-border);
-  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-light);
+  background: #ffffff;
   transition: background-color var(--duration-normal) var(--ease-out),
     border-color var(--duration-normal) var(--ease-out);
 }
 
 .interview-loading-popup__stage--current {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary-muted);
+  background: #f3f4f6;
+  border-color: var(--color-border);
 }
 
 .interview-loading-popup__stage--completed {
@@ -151,7 +144,7 @@
 }
 
 .interview-loading-popup__stage--current .interview-loading-popup__stage-icon svg {
-  color: var(--color-primary);
+  color: var(--color-text, #0f172a);
 }
 
 .interview-loading-popup__stage--completed .interview-loading-popup__stage-icon svg {
@@ -195,11 +188,7 @@
 
 .interview-loading-popup__progress-bar {
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--color-primary) 0%,
-    var(--color-primary-muted) 100%
-  );
+  background: linear-gradient(90deg, #0f172a 0%, #6b7280 100%);
   border-radius: 9999px;
   transition: width var(--duration-normal) var(--ease-out);
 }

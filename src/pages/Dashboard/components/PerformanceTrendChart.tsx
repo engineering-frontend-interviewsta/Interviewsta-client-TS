@@ -8,10 +8,10 @@ interface Props {
   height?: number;
 }
 
-/* Hex for Recharts SVG (theme primary #6d28d9) */
-const CHART_PRIMARY = '#6d28d9';
-const CHART_GRID = '#f3f0f7';
-const CHART_AXIS = '#5c5466';
+/* Neutral chart palette for white theme */
+const CHART_PRIMARY = '#0f172a';
+const CHART_GRID = '#e5e7eb';
+const CHART_AXIS = '#6b7280';
 
 export default function PerformanceTrendChart({ trend, title = 'Overall performance trend', height = 280 }: Props) {
   if (!trend || trend.length === 0) {
@@ -84,7 +84,7 @@ export default function PerformanceTrendChart({ trend, title = 'Overall performa
                 ? new Date(d).toLocaleDateString()
                 : payload[0]?.payload?.dateLabel ?? '';
             }}
-            cursor={{ stroke: '#8b5cf6', strokeWidth: 1, strokeDasharray: '3 3' }}
+            cursor={{ stroke: CHART_AXIS, strokeWidth: 1, strokeDasharray: '3 3' }}
           />
           <Area
             type="monotone"
