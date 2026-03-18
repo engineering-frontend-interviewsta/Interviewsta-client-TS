@@ -58,15 +58,17 @@ export const FEEDBACK_ENDPOINTS = {
   SESSION_HISTORY: '/interview-feedback/',
 } as const;
 
-/** Billing & account (Django) */
+/** Billing & account (customer-management) */
 export const BILLING_ENDPOINTS = {
-  ACCOUNT: 'billing/account/',
+  /** GET subscription + legacy user/account (camelCase) */
+  ACCOUNT: '/customer-management/subscription/me',
   PLAN_STATUS: 'billing/plan-status/',
-  FEEDBACK_ACCESS: 'billing/feedback-access/',
-  TRANSACTIONS: (page: number) => `billing/transactions/?page=${page}`,
+  /** GET feedback access for current user */
+  FEEDBACK_ACCESS: '/customer-management/subscription/feedback-access',
+  /** GET paginated transactions */
+  TRANSACTIONS: (page: number) => `/customer-management/transactions?page=${page}`,
   CREATE_ORDER: 'billing/create-order/',
   VERIFY_PAYMENT: 'billing/verify-payment/',
-  API_KEYS: 'billing/api-keys/',
   ADMIN_USERS: (page: number) => `billing/admin/users/?page=${page}`,
   ADMIN_DASHBOARD: 'billing/admin/dashboard/',
   ADMIN_USER_TIER: (userId: number) => `billing/admin/users/${userId}/tier/`,
