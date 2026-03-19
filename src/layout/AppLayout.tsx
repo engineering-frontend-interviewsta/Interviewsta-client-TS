@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, LogOut, ChevronDown, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ROUTES } from '../constants/routerConstants';
 import LoadingFallback from '../components/shared/LoadingFallback';
@@ -127,6 +127,16 @@ export default function AppLayout() {
                   >
                     Users
                   </Link>
+                  <Link
+                    to={ROUTES.ADMIN_INTERVIEW_THUMBNAILS}
+                    className={`app-layout__nav-link ${
+                      location.pathname === ROUTES.ADMIN_INTERVIEW_THUMBNAILS
+                        ? 'app-layout__nav-link--active'
+                        : ''
+                    }`}
+                  >
+                    Thumbnails
+                  </Link>
                 </>
               )}
             </nav>
@@ -178,6 +188,15 @@ export default function AppLayout() {
                       >
                         <Users size={18} strokeWidth={2} aria-hidden />
                         <span>Users</span>
+                      </Link>
+                      <Link
+                        to={ROUTES.ADMIN_INTERVIEW_THUMBNAILS}
+                        className="app-layout__user-item"
+                        role="menuitem"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <ImageIcon size={18} strokeWidth={2} aria-hidden />
+                        <span>Thumbnails</span>
                       </Link>
                     </>
                   )}

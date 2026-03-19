@@ -144,6 +144,14 @@ export default function AdminDashboard() {
               <UserCog aria-hidden />
               Users
             </Link>
+            <Link
+              to={ROUTES.ADMIN_INTERVIEW_THUMBNAILS}
+              className="admin-dashboard__btn-primary"
+              style={{ paddingLeft: '0.85rem', paddingRight: '0.85rem' }}
+            >
+              <Video aria-hidden />
+              Thumbnails
+            </Link>
           </div>
         </header>
 

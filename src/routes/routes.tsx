@@ -31,6 +31,7 @@ const StudentClasses = lazyWithRetry(() => import('../pages/Student/Classes'));
 const StudentInterviewHistory = lazyWithRetry(() => import('../pages/Student/InterviewHistory'));
 const AdminDashboard = lazyWithRetry(() => import('../pages/Admin/Dashboard'));
 const AdminUsers = lazyWithRetry(() => import('../pages/Admin/Users'));
+const AdminInterviewThumbnails = lazyWithRetry(() => import('../pages/Admin/InterviewThumbnails'));
 const Account = lazyWithRetry(() => import('../pages/Account'));
 const Learning = lazyWithRetry(() => import('../pages/Learning'));
 const LearningArrays = lazyWithRetry(() => import('../pages/Learning/Arrays'));
@@ -120,6 +121,7 @@ const routeConfig = [
     children: [
       { path: 'dashboard', element: <AdminDashboard /> },
       { path: 'users', element: <AdminUsers /> },
+      { path: 'interview-thumbnails', element: <AdminInterviewThumbnails /> },
     ],
   },
   {

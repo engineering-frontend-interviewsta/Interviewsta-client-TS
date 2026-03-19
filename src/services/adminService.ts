@@ -1,5 +1,5 @@
 import { nestClient } from '../api/axiosInstance';
-import { BILLING_ENDPOINTS } from '../constants/apiEndpoints';
+import { ADMIN_INTERVIEW_THUMBNAILS_ENDPOINTS, BILLING_ENDPOINTS } from '../constants/apiEndpoints';
 import type {
   AdminDashboardData,
   AdminUsersResponse,
@@ -26,4 +26,18 @@ export async function updateUserTier(
 
 export async function deleteUser(userId: number): Promise<void> {
   await nestClient.delete(BILLING_ENDPOINTS.ADMIN_USER_DELETE(userId));
+}
+
+export async function uploadInterviewThumbnail(interviewTestId: string, file: File): Promise<string | null> {
+  const formData = new FormData();
+  formData.append('thumbnail', file);
+
+  const res = await nestClient.post(
+    ADMIN_INTERVIEW_THUMBNAILS_ENDPOINTS.UPLOAD_THUMBNAIL(interviewTestId),
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
+
+  const data = res.data as { thumbnailUrl?: string | null };
+  return data.thumbnailUrl ?? null;
 }
