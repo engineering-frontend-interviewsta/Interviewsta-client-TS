@@ -12,20 +12,21 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  getAdminUsers,
-  updateUserTier,
-  deleteUser,
+  getNestAdminUsers,
+  updateNestUserRole,
+  deleteNestUser,
 } from '../../../services/adminService';
 import { ROUTES } from '../../../constants/routerConstants';
-import type { AdminUser } from '../../../types/admin';
+import type { AdminUserView } from '../../../types/account';
 import './AdminUsers.css';
 
-const TIER_OPTIONS = [
-  { value: 0, label: 'Free' },
-  { value: 1, label: 'Pro' },
-  { value: 2, label: 'Pro Plus' },
-  { value: 3, label: 'Organisation' },
-  { value: 4, label: 'Developer' },
+const ROLE_OPTIONS = [
+  { value: 'user',        label: 'User'         },
+  { value: 'student',     label: 'Student'      },
+  { value: 'teacher',     label: 'Teacher'      },
+  { value: 'admin',       label: 'Admin'        },
+  { value: 'admin_staff', label: 'Admin Staff'  },
+  { value: 'developer',   label: 'Developer'    },
 ];
 
 function DeleteModal({
@@ -34,7 +35,7 @@ function DeleteModal({
   onCancel,
   deleting,
 }: {
-  user: AdminUser | null;
+  user: AdminUserView | null;
   onConfirm: () => void;
   onCancel: () => void;
   deleting: boolean;
@@ -83,14 +84,6 @@ function DeleteModal({
   );
 }
 
-function TierBadge({ tier, tierName }: { tier: number; tierName: string }) {
-  return (
-    <span className={`admin-users__badge admin-users__badge--tier-${tier}`}>
-      {tierName}
-    </span>
-  );
-}
-
 function RoleBadge({ role }: { role: string }) {
   return (
     <span className={`admin-users__badge admin-users__badge--role-${role}`}>
@@ -100,27 +93,26 @@ function RoleBadge({ role }: { role: string }) {
 }
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [users, setUsers] = useState<AdminUserView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [updatingTier, setUpdatingTier] = useState<number | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [updatingRole, setUpdatingRole] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUserView | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  const PAGE_SIZE = 20;
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const fetchUsers = useCallback(async (p: number) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await getAdminUsers(p);
-      setUsers(res.results ?? []);
-      setTotalCount(res.count ?? 0);
+      const res = await getNestAdminUsers(p);
+      setUsers(res.data ?? []);
+      setTotalCount(res.total ?? 0);
+      setTotalPages(res.totalPages ?? 1);
     } catch {
       setError('Could not load users.');
     } finally {
@@ -132,27 +124,17 @@ export default function AdminUsers() {
     fetchUsers(page);
   }, [page, fetchUsers]);
 
-  const handleTierChange = async (userId: number, newTier: number) => {
-    setUpdatingTier(userId);
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    setUpdatingRole(userId);
     try {
-      const updated = await updateUserTier(userId, newTier);
+      const updated = await updateNestUserRole(userId, newRole);
       setUsers((prev) =>
-        prev.map((u) =>
-          u.id === userId
-            ? {
-                ...u,
-                tier: updated.tier,
-                tier_name: updated.tier_name,
-                total_credits: updated.total_credits,
-                remaining_credits: updated.remaining_credits,
-              }
-            : u
-        )
+        prev.map((u) => (u.id === userId ? { ...u, roles: updated.roles, isWhitelisted: updated.isWhitelisted } : u))
       );
     } catch {
-      alert('Update failed.');
+      alert('Role update failed.');
     } finally {
-      setUpdatingTier(null);
+      setUpdatingRole(null);
     }
   };
 
@@ -160,7 +142,7 @@ export default function AdminUsers() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await deleteUser(deleteTarget.id);
+      await deleteNestUser(deleteTarget.id);
       setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
       setTotalCount((c) => c - 1);
       setDeleteTarget(null);
@@ -175,7 +157,7 @@ export default function AdminUsers() {
     const q = searchQuery.toLowerCase();
     const matchSearch =
       u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
-    const matchRole = roleFilter === 'all' || u.app_role === roleFilter;
+    const matchRole = roleFilter === 'all' || u.roles.includes(roleFilter);
     return matchSearch && matchRole;
   });
 
@@ -226,6 +208,7 @@ export default function AdminUsers() {
             <option value="student">Student</option>
             <option value="teacher">Teacher</option>
             <option value="admin">Admin</option>
+            <option value="developer">Developer</option>
           </select>
         </div>
 
@@ -235,12 +218,11 @@ export default function AdminUsers() {
               <thead>
                 <tr>
                   <th>User</th>
+                  <th>ID</th>
                   <th>Role</th>
-                  <th>Tier</th>
-                  <th style={{ textAlign: 'right' }}>Credits</th>
                   <th style={{ textAlign: 'right' }}>Interviews</th>
                   <th>Joined</th>
-                  <th>Tier</th>
+                  <th>Change Role</th>
                   <th style={{ width: '2.5rem' }} />
                 </tr>
               </thead>
@@ -248,7 +230,7 @@ export default function AdminUsers() {
                 {loading ? (
                   [...Array(8)].map((_, i) => (
                     <tr key={i}>
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map((j) => (
+                      {[1, 2, 3, 4, 5, 6, 7].map((j) => (
                         <td key={j} className="admin-users__loading-cell">
                           <div className="admin-users__loading-skeleton" />
                         </td>
@@ -257,7 +239,7 @@ export default function AdminUsers() {
                   ))
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="admin-users__empty">
+                    <td colSpan={7} className="admin-users__empty">
                       No users match.
                     </td>
                   </tr>
@@ -268,14 +250,20 @@ export default function AdminUsers() {
                         <p className="admin-users__user-name">{u.name}</p>
                         <p className="admin-users__user-email">{u.email}</p>
                       </td>
-                      <td><RoleBadge role={u.app_role} /></td>
-                      <td><TierBadge tier={u.tier} tierName={u.tier_name} /></td>
-                      <td style={{ textAlign: 'right', fontWeight: 500 }}>
-                        {u.remaining_credits === -1 ? '∞' : u.remaining_credits}
+                      <td>
+                        <code className="admin-users__user-id">{u.id.slice(0, 8)}…</code>
                       </td>
-                      <td style={{ textAlign: 'right' }}>{u.interview_count ?? 0}</td>
+                      <td>
+                        <div className="admin-users__role-badges">
+                          {u.roles.map((r) => <RoleBadge key={r} role={r} />)}
+                          {u.isWhitelisted && (
+                            <span className="admin-users__badge admin-users__badge--whitelist">Whitelisted</span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>{u.interviewCount ?? 0}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        {new Date(u.date_joined).toLocaleDateString('en-GB', {
+                        {new Date(u.createdAt).toLocaleDateString('en-GB', {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
@@ -283,16 +271,16 @@ export default function AdminUsers() {
                       </td>
                       <td>
                         <select
-                          value={u.tier}
-                          disabled={updatingTier === u.id}
-                          onChange={(e) => handleTierChange(u.id, Number(e.target.value))}
+                          value={u.roles[0] ?? 'user'}
+                          disabled={updatingRole === u.id}
+                          onChange={(e) => handleRoleChange(u.id, e.target.value)}
                           className="admin-users__tier-select"
                         >
-                          {TIER_OPTIONS.map((o) => (
+                          {ROLE_OPTIONS.map((o) => (
                             <option key={o.value} value={o.value}>{o.label}</option>
                           ))}
                         </select>
-                        {updatingTier === u.id && <span className="admin-users__tier-spinner" />}
+                        {updatingRole === u.id && <span className="admin-users__tier-spinner" />}
                       </td>
                       <td>
                         <button

@@ -123,7 +123,13 @@
 
 @media (min-width: 1024px) {
   .admin-dashboard__stat-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .admin-dashboard__stat-grid {
+    grid-template-columns: repeat(6, 1fr);
   }
 }
 

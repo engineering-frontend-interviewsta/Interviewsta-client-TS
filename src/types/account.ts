@@ -140,3 +140,84 @@ export interface PlanStatus {
   has_time_limit?: boolean;
   tier?: number;
 }
+
+// ─── Payment / Razorpay ────────────────────────────────────────────────────
+
+export type OrderType = 'plan_upgrade' | 'credit_purchase';
+
+export interface CreateOrderPayload {
+  type: OrderType;
+  tierId?: string;
+  amountPaise?: number;
+  billingInterval?: 'monthly' | 'annual';
+}
+
+export interface RazorpayOrderResult {
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+}
+
+export interface VerifyPaymentPayload {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+  type: OrderType;
+  tierId?: string;
+  billingInterval?: 'monthly' | 'annual';
+  amountPaise?: number;
+}
+
+export interface VerifyPaymentResult {
+  success: boolean;
+  creditsAdded?: number;
+}
+
+export interface PlanTierInfo {
+  id: string;
+  name: string;
+  slug: string;
+  credits: number;
+  monthlyPaise: number;
+  annualPaise: number;
+}
+
+// ─── Admin user management (NestJS /user/admin/*) ─────────────────────────
+
+export interface AdminUserView {
+  id: string;
+  name: string;
+  email: string;
+  roles: string[];
+  isWhitelisted: boolean;
+  interviewCount: number;
+  createdAt: string;
+}
+
+export interface AdminUsersPage {
+  data: AdminUserView[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface AdminPlatformStats {
+  totalUsers: number;
+  totalAdmins: number;
+  totalDevelopers: number;
+  totalInterviews: number;
+}
+
+// ─── Active sessions ───────────────────────────────────────────────────────
+
+export interface UserSession {
+  id: string;
+  userId: string;
+  deviceInfo?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  isRevoked: boolean;
+  createdAt: string;
+  lastUsedAt: string;
+}

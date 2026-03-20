@@ -31,3 +31,22 @@ export const VALIDATION = {
 export const TOKEN = {
   EXPIRY_BUFFER_SECONDS: 300,
 } as const;
+
+export const PLAN_TIERS = {
+  FREE:     { tier: 0, slug: 'free',         name: 'Free',         credits: 4,   priceInr: 0,    priceDisplay: 'Free'    },
+  PRO:      { tier: 1, slug: 'pro',          name: 'Pro',          credits: 20,  priceInr: 830,  priceDisplay: '₹830/mo' },
+  PRO_PLUS: { tier: 2, slug: 'pro-plus',     name: 'Pro+',         credits: 60,  priceInr: 1660, priceDisplay: '₹1660/mo'},
+  ORG:      { tier: 3, slug: 'organisation', name: 'Organization', credits: -1,  priceInr: -1,   priceDisplay: 'Custom'  },
+  DEV:      { tier: 4, slug: 'developer',    name: 'Developer',    credits: -1,  priceInr: 0,    priceDisplay: 'Internal'},
+} as const;
+
+export const CREDIT_COSTS = {
+  INTERVIEW: 2,
+  RESUME: 1,
+} as const;
+
+/** Approximate INR per USD used for credit preview calculations */
+export const USD_TO_INR = 83;
+
+/** 2 credits per $1 spent (on-demand purchases) */
+export const CREDITS_PER_DOLLAR = 2;

@@ -11,6 +11,8 @@ import {
   AlertCircle,
   LayoutGrid,
   UserCog,
+  Code2,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   BarChart,
@@ -27,9 +29,10 @@ import {
   PieChart,
   Pie,
 } from 'recharts';
-import { getAdminDashboard } from '../../../services/adminService';
+import { getAdminDashboard, getNestAdminStats } from '../../../services/adminService';
 import { ROUTES } from '../../../constants/routerConstants';
 import type { AdminDashboardData } from '../../../types/admin';
+import type { AdminPlatformStats } from '../../../types/account';
 import './AdminDashboard.css';
 
 const TIER_FILL: Record<string, string> = {
@@ -66,6 +69,7 @@ function StatBlock({
 
 export default function AdminDashboard() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
+  const [nestStats, setNestStats] = useState<AdminPlatformStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,10 +77,15 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const res = await getAdminDashboard();
-      setData(res);
-    } catch {
-      setError('Could not load dashboard.');
+      const [res, stats] = await Promise.allSettled([
+        getAdminDashboard(),
+        getNestAdminStats(),
+      ]);
+      if (res.status === 'fulfilled') setData(res.value);
+      if (stats.status === 'fulfilled') setNestStats(stats.value);
+      if (res.status === 'rejected' && stats.status === 'rejected') {
+        setError('Could not load dashboard.');
+      }
     } finally {
       setLoading(false);
     }
@@ -116,16 +125,14 @@ export default function AdminDashboard() {
     );
   }
 
-  if (data == null) return null;
+  if (data == null && nestStats == null) return null;
 
-  const {
-    overview,
-    users_by_tier,
-    interview_type_breakdown,
-    monthly_trend,
-    top_performers,
-    bottom_performers,
-  } = data;
+  const overview = data?.overview;
+  const users_by_tier = data?.users_by_tier ?? [];
+  const interview_type_breakdown = data?.interview_type_breakdown ?? [];
+  const monthly_trend = data?.monthly_trend ?? [];
+  const top_performers = data?.top_performers ?? [];
+  const bottom_performers = data?.bottom_performers ?? [];
 
   return (
     <div className="admin-dashboard">
@@ -148,10 +155,12 @@ export default function AdminDashboard() {
         </header>
 
         <section className="admin-dashboard__stat-grid">
-          <StatBlock label="Total users" value={overview.total_users} icon={Users} />
-          <StatBlock label="Avg. interview score" value={`${overview.avg_score}%`} icon={Award} />
-          <StatBlock label="Interviews" value={overview.total_interviews} icon={Video} />
-          <StatBlock label="Resume analyses" value={overview.total_resumes} icon={FileText} />
+          <StatBlock label="Total users" value={nestStats?.totalUsers ?? overview?.total_users ?? 0} icon={Users} />
+          <StatBlock label="Avg. interview score" value={overview ? `${overview.avg_score}%` : '—'} icon={Award} />
+          <StatBlock label="Interviews" value={nestStats?.totalInterviews ?? overview?.total_interviews ?? 0} icon={Video} />
+          <StatBlock label="Resume analyses" value={overview?.total_resumes ?? 0} icon={FileText} />
+          <StatBlock label="Admins" value={nestStats?.totalAdmins ?? 0} icon={ShieldCheck} />
+          <StatBlock label="Developers" value={nestStats?.totalDevelopers ?? 0} icon={Code2} />
         </section>
 
         <section className="admin-dashboard__section">
@@ -177,7 +186,7 @@ export default function AdminDashboard() {
                           borderRadius: 6,
                           backgroundColor: '#fff',
                         }}
-                        formatter={(v: number) => [v, 'Users']}
+                        formatter={(v) => [v ?? 0, 'Users']}
                       />
                       <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={48}>
                         {users_by_tier.map((e) => (

@@ -538,3 +538,35 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+/* ─── New NestJS-connected elements ──────────────────────────────────────── */
+.admin-users__user-id {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+  background: #f1f5f9;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.admin-users__role-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.admin-users__badge--whitelist {
+  background: #fef3c7;
+  color: #d97706;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.admin-users__badge--role-developer { background: #f0fdf4; color: #16a34a; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+.admin-users__badge--role-admin     { background: #fef3c7; color: #d97706; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+.admin-users__badge--role-admin_staff { background: #fef3c7; color: #d97706; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+.admin-users__badge--role-teacher   { background: #eff6ff; color: #2563eb; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+.admin-users__badge--role-student   { background: #f5f3ff; color: #7c3aed; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+.admin-users__badge--role-user      { background: #f8fafc; color: #64748b; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
