@@ -31,6 +31,7 @@ export interface InterviewTest {
   credits: number;
   isActive: boolean;
   parent: InterviewTestParent;
+  thumbnailUrl?: string | null;
 }
 
 /** Paginated response for interview tests */

@@ -134,3 +134,9 @@ export const RESUME_APP_ENDPOINTS = {
   GET_RESUME_HR: 'get-resume-hr/',
   GET_RESUME_TECHNICAL: 'get-resume-technical/',
 } as const;
+
+/** Admin – interview test thumbnails */
+export const ADMIN_INTERVIEW_THUMBNAILS_ENDPOINTS = {
+  UPLOAD_THUMBNAIL: (interviewTestId: string) =>
+    `/admin/interview-thumbnails/${interviewTestId}/thumbnail`,
+} as const;

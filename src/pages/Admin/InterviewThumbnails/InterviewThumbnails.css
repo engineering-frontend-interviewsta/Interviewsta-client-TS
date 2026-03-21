@@ -1,0 +1,184 @@
+.admin-interview-thumbnails {
+  min-height: 100vh;
+  padding: 2rem 1.25rem;
+}
+
+.admin-interview-thumbnails__inner {
+  width: 100%;
+  max-width: 70rem;
+  margin: 0 auto;
+}
+
+.admin-interview-thumbnails__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-interview-thumbnails__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+}
+
+.admin-interview-thumbnails__subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-muted, #6b7280);
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.admin-interview-thumbnails__actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.admin-interview-thumbnails__btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-lg, 0.5rem);
+  border: 1px solid var(--color-border-light, #e5e7eb);
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-interview-thumbnails__btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-interview-thumbnails__error {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg, 0.5rem);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+.admin-interview-thumbnails__loading {
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-muted, #6b7280);
+}
+
+.admin-interview-thumbnails__toolbar {
+  margin-bottom: 1.25rem;
+}
+
+.admin-interview-thumbnails__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-interview-thumbnails__pill {
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 500;
+  border: 1px solid var(--color-border-light, #e5e7eb);
+  background: #ffffff;
+  color: var(--color-text, #0f172a);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-interview-thumbnails__pill--active {
+  background: #ffffff;
+  border-color: var(--color-border, #d1d5db);
+  color: var(--color-text, #0f172a);
+}
+
+.admin-interview-thumbnails__table-wrap {
+  background: #fff;
+  border: 1px solid var(--color-border-light, #e5e7eb);
+  border-radius: var(--radius-xl, 1rem);
+  overflow: hidden;
+}
+
+.admin-interview-thumbnails__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.admin-interview-thumbnails__table th {
+  text-align: left;
+  padding: 0.85rem 1rem;
+  background: var(--color-surface-alt, #f9fafb);
+  color: var(--color-text-muted, #6b7280);
+  font-weight: 700;
+  border-bottom: 1px solid var(--color-border-light, #e5e7eb);
+}
+
+.admin-interview-thumbnails__table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--color-border-light, #e5e7eb);
+  vertical-align: middle;
+}
+
+.admin-interview-thumbnails__cell-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-weight: 700;
+}
+
+.admin-interview-thumbnails__cell-id {
+  color: var(--color-text-muted, #6b7280);
+  font-weight: 500;
+  font-size: 0.75rem;
+  word-break: break-all;
+}
+
+.admin-interview-thumbnails__thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-light, #e5e7eb);
+}
+
+.admin-interview-thumbnails__no-thumb {
+  color: var(--color-text-muted, #6b7280);
+  font-weight: 600;
+}
+
+.admin-interview-thumbnails__upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-lg, 0.5rem);
+  border: 1px dashed var(--color-border, #d1d5db);
+  background: #fff;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  position: relative;
+}
+
+.admin-interview-thumbnails__upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.admin-interview-thumbnails__back {
+  display: inline-block;
+  margin-top: 1.25rem;
+  text-decoration: none;
+  color: var(--color-text, #0f172a);
+  font-weight: 700;
+}
+

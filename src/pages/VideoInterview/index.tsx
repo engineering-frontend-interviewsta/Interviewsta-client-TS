@@ -330,7 +330,15 @@ export default function VideoInterview() {
             <div className="video-interview__list">
               {filteredTests.map((test) => (
                 <article key={test.id} className="video-interview__card">
-                  <div className="video-interview__card-header" />
+                  {test.thumbnailUrl ? (
+                    <div className="video-interview__card-header">
+                      <img
+                        className="video-interview__card-thumb"
+                        src={test.thumbnailUrl}
+                        alt={`${test.title} thumbnail`}
+                      />
+                    </div>
+                  ) : null}
                   <div className="video-interview__card-body">
                     <div className="video-interview__card-tags">
                       {test.parent?.title && (

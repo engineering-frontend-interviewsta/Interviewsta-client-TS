@@ -33,5 +33,6 @@ export const ROUTES = {
   TEACHER_DASHBOARD: '/teacher/dashboard',
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_USERS: '/admin/users',
+  ADMIN_INTERVIEW_THUMBNAILS: '/admin/interview-thumbnails',
   NOT_FOUND: '*',
 } as const;
