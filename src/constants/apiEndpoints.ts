@@ -58,6 +58,15 @@ export const FEEDBACK_ENDPOINTS = {
   SESSION_HISTORY: '/interview-feedback/',
 } as const;
 
+/** Payment (Razorpay) */
+export const PAYMENT_ENDPOINTS = {
+  CONFIG: '/payment/config',
+  PLANS: '/payment/plans',
+  CREATE_ORDER: '/payment/create-order',
+  VERIFY: '/payment/verify',
+  WEBHOOK: '/payment/webhook',
+} as const;
+
 /** Billing & account (customer-management) */
 export const BILLING_ENDPOINTS = {
   /** GET subscription + legacy user/account (camelCase) */
@@ -73,6 +82,21 @@ export const BILLING_ENDPOINTS = {
   ADMIN_DASHBOARD: 'billing/admin/dashboard/',
   ADMIN_USER_TIER: (userId: number) => `billing/admin/users/${userId}/tier/`,
   ADMIN_USER_DELETE: (userId: number) => `billing/admin/users/${userId}/delete/`,
+} as const;
+
+/** Session management (NestJS /auth/sessions) */
+export const SESSION_ENDPOINTS = {
+  LIST: '/auth/sessions',
+  REVOKE: (id: string) => `/auth/sessions/${id}`,
+  REVOKE_OTHERS: '/auth/sessions',
+} as const;
+
+/** Admin user management (NestJS /user/admin/*) */
+export const USER_ADMIN_ENDPOINTS = {
+  USERS: (page: number, limit = 20) => `/user/admin/users?page=${page}&limit=${limit}`,
+  UPDATE_ROLE: (userId: string) => `/user/admin/users/${userId}/role`,
+  DELETE_USER: (userId: string) => `/user/admin/users/${userId}`,
+  STATS: '/user/admin/stats',
 } as const;
 
 /** Teacher (Django) */

@@ -13,8 +13,16 @@ import {
 } from '../../services/interviewService';
 import { setInterviewAccessToken, clearInterviewAccessToken } from '../../api/axiosInstance';
 import { ROUTES } from '../../constants/routerConstants';
+import {
+  COMPANY_GROWTH_TAG,
+  CONSULTING_TOPIC_TAG,
+  CONSULTING_TOPICS_LIST,
+} from '../../constants/interviewTypes';
+import type { ConsultingTopic } from '../../constants/interviewTypes';
 import type { InterviewTest, ParentInterviewType } from '../../types/interviewTest';
+import type { StartInterviewPayload } from '../../types/interview';
 import InterviewLoadingPopup from './components/InterviewLoadingPopup';
+import ConsultingTopicSelector from './components/ConsultingTopicSelector';
 import './VideoInterview.css';
 
 const START_POLL_MS = 1500;
@@ -44,6 +52,8 @@ export default function VideoInterview() {
   const [starting, setStarting] = useState(false);
   const [startProgress, setStartProgress] = useState(0);
   const [startError, setStartError] = useState<string | null>(null);
+  const [topicSelectorOpen, setTopicSelectorOpen] = useState(false);
+  const [pendingTest, setPendingTest] = useState<InterviewTest | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const hasMore = page < totalPages;
@@ -132,69 +142,127 @@ export default function VideoInterview() {
     );
   }, [tests, searchQuery]);
 
-  const handleStart = async (test: InterviewTest) => {
-    if (!user?.email) {
-      setStartError('Please sign in to start an interview.');
-      return;
-    }
-    setStartError(null);
-    const interviewType = test.parent?.type ?? 'technical';
-    const tags = (test.topics?.length ? test.topics : test.subjects) ?? [];
-    const payload = {
-      interview_test_id: test.id,
-      ...(test.company && { company: test.company }),
-      ...(tags.length > 0 && { Tags: tags }),
-    };
-    try {
-      const token = await getInterviewAccessToken(String(test.id));
-      setInterviewAccessToken(token);
-      setStarting(true);
-      setStartProgress(0);
-      const result = await startInterview({
-        payload,
-      });
-      let attempts = 0;
-      const poll = async (): Promise<void> => {
-        if (attempts >= START_POLL_MAX) {
-          setStartError('Session start timed out.');
-          setStarting(false);
-          return;
-        }
-        attempts++;
-        const statusResult = await getStartTaskStatus(result.taskId);
-        const progress =
-          typeof statusResult.progress === 'number' ? statusResult.progress : Math.min(90, attempts * 15);
-        setStartProgress(progress);
-        if (statusResult.status === 'completed') {
-          setStartProgress(100);
-          setStarting(false);
-          navigate(ROUTES.INTERVIEW_INTERFACE, {
-            state: { sessionId: result.sessionId, interviewType, interviewTypeId: test.id },
-          });
-          return;
-        }
-        if (statusResult.status === 'failed') {
-          setStartError(statusResult.error ?? 'Failed to start session.');
-          setStarting(false);
-          return;
-        }
-        setTimeout(poll, START_POLL_MS);
+  const launchInterview = useCallback(
+    async (test: InterviewTest, extraPayload: Record<string, unknown> = {}) => {
+      const interviewType = test.parent?.type ?? 'technical';
+      const tags = (test.topics?.length ? test.topics : test.subjects) ?? [];
+      const payload: StartInterviewPayload = {
+        interview_test_id: test.id,
+        ...(test.company && { company: test.company }),
+        ...(tags.length > 0 && { Tags: tags }),
+        ...extraPayload,
       };
-      await poll();
-    } catch (err) {
-      clearInterviewAccessToken();
-      if (err instanceof InterviewAccessTokenError) {
-        setStartError(err.message);
-      } else {
-        setStartError(err instanceof Error ? err.message : 'Failed to start interview.');
+      try {
+        const token = await getInterviewAccessToken(String(test.id));
+        setInterviewAccessToken(token);
+        setStarting(true);
+        setStartProgress(0);
+        const result = await startInterview({ payload });
+        let attempts = 0;
+        const poll = async (): Promise<void> => {
+          if (attempts >= START_POLL_MAX) {
+            setStartError('Session start timed out.');
+            setStarting(false);
+            return;
+          }
+          attempts++;
+          const statusResult = await getStartTaskStatus(result.taskId);
+          const progress =
+            typeof statusResult.progress === 'number' ? statusResult.progress : Math.min(90, attempts * 15);
+          setStartProgress(progress);
+          if (statusResult.status === 'completed') {
+            setStartProgress(100);
+            setStarting(false);
+            navigate(ROUTES.INTERVIEW_INTERFACE, {
+              state: {
+                sessionId: result.sessionId,
+                interviewType,
+                interviewTypeId: test.id,
+                sessionLabel: (extraPayload.fun_title as string | undefined) ?? (extraPayload.topic_name as string | undefined),
+              },
+            });
+            return;
+          }
+          if (statusResult.status === 'failed') {
+            setStartError(statusResult.error ?? 'Failed to start session.');
+            setStarting(false);
+            return;
+          }
+          setTimeout(poll, START_POLL_MS);
+        };
+        await poll();
+      } catch (err) {
+        clearInterviewAccessToken();
+        if (err instanceof InterviewAccessTokenError) {
+          setStartError(err.message);
+        } else {
+          setStartError(err instanceof Error ? err.message : 'Failed to start interview.');
+        }
+        setStarting(false);
       }
-      setStarting(false);
-    }
-  };
+    },
+    [navigate]
+  );
+
+  const handleStart = useCallback(
+    async (test: InterviewTest) => {
+      if (!user?.email) {
+        setStartError('Please sign in to start an interview.');
+        return;
+      }
+      setStartError(null);
+
+      const isConsultingTopic = (test.topics ?? []).includes(CONSULTING_TOPIC_TAG);
+      const isCompanyGrowth = (test.topics ?? []).includes(COMPANY_GROWTH_TAG);
+
+      if (isConsultingTopic) {
+        setPendingTest(test);
+        setTopicSelectorOpen(true);
+        return;
+      }
+
+      if (isCompanyGrowth) {
+        const companySlug = (test.topics ?? []).find((t) => t !== COMPANY_GROWTH_TAG) ?? '';
+        await launchInterview(test, {
+          company_slug: companySlug,
+          company_name: test.company ?? '',
+          fun_title: test.title,
+        });
+        return;
+      }
+
+      await launchInterview(test);
+    },
+    [user?.email, launchInterview]
+  );
+
+  const handleTopicConfirmed = useCallback(
+    async (topic: ConsultingTopic) => {
+      setTopicSelectorOpen(false);
+      if (!pendingTest) return;
+      await launchInterview(pendingTest, {
+        consulting_topic: topic.slug,
+        topic_name: topic.name,
+      });
+      setPendingTest(null);
+    },
+    [pendingTest, launchInterview]
+  );
+
+  const handleTopicSelectorClose = useCallback(() => {
+    setTopicSelectorOpen(false);
+    setPendingTest(null);
+  }, []);
 
   return (
     <>
       {starting && <InterviewLoadingPopup progress={startProgress} />}
+      <ConsultingTopicSelector
+        isOpen={topicSelectorOpen}
+        topics={CONSULTING_TOPICS_LIST}
+        onSelect={handleTopicConfirmed}
+        onClose={handleTopicSelectorClose}
+      />
       <main className="video-interview" role="main" aria-label="Video Interview">
         <div className="video-interview__inner">
           <header className="video-interview__header">
