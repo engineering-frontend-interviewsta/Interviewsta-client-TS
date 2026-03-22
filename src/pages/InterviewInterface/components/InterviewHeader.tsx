@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Clock, Download, Square, Zap } from 'lucide-react';
 import { ROUTES } from '../../../constants/routerConstants';
+import logoImg from '../../../assets/logo.png';
 
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
@@ -32,7 +33,7 @@ export default function InterviewHeader({
       <div className="interview-header__inner">
         <div className="interview-header__left">
           <Link to={ROUTES.STUDENT_DASHBOARD} className="interview-header__brand">
-            Interviewsta
+            <img src={logoImg} alt="Interviewsta" className="interview-header__logo" />
           </Link>
           {!isComplete && (
             <>

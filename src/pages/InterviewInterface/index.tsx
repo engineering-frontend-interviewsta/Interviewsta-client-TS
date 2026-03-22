@@ -21,6 +21,17 @@ const FEEDBACK_POLL_MAX_ATTEMPTS = 45;
 
 const DEV_MODE_KEY = 'devMode';
 
+/** Phases where legacy app hid user STT in the main transcript (phase-specific UI instead). */
+const COMMUNICATION_TRANSCRIPT_SUPPRESSED_PHASES = new Set([
+  'Speaking',
+  'Speaking_after',
+  'Comprehension',
+  'Comprehension_before',
+  'Comprehension_after',
+  'MCQ',
+  'MCQ_after',
+]);
+
 export default function InterviewInterface() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -42,6 +53,7 @@ export default function InterviewInterface() {
   
   const [isEndingInterview, setIsEndingInterview] = useState(false);
   const [endTaskId, setEndTaskId] = useState<string | null>(null);
+  const appendStreamUserTranscriptRef = useRef(true);
 
   const {
     aiMessage,
@@ -50,7 +62,6 @@ export default function InterviewInterface() {
     communicationData,
     status,
     isComplete,
-    error,
     isSubmitting,
     isPlayingAudio,
     submitText,
@@ -63,10 +74,11 @@ export default function InterviewInterface() {
     sessionId: sessionId ?? '',
     interviewType,
     devMode,
+    appendStreamUserTranscriptRef,
   });
 
   const [textInput, setTextInput] = useState('');
-  const { videoRef, videoEnabled, audioEnabled, micLevel, error: mediaError, toggleVideo, toggleAudio, getStream, streamReady } =
+  const { videoRef, videoEnabled, audioEnabled, micLevel, toggleVideo, toggleAudio, getStream, streamReady } =
     useMediaDevices();
   const allowVadSendRef = useRef(true);
   const [activeTab, setActiveTab] = useState<'conversation' | 'code' | 'notes'>('conversation');
@@ -126,6 +138,17 @@ export default function InterviewInterface() {
     !!communicationData.speaking &&
     !communicationData.speakingFeedback;
   allowVadSendRef.current = !isCommunicationSpeakingExercise;
+
+  useEffect(() => {
+    if (!isCommunication || !communicationPhase) {
+      appendStreamUserTranscriptRef.current = true;
+      return;
+    }
+    const inStructuredRound = COMMUNICATION_TRANSCRIPT_SUPPRESSED_PHASES.has(communicationPhase);
+    const afterSpeakingFeedback =
+      communicationPhase === 'Speaking' && Boolean(communicationData.speakingFeedback);
+    appendStreamUserTranscriptRef.current = !inStructuredRound || afterSpeakingFeedback;
+  }, [isCommunication, communicationPhase, communicationData.speakingFeedback]);
 
   const vad = useMicVAD({
     startOnLoad: false,
@@ -355,7 +378,6 @@ export default function InterviewInterface() {
             <div className="interview-interface__video-wrap">
               <video ref={videoRef} autoPlay playsInline muted />
             </div>
-            {mediaError && <p className="interview-interface__media-error">{mediaError}</p>}
             <div className="interview-interface__controls">
               <div className="interview-interface__control-btns">
                 <button type="button" onClick={toggleVideo} className="interview-interface__btn-control">
@@ -420,12 +442,6 @@ export default function InterviewInterface() {
               )}
             </div>
 
-            {error && <div className="interview-interface__error" role="alert">{error}</div>}
-            {vad.errored && (
-              <div className="interview-interface__error" role="alert">
-                Voice detection error: {typeof vad.errored === 'string' ? vad.errored : 'Could not start microphone.'}
-              </div>
-            )}
             {showTimeWarning && !autoEnded && (
               <div className="interview-interface__warning">
                 You are nearing the free session limit. This interview will end automatically at 10 minutes.
@@ -439,18 +455,19 @@ export default function InterviewInterface() {
 
           {activeTab === 'conversation' && !showCommunicationPhaseUI && (
             <>
-              <div className="flex-1 min-h-0 flex flex-col mb-4">
+              <div className="interview-interface__transcript-area">
                 <TranscriptPanel
                   messages={messages}
                   status={status}
                   fallbackMessage={aiMessage || undefined}
                   isUserTurnToSpeak={isUserTurnToSpeak}
                   userSpeaking={vad.userSpeaking}
-                  className="flex-1 min-h-[240px]"
+                  allowDevTextInput={devMode}
+                  className="interview-interface__transcript-panel"
                 />
               </div>
 
-              {!isComplete && (
+              {!isComplete && devMode && (
                 <form onSubmit={handleSubmit} className="interview-interface__form">
                   <input
                     type="text"
@@ -468,16 +485,20 @@ export default function InterviewInterface() {
 
               {!isComplete && (
                 <p className="interview-interface__hint">
-                  {audioEnabled
-                    ? 'Mic stays on. Speak when you see “Your turn — speak now”; your response is sent automatically. Don’t speak while the interviewer is talking.'
-                    : 'Turn mic on to speak.'}
+                  {devMode
+                    ? audioEnabled
+                      ? 'Dev mode: use Send or mic. In production, only voice is used.'
+                      : 'Dev mode: turn mic on to speak, or type and Send.'
+                    : audioEnabled
+                      ? 'Mic stays on. Speak when you see “Your turn — speak now”; your response is sent automatically. Don’t speak while the interviewer is talking.'
+                      : 'Turn mic on to speak.'}
                 </p>
               )}
             </>
           )}
 
           {showCommunicationPhaseUI && (
-            <div className="mb-4 overflow-y-auto">
+            <div className="interview-interface__phase-stack mb-4 overflow-y-auto min-h-0">
               {(communicationPhase === 'Speaking' || communicationPhase === 'Speaking_after') &&
                 (communicationData.speaking || communicationPhase) && (
                   <SpeakingPhase

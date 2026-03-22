@@ -2,22 +2,26 @@ import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { ROUTES } from '../constants/routerConstants';
 import LandingLayout from '../layout/LandingLayout';
+import AuthLayout from '../layout/AuthLayout';
 import AppLayout from '../layout/AppLayout';
 import PageNotFound from '../components/shared/PageNotFound';
 import RouteError from '../components/shared/RouteError';
 import lazyWithRetry from '../utils/lazyWithRetry';
 
-const Home = lazy(() => import('../pages/Home'));
+/** Legacy marketing pages (ported as-is from interviewsta-landing-website). */
+const Home = lazy(() => import('../landing/Home'));
+const About = lazy(() => import('../landing/AboutUs'));
+const Contact = lazy(() => import('../landing/ContactUs'));
+const PrivacyPolicy = lazy(() => import('../landing/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('../landing/TermsOfService'));
+const VideoInterviewsPage = lazy(() => import('../landing/VideoInterviewsPage'));
+const ResumeAnalysisPage = lazy(() => import('../landing/ResumeAnalysisPage'));
+const LandingDashboard = lazy(() => import('../landing/LandingDashboard'));
+const LandingCatchAll = lazy(() => import('../landing/PageNotFound'));
+
 const Login = lazy(() => import('../pages/Auth/Login'));
 const Signup = lazy(() => import('../pages/Auth/Signup'));
 const OAuthCallback = lazy(() => import('../pages/Auth/OAuthCallback'));
-const About = lazy(() => import('../pages/About'));
-const Contact = lazy(() => import('../pages/Contact'));
-const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy'));
-const TermsOfService = lazy(() => import('../pages/TermsOfService'));
-const VideoInterviewsPage = lazy(() => import('../pages/VideoInterviews'));
-const ResumeAnalysisPage = lazy(() => import('../pages/ResumeAnalysis'));
-const LandingDashboard = lazy(() => import('../pages/LandingDashboard'));
 const StudentDashboard = lazyWithRetry(() => import('../pages/Dashboard'));
 const VideoInterview = lazyWithRetry(() => import('../pages/VideoInterview'));
 const InterviewInterface = lazyWithRetry(() => import('../pages/InterviewInterface'));
@@ -46,9 +50,6 @@ const routeConfig = [
     errorElement: <RouteError />,
     children: [
       { index: true, element: <Home /> },
-      { path: 'login', element: <Login /> },
-      { path: 'signup', element: <Signup /> },
-      { path: 'auth/callback', element: <OAuthCallback /> },
       { path: 'about', element: <About /> },
       { path: 'contact', element: <Contact /> },
       { path: 'privacy-policy', element: <PrivacyPolicy /> },
@@ -56,8 +57,32 @@ const routeConfig = [
       { path: 'video-interviews', element: <VideoInterviewsPage /> },
       { path: 'resume', element: <ResumeAnalysisPage /> },
       { path: 'dashboard', element: <LandingDashboard /> },
-      { path: 'forgot-password', element: <ForgotPassword /> },
+      { path: '*', element: <LandingCatchAll /> },
     ],
+  },
+  {
+    path: ROUTES.LOGIN,
+    element: <AuthLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <Login /> }],
+  },
+  {
+    path: ROUTES.SIGNUP,
+    element: <AuthLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <Signup /> }],
+  },
+  {
+    path: ROUTES.FORGOT_PASSWORD,
+    element: <AuthLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <ForgotPassword /> }],
+  },
+  {
+    path: ROUTES.AUTH_CALLBACK,
+    element: <AuthLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <OAuthCallback /> }],
   },
   {
     path: ROUTES.STUDENT_DASHBOARD,

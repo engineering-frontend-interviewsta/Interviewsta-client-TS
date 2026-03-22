@@ -1,5 +1,12 @@
 /// <reference types="vite/client" />
 
+/** Legacy landing pages (plain JSX); default export is a React page with no required props. */
+declare module '*.jsx' {
+  import type { ComponentType } from 'react';
+  const component: ComponentType<object>;
+  export default component;
+}
+
 interface ImportMetaEnv {
   readonly VITE_BACKEND_URL: string;
   readonly VITE_FASTAPI_BASE_URL: string;

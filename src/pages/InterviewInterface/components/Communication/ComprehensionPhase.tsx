@@ -27,15 +27,12 @@ export default function ComprehensionPhase({
   const handleSubmit = async () => {
     if (isSubmitting || isProcessing) return;
     if (!writtenText.trim()) {
-      alert('Please write your response before submitting.');
       return;
     }
     if (wordCount < 50) {
-      alert(`Please write at least 50 words. You currently have ${wordCount} words.`);
       return;
     }
     if (wordCount > 100) {
-      alert(`Please keep your response to 100 words or less. You currently have ${wordCount} words.`);
       return;
     }
     setIsSubmitting(true);

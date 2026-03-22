@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, Settings, LogOut, ChevronDown, Image as ImageIc
 import { useAuth } from '../context/AuthContext';
 import { ROUTES } from '../constants/routerConstants';
 import LoadingFallback from '../components/shared/LoadingFallback';
+import logoImg from '../assets/logo.png';
 import './AppLayout.css';
 
 const HIDE_HEADER_PATHS: string[] = [ROUTES.INTERVIEW_INTERFACE];
@@ -64,7 +65,7 @@ export default function AppLayout() {
               }
               className="app-layout__brand"
             >
-              <span className="app-layout__brand-text">Interviewsta</span>
+              <img src={logoImg} alt="Interviewsta" className="app-layout__brand-logo" />
             </Link>
             <nav className="app-layout__nav">
               <Link

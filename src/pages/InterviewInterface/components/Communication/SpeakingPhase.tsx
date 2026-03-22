@@ -43,7 +43,6 @@ export default function SpeakingPhase({
       setIsRecording(true);
     } catch (err) {
       console.error('Error starting recording:', err);
-      alert('Error accessing microphone. Please check permissions.');
     }
   };
 
@@ -55,7 +54,6 @@ export default function SpeakingPhase({
 
   const handleSubmit = async () => {
     if (!recordedAudio) {
-      alert('Please record your speaking first.');
       return;
     }
     setIsSubmitting(true);
@@ -65,12 +63,9 @@ export default function SpeakingPhase({
         await onSendResponse({ audioData: base64Wav, sampleRate: TARGET_SAMPLE_RATE });
         onClearFeedback();
         setRecordedAudio(null);
-      } else {
-        alert('Failed to prepare audio. Please try again.');
       }
     } catch (err) {
       console.error('Error submitting speaking:', err);
-      alert('Error preparing or submitting audio. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

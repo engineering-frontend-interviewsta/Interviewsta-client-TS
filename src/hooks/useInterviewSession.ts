@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, type MutableRefObject } from 'react';
 import {
   connectToInterviewStream,
   submitResponse,
@@ -83,6 +83,11 @@ export interface UseInterviewSessionParams {
   interviewType: string;
   /** When true, TTS audio is skipped (dev mode). */
   devMode?: boolean;
+  /**
+   * When `.current` is false at event time, SSE user transcripts are not appended
+   * (matches legacy Communication interview: hide STT in main chat during structured rounds).
+   */
+  appendStreamUserTranscriptRef?: MutableRefObject<boolean>;
 }
 
 export type EndSessionOpts = { sessionFinished?: boolean; interviewTestId?: number };
@@ -112,6 +117,7 @@ export function useInterviewSession({
   sessionId,
   interviewType,
   devMode = false,
+  appendStreamUserTranscriptRef,
 }: UseInterviewSessionParams): UseInterviewSessionResult {
   const [aiMessage, setAiMessage] = useState('');
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
@@ -188,6 +194,12 @@ export function useInterviewSession({
     try {
       const { close } = connectToInterviewStream(sessionId, {
         onStatusUpdate: (s) => setStatus(s),
+        onTranscript: (raw) => {
+          const text = typeof raw === 'string' ? raw.trim() : '';
+          if (!text) return;
+          if (appendStreamUserTranscriptRef && !appendStreamUserTranscriptRef.current) return;
+          addUserMessage(text);
+        },
         onAIResponse: (data: AIResponseData) => {
           if (data.message != null) {
             setAiMessage(data.message);
@@ -216,7 +228,7 @@ export function useInterviewSession({
       setError(message);
       setStatus('error');
     }
-  }, [sessionId, addAIMessage, enqueueAudio]);
+  }, [sessionId, addAIMessage, enqueueAudio, addUserMessage, appendStreamUserTranscriptRef]);
 
   const submitText = useCallback(
     async (text: string) => {

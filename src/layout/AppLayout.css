@@ -42,19 +42,28 @@
 .app-layout__brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  line-height: 0;
   text-decoration: none;
-  color: var(--color-primary);
-  font-weight: 600;
-  font-size: var(--text-lg);
-  letter-spacing: -0.02em;
-  transition: color var(--duration-fast) var(--ease-out),
-    opacity var(--duration-fast) var(--ease-out);
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
 
 .app-layout__brand:hover {
-  color: var(--color-primary-hover);
-  opacity: 0.92;
+  opacity: 0.88;
+}
+
+.app-layout__brand-logo {
+  height: 1.75rem;
+  width: auto;
+  max-width: 10rem;
+  object-fit: contain;
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .app-layout__brand-logo {
+    height: 2rem;
+    max-width: 11rem;
+  }
 }
 
 .app-layout__brand-icon {
@@ -62,10 +71,6 @@
   align-items: center;
   justify-content: center;
   color: var(--color-primary);
-}
-
-.app-layout__brand-text {
-  white-space: nowrap;
 }
 
 /* Main nav */

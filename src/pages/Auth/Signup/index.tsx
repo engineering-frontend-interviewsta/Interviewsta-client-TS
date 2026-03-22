@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { ROUTES } from '../../../constants/routerConstants';
 import { VALIDATION } from '../../../constants/appConstants';
+import AuthShell from '../AuthShell';
 import '../Auth.css';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -88,98 +89,113 @@ export default function Signup() {
   if (isLoading || user) return null;
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <h1 className="auth-title">Sign up</h1>
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="auth-fields-row">
-            <div className="auth-field">
-              <label htmlFor="signup-first" className="auth-label">First name</label>
-              <input
-                id="signup-first"
-                type="text"
-                autoComplete="given-name"
-                value={formData.firstName}
-                onChange={(e) => handleChange('firstName', e.target.value)}
-                className="auth-input"
-              />
-            </div>
-            <div className="auth-field">
-              <label htmlFor="signup-last" className="auth-label">Last name</label>
-              <input
-                id="signup-last"
-                type="text"
-                autoComplete="family-name"
-                value={formData.lastName}
-                onChange={(e) => handleChange('lastName', e.target.value)}
-                className="auth-input"
-              />
-            </div>
-          </div>
+    <AuthShell wide>
+      <h1 className="auth-title">Create account</h1>
+      <p className="auth-subtitle auth-subtitle--tight">Join Interviewsta to practice and improve.</p>
+      <form onSubmit={handleSubmit} className="auth-form">
+        <div className="auth-fields-row">
           <div className="auth-field">
-            <label htmlFor="signup-email" className="auth-label">Email</label>
+            <label htmlFor="signup-first" className="auth-label">
+              First name
+            </label>
             <input
-              id="signup-email"
-              type="email"
-              autoComplete="email"
-              value={formData.email}
-              onChange={(e) => handleChange('email', e.target.value)}
+              id="signup-first"
+              type="text"
+              autoComplete="given-name"
+              value={formData.firstName}
+              onChange={(e) => handleChange('firstName', e.target.value)}
               className="auth-input"
-              placeholder="you@example.com"
             />
           </div>
           <div className="auth-field">
-            <label htmlFor="signup-role" className="auth-label">Role</label>
-            <select
-              id="signup-role"
-              value={formData.roles}
-              onChange={(e) => handleChange('roles', [e.target.value] as string[])}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="user">User</option>
-              <option value="student">Student</option>
-              <option value="teacher">Teacher</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-          <div className="auth-field">
-            <label htmlFor="signup-password" className="auth-label">Password</label>
+            <label htmlFor="signup-last" className="auth-label">
+              Last name
+            </label>
             <input
-              id="signup-password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              value={formData.password}
-              onChange={(e) => handleChange('password', e.target.value)}
+              id="signup-last"
+              type="text"
+              autoComplete="family-name"
+              value={formData.lastName}
+              onChange={(e) => handleChange('lastName', e.target.value)}
               className="auth-input"
-              placeholder={`At least ${VALIDATION.MIN_PASSWORD_LENGTH} characters`}
             />
           </div>
-          <div className="auth-field">
-            <label htmlFor="signup-confirm" className="auth-label">Confirm password</label>
-            <input
-              id="signup-confirm"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              value={formData.confirmPassword}
-              onChange={(e) => handleChange('confirmPassword', e.target.value)}
-              className="auth-input"
-              placeholder="Repeat password"
-            />
-          </div>
-          <div className="auth-toggle-wrap">
-            <button type="button" onClick={() => setShowPassword((p) => !p)} className="auth-toggle-btn">
-              {showPassword ? 'Hide' : 'Show'} passwords
-            </button>
-          </div>
-          {error && <p className="auth-error" role="alert">{error}</p>}
-          <button type="submit" disabled={isSubmitting} className="auth-btn-primary">
-            {isSubmitting ? 'Creating account…' : 'Create account'}
+        </div>
+        <div className="auth-field">
+          <label htmlFor="signup-email" className="auth-label">
+            Email
+          </label>
+          <input
+            id="signup-email"
+            type="email"
+            autoComplete="email"
+            value={formData.email}
+            onChange={(e) => handleChange('email', e.target.value)}
+            className="auth-input"
+            placeholder="you@example.com"
+          />
+        </div>
+        <div className="auth-field">
+          <label htmlFor="signup-role" className="auth-label">
+            Role
+          </label>
+          <select
+            id="signup-role"
+            value={formData.roles[0]}
+            onChange={(e) => handleChange('roles', [e.target.value])}
+            className="auth-select"
+          >
+            <option value="user">User</option>
+            <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div className="auth-field">
+          <label htmlFor="signup-password" className="auth-label">
+            Password
+          </label>
+          <input
+            id="signup-password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            value={formData.password}
+            onChange={(e) => handleChange('password', e.target.value)}
+            className="auth-input"
+            placeholder={`At least ${VALIDATION.MIN_PASSWORD_LENGTH} characters`}
+          />
+        </div>
+        <div className="auth-field">
+          <label htmlFor="signup-confirm" className="auth-label">
+            Confirm password
+          </label>
+          <input
+            id="signup-confirm"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            value={formData.confirmPassword}
+            onChange={(e) => handleChange('confirmPassword', e.target.value)}
+            className="auth-input"
+            placeholder="Repeat password"
+          />
+        </div>
+        <div className="auth-toggle-wrap">
+          <button type="button" onClick={() => setShowPassword((p) => !p)} className="auth-toggle-btn">
+            {showPassword ? 'Hide' : 'Show'} passwords
           </button>
-        </form>
-        <p className="auth-footer">
-          Already have an account? <Link to={ROUTES.LOGIN} className="auth-link">Log in</Link>
-        </p>
-      </div>
-    </div>
+        </div>
+        {error && (
+          <p className="auth-error" role="alert">
+            {error}
+          </p>
+        )}
+        <button type="submit" disabled={isSubmitting} className="auth-btn-primary">
+          {isSubmitting ? 'Creating account…' : 'Create account'}
+        </button>
+      </form>
+      <p className="auth-footer">
+        Already have an account? <Link to={ROUTES.LOGIN} className="auth-link">Log in</Link>
+      </p>
+    </AuthShell>
   );
 }

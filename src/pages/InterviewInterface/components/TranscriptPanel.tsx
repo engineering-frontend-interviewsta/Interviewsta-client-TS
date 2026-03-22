@@ -1,6 +1,33 @@
 import { useEffect, useRef } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Bot, User } from 'lucide-react';
 import type { InterviewMessage } from '../../../hooks/useInterviewSession';
+
+const EASE_SMOOTH = [0.16, 1, 0.3, 1] as const;
+
+const messageTransition = {
+  duration: 0.32,
+  ease: EASE_SMOOTH,
+};
+
+const messageVariants = {
+  hidden: (role: 'ai' | 'user') => ({
+    opacity: 0,
+    y: 12,
+    x: role === 'user' ? 18 : -18,
+  }),
+  visible: {
+    opacity: 1,
+    y: 0,
+    x: 0,
+  },
+};
+
+const bubbleInnerTransition = {
+  duration: 0.22,
+  delay: 0.04,
+  ease: EASE_SMOOTH,
+};
 
 export interface TranscriptPanelProps {
   messages: InterviewMessage[];
@@ -11,6 +38,8 @@ export interface TranscriptPanelProps {
   isUserTurnToSpeak?: boolean;
   /** When true, user is currently speaking (VAD detected) */
   userSpeaking?: boolean;
+  /** When false, copy assumes voice-only (no dev text field). */
+  allowDevTextInput?: boolean;
   className?: string;
 }
 
@@ -20,13 +49,26 @@ export default function TranscriptPanel({
   fallbackMessage,
   isUserTurnToSpeak = false,
   userSpeaking = false,
+  allowDevTextInput = false,
   className = '',
 }: TranscriptPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isUserTurnToSpeak, userSpeaking]);
+
+  const msgInitial = reduceMotion ? false : 'hidden';
+  const msgAnimate = reduceMotion ? false : 'visible';
+  const msgTransition = reduceMotion ? { duration: 0 } : messageTransition;
+  const bubbleInner = reduceMotion
+    ? { initial: false, animate: false }
+    : {
+        initial: { opacity: 0, scale: 0.985 },
+        animate: { opacity: 1, scale: 1 },
+        transition: bubbleInnerTransition,
+      };
 
   return (
     <div
@@ -34,7 +76,12 @@ export default function TranscriptPanel({
     >
       <div className="flex-1 min-h-[200px] overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-white to-slate-50/30">
         {messages.length === 0 && !fallbackMessage && (
-          <div className="flex flex-col items-center justify-center h-full min-h-[180px] text-center text-slate-500">
+          <motion.div
+            className="flex flex-col items-center justify-center h-full min-h-[180px] text-center text-slate-500"
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={reduceMotion ? false : { opacity: 1, y: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.35, ease: EASE_SMOOTH }}
+          >
             <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
               <User className="h-6 w-6 text-slate-400" />
             </div>
@@ -42,55 +89,93 @@ export default function TranscriptPanel({
               Conversation will appear here
             </p>
             <p className="text-xs text-slate-400 mt-1">
-              {status === 'connecting' ? 'Connecting…' : 'Speak or type to respond'}
+              {status === 'connecting'
+                ? 'Connecting…'
+                : allowDevTextInput
+                  ? 'Speak or type to respond'
+                  : 'Speak when it is your turn'}
             </p>
-          </div>
+          </motion.div>
         )}
         {messages.length === 0 && fallbackMessage && (
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-slate-700 flex items-center justify-center shrink-0">
+          <motion.div
+            className="flex items-start gap-3"
+            custom="ai"
+            variants={messageVariants}
+            initial={msgInitial}
+            animate={msgAnimate}
+            transition={msgTransition}
+          >
+            <motion.div
+              className="w-9 h-9 rounded-lg bg-slate-700 flex items-center justify-center shrink-0"
+              initial={reduceMotion ? false : { scale: 0.85, opacity: 0 }}
+              animate={reduceMotion ? false : { scale: 1, opacity: 1 }}
+              transition={{ ...msgTransition, delay: reduceMotion ? 0 : 0.02 }}
+            >
               <Bot className="h-4 w-4 text-white" />
-            </div>
-            <div className="flex-1 min-w-0 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-800 whitespace-pre-wrap">
+            </motion.div>
+            <motion.div
+              className="flex-1 min-w-0 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-800 whitespace-pre-wrap shadow-sm"
+              {...bubbleInner}
+            >
               {fallbackMessage}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
         {messages.map((msg) => (
-          <div
+          <motion.div
             key={msg.id}
             className={`flex items-start gap-3 ${msg.type === 'user' ? 'flex-row-reverse' : ''}`}
+            custom={msg.type}
+            variants={messageVariants}
+            initial={msgInitial}
+            animate={msgAnimate}
+            transition={msgTransition}
           >
-            <div
+            <motion.div
               className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                msg.type === 'user'
-                  ? 'bg-blue-600'
-                  : 'bg-slate-700'
+                msg.type === 'user' ? 'bg-blue-600' : 'bg-slate-700'
               }`}
+              initial={reduceMotion ? false : { scale: 0.8, opacity: 0 }}
+              animate={reduceMotion ? false : { scale: 1, opacity: 1 }}
+              transition={{ ...msgTransition, delay: reduceMotion ? 0 : 0.03 }}
             >
               {msg.type === 'user' ? (
                 <User className="h-4 w-4 text-white" />
               ) : (
                 <Bot className="h-4 w-4 text-white" />
               )}
-            </div>
-            <div
-              className={`flex-1 min-w-0 max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-                msg.type === 'user'
-                  ? 'bg-blue-50 text-slate-800'
-                  : 'bg-slate-100 text-slate-800'
+            </motion.div>
+            <motion.div
+              className={`flex-1 min-w-0 max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap shadow-sm ${
+                msg.type === 'user' ? 'bg-blue-50 text-slate-800' : 'bg-slate-100 text-slate-800'
               }`}
+              {...bubbleInner}
             >
               {msg.content}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         ))}
         {isUserTurnToSpeak && (
-          <div className="flex justify-end">
+          <motion.div
+            className="flex justify-end"
+            initial={reduceMotion ? false : { opacity: 0, y: 16, scale: 0.96 }}
+            animate={reduceMotion ? false : { opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: reduceMotion ? 0 : 0.34, ease: EASE_SMOOTH }}
+          >
             <div className="flex items-start gap-3 max-w-[85%] flex-row-reverse">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-blue-600">
+              <motion.div
+                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-blue-600"
+                initial={reduceMotion ? false : { scale: 0.85 }}
+                animate={reduceMotion ? false : { scale: 1 }}
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : { type: 'spring', stiffness: 420, damping: 22 }
+                }
+              >
                 <User className="h-4 w-4 text-white" />
-              </div>
+              </motion.div>
               <div className="rounded-xl px-4 py-3 bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm border border-blue-500/30">
                 <div className="flex items-center gap-3">
                   <div className="relative flex items-center justify-center">
@@ -104,13 +189,15 @@ export default function TranscriptPanel({
                     <span className="text-xs text-blue-100">
                       {userSpeaking
                         ? 'Your response will be sent when you finish.'
-                        : 'Answer in your own words. Speak or type below.'}
+                        : allowDevTextInput
+                          ? 'Answer in your own words. Speak or type below.'
+                          : 'Answer in your own words when you see your turn.'}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
         <div ref={bottomRef} className="h-1" />
       </div>

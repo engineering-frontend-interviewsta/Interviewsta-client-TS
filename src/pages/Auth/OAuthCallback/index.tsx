@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { ROUTES } from '../../../constants/routerConstants';
+import '../Auth.css';
 
 export default function OAuthCallback() {
   const [searchParams] = useSearchParams();
@@ -80,23 +80,23 @@ export default function OAuthCallback() {
   }, [searchParams, navigate, loginWithGoogle, loginWithGithub]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="text-center">
+    <div className="auth-callback-page">
+      <div className="auth-callback-inner">
         {processing ? (
           <>
-            <Loader2 className="w-16 h-16 animate-spin text-blue-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Completing sign in…</h2>
-            <p className="text-gray-600">Please wait while we authenticate your account.</p>
+            <div className="auth-callback-spinner-wrap" aria-hidden>
+              <svg className="auth-callback-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+              </svg>
+            </div>
+            <h2>Completing sign in…</h2>
+            <p>Please wait while we authenticate your account.</p>
           </>
         ) : (
           <>
-            <div className="text-red-600 mb-4">
-              <svg
-                className="w-16 h-16 mx-auto mb-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+            <div className="auth-error-icon" aria-hidden>
+              <svg className="auth-error-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -105,9 +105,9 @@ export default function OAuthCallback() {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Authentication failed</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <p className="text-sm text-gray-500">Redirecting to login page…</p>
+            <h2>Authentication failed</h2>
+            <p className="auth-callback-error-msg">{error}</p>
+            <p className="auth-callback-redirect-hint">Redirecting to login page…</p>
           </>
         )}
       </div>

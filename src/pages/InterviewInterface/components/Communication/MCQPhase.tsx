@@ -35,7 +35,6 @@ export default function MCQPhase({
 
   const handleSubmit = async () => {
     if (selectedOption === null) {
-      alert('Please select an option before submitting.');
       return;
     }
     const optionText = options[selectedOption] ?? '';
