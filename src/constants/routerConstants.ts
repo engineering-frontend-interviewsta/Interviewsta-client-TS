@@ -25,6 +25,7 @@ export const ROUTES = {
   VIDEO_INTERVIEWS_LANDING: '/video-interviews',
   RESUME_LANDING: '/resume',
   LANDING_DASHBOARD: '/dashboard',
+  PRICING: '/pricing',
   TEACHER_CLASSES: '/teacher/classes',
   TEACHER_SCHEDULE: '/teacher/schedule',
   TEACHER_STUDENTS: '/teacher/students',

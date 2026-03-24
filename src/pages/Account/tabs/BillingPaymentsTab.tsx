@@ -109,6 +109,8 @@ function UpgradeModal({
       ? selected.annualPaise
       : selected.monthlyPaise
     : 0;
+  const isIntervalPriceAvailable = price > 0;
+  const hasAnyAnnualPricing = plans.some((plan) => plan.annualPaise > 0);
 
   return (
     <div className="account-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="upgrade-title">
@@ -151,6 +153,7 @@ function UpgradeModal({
                 type="button"
                 className={`account-modal__interval-btn ${interval === 'annual' ? 'account-modal__interval-btn--active' : ''}`}
                 onClick={() => setInterval('annual')}
+                disabled={!hasAnyAnnualPricing}
               >
                 Annual <span className="account-modal__save-badge">Save 20%</span>
               </button>
@@ -176,17 +179,26 @@ function UpgradeModal({
                       {plan.credits === -1 ? 'Unlimited' : plan.credits} credits
                     </p>
                     <p className="account-modal__plan-price">
-                      ₹{rupees}<span className="account-modal__plan-period">/{interval === 'annual' ? 'yr' : 'mo'}</span>
+                      {paise > 0 ? (
+                        <>₹{rupees}<span className="account-modal__plan-period">/{interval === 'annual' ? 'yr' : 'mo'}</span></>
+                      ) : (
+                        <span className="account-modal__plan-period">Not available</span>
+                      )}
                     </p>
                   </button>
                 );
               })}
             </div>
+            {!isIntervalPriceAvailable && selected && (
+              <p className="account-modal__error" role="alert">
+                Selected billing interval is not configured for this plan yet.
+              </p>
+            )}
 
             <button
               type="button"
               className="account-modal__pay-btn"
-              disabled={!selected || paying || !isLoaded}
+              disabled={!selected || paying || !isLoaded || !isIntervalPriceAvailable}
               onClick={handlePay}
             >
               {paying ? (

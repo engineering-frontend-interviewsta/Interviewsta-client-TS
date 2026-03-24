@@ -71,7 +71,7 @@ export const PAYMENT_ENDPOINTS = {
 export const BILLING_ENDPOINTS = {
   /** GET subscription + legacy user/account (camelCase) */
   ACCOUNT: '/customer-management/subscription/me',
-  PLAN_STATUS: 'billing/plan-status/',
+  PLAN_STATUS: '/customer-management/subscription/plan-status',
   /** GET feedback access for current user */
   FEEDBACK_ACCESS: '/customer-management/subscription/feedback-access',
   /** GET paginated transactions */

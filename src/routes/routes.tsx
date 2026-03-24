@@ -9,13 +9,14 @@ import RouteError from '../components/shared/RouteError';
 import lazyWithRetry from '../utils/lazyWithRetry';
 
 /** Legacy marketing pages (ported as-is from interviewsta-landing-website). */
-const Home = lazy(() => import('../landing/Home'));
+const LandingHome = lazy(() => import('../landing/Home'));
 const About = lazy(() => import('../landing/AboutUs'));
 const Contact = lazy(() => import('../landing/ContactUs'));
 const PrivacyPolicy = lazy(() => import('../landing/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('../landing/TermsOfService'));
 const VideoInterviewsPage = lazy(() => import('../landing/VideoInterviewsPage'));
 const ResumeAnalysisPage = lazy(() => import('../landing/ResumeAnalysisPage'));
+const PricingPage = lazy(() => import('../landing/PricingPage.tsx'));
 const LandingDashboard = lazy(() => import('../landing/LandingDashboard'));
 const LandingCatchAll = lazy(() => import('../landing/PageNotFound'));
 
@@ -49,13 +50,14 @@ const routeConfig = [
     element: <LandingLayout />,
     errorElement: <RouteError />,
     children: [
-      { index: true, element: <Home /> },
+      { index: true, element: <LandingHome /> },
       { path: 'about', element: <About /> },
       { path: 'contact', element: <Contact /> },
       { path: 'privacy-policy', element: <PrivacyPolicy /> },
       { path: 'terms-of-service', element: <TermsOfService /> },
       { path: 'video-interviews', element: <VideoInterviewsPage /> },
       { path: 'resume', element: <ResumeAnalysisPage /> },
+      { path: 'pricing', element: <PricingPage /> },
       { path: 'dashboard', element: <LandingDashboard /> },
       { path: '*', element: <LandingCatchAll /> },
     ],

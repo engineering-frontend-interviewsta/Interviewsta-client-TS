@@ -4,7 +4,7 @@ import { getAccessToken, clearAuthStorage, getInterviewAccessToken } from '../ut
 import { TIMEOUTS } from '../constants/appConstants';
 
 /**
- * Django API client (auth, user, resume, coaching, teacher, student, etc.)
+ * Primary backend API client (NestJS in current stack).
  */
 
 export const nestClient: AxiosInstance = axios.create({

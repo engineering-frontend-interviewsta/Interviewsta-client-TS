@@ -976,8 +976,8 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Get Hired at Top Companies Section */}
-      <div className="relative py-24 bg-gradient-to-br from-slate-50 via-white to-blue-50 overflow-hidden">
+      {/* Get Hired at Top Companies Section (temporarily hidden) */}
+      {false && <div className="relative py-24 bg-gradient-to-br from-slate-50 via-white to-blue-50 overflow-hidden">
         {/* Subtle Pattern Background */}
         <div className="absolute inset-0 opacity-5">
           <div
@@ -1069,7 +1069,7 @@ const Home = () => {
             </div>
           </motion.div>
         </div>
-      </div>
+      </div>}
 
       {/* Testimonials Section */}
       <div className="bg-gradient-to-br from-slate-50 via-white to-blue-50 py-24 relative overflow-hidden">

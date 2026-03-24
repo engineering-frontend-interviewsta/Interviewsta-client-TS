@@ -10,6 +10,12 @@ export default function Home() {
       </p>
       <div className="flex gap-4 justify-center">
         <Link
+          to={ROUTES.PRICING}
+          className="px-6 py-3 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50"
+        >
+          View Pricing
+        </Link>
+        <Link
           to={ROUTES.LOGIN}
           className="px-6 py-3 border border-neutral-300 rounded-lg hover:bg-neutral-100"
         >
