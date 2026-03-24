@@ -4,6 +4,7 @@ import { CheckCircle, Loader2, Sparkles, ArrowRight } from 'lucide-react';
 import { getPaymentPlans } from '../services/paymentService';
 import type { PlanTierInfo } from '../types/account';
 import { ROUTES } from '../constants/routerConstants';
+import { CREDIT_COSTS } from '../constants/appConstants';
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toLocaleString('en-IN')}`;
@@ -92,6 +93,11 @@ export default function PricingPage() {
                 billingInterval === 'annual' ? plan.annualPaise : plan.monthlyPaise;
               const displayPrice = activePrice > 0 ? formatRupees(activePrice) : 'Not available';
               const isPopular = index === 1 || plan.slug.toLowerCase() === 'pro';
+              const monthlyCredits = plan.credits;
+              const interviewSessions =
+                monthlyCredits === -1 ? -1 : Math.floor(monthlyCredits / CREDIT_COSTS.INTERVIEW);
+              const resumeAnalyses =
+                monthlyCredits === -1 ? -1 : Math.floor(monthlyCredits / CREDIT_COSTS.RESUME);
               return (
                 <div
                   key={plan.id}
@@ -117,11 +123,15 @@ export default function PricingPage() {
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className={`h-4 w-4 ${isPopular ? 'text-white' : 'text-violet-600'}`} />
-                      Full interview platform access
+                      {interviewSessions === -1
+                        ? 'Unlimited interview sessions/month'
+                        : `${interviewSessions} interview sessions/month (${CREDIT_COSTS.INTERVIEW} credits/session)`}
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className={`h-4 w-4 ${isPopular ? 'text-white' : 'text-violet-600'}`} />
-                      Priority AI support and analytics
+                      {resumeAnalyses === -1
+                        ? 'Unlimited resume analyses/month'
+                        : `${resumeAnalyses} resume analyses/month (${CREDIT_COSTS.RESUME} credit/analysis)`}
                     </li>
                   </ul>
 
