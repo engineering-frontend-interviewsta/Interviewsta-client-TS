@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlayCircle, ArrowLeft } from 'lucide-react';
-import { getLatestStats, mapVideoReport } from '../../services/dashboardService';
+import { getInterviewSessions, mapVideoReport } from '../../services/dashboardService';
 import type { VideoInterviewReport } from '../../types/dashboard';
 import { ROUTES } from '../../constants/routerConstants';
 import { ALL_INTERVIEW_OPTIONS } from '../../data/interviewTypesData';
@@ -29,8 +29,8 @@ export default function VideoInterviewHistory() {
     const load = async () => {
       try {
         setLoading(true);
-        const raw = await getLatestStats();
-        setReports(raw.map((item) => mapVideoReport(item, lookupInterviewMeta)));
+        const raw = await getInterviewSessions();
+        setReports((raw?.sessions ?? []).map((item) => mapVideoReport(item, lookupInterviewMeta)));
       } catch {
         setError('Failed to load video interview history.');
       } finally {

@@ -80,7 +80,7 @@ export default function UsageCreditsTab({ account, onUpgrade, onBuyCredits, isWh
                 <RadialBar dataKey="value" cornerRadius={8} background={{ fill: 'var(--color-border-light)' }} />
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid var(--color-border-light)' }}
-                  formatter={(v: number) => [`${v}%`, 'Used']}
+                  formatter={(value) => [`${value ?? 0}%`, 'Used']}
                 />
               </RadialBarChart>
             </ResponsiveContainer>

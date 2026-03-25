@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, ArrowLeft } from 'lucide-react';
-import { getResumeProgress, mapResumeReport } from '../../services/dashboardService';
+import { getResumeSessions, mapResumeReport } from '../../services/dashboardService';
 import type { ResumeReport } from '../../types/dashboard';
 import { ROUTES } from '../../constants/routerConstants';
 import './ResumeAnalysisHistory.css';
@@ -17,8 +17,8 @@ export default function ResumeAnalysisHistory() {
     const load = async () => {
       try {
         setLoading(true);
-        const raw = await getResumeProgress();
-        setReports(raw.map(mapResumeReport));
+        const raw = await getResumeSessions();
+        setReports(raw.sessions.map(mapResumeReport));
       } catch {
         setError('Failed to load resume analysis history.');
       } finally {

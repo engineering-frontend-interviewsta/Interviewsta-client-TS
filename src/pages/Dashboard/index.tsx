@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, FileText, GraduationCap } from 'lucide-react';
+import { BarChart3, FileText } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   getLatestStats,

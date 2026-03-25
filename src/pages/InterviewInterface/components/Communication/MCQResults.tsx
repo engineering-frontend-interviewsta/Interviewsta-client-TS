@@ -1,5 +1,5 @@
 import { CheckCircle, XCircle, Award } from 'lucide-react';
-import type { MCQResultItem } from '../../../types/interview';
+import type { MCQResultItem } from '../../../../types/interview';
 
 export interface MCQResultsProps {
   results: MCQResultItem[];

@@ -7,15 +7,6 @@ interface Props {
   isWhitelisted?: boolean;
 }
 
-const ROLE_BADGE: Record<string, { label: string; cls: string }> = {
-  developer: { label: 'Developer', cls: 'account-tab__badge--developer' },
-  admin:     { label: 'Admin',     cls: 'account-tab__badge--admin'     },
-  admin_staff:{ label: 'Staff',   cls: 'account-tab__badge--admin'     },
-  teacher:   { label: 'Teacher',  cls: 'account-tab__badge--teacher'   },
-  student:   { label: 'Student',  cls: 'account-tab__badge--student'   },
-  user:      { label: 'User',     cls: 'account-tab__badge--user'      },
-};
-
 export default function AccountDetailsTab({ account, displayName, isWhitelisted }: Props) {
   const u = account.user;
   const sub = account.subscription;

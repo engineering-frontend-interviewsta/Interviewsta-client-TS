@@ -27,18 +27,14 @@ export interface BillingAccount {
   account?: AccountPlan;
 }
 
-export enum SubscriptionStatus {
-  ACTIVE = 'active',
-  CANCELLED = 'cancelled',
-  EXPIRED = 'expired',
-  PAST_DUE = 'past_due',
-  TRIALING = 'trialing',
-}
+export type SubscriptionStatus =
+  | 'active'
+  | 'cancelled'
+  | 'expired'
+  | 'past_due'
+  | 'trialing';
 
-export enum BillingInterval {
-  MONTHLY = 'monthly',
-  ANNUAL = 'annual',
-}
+export type BillingInterval = 'monthly' | 'annual';
 
 export interface SubscriptionView {
   id: string;
