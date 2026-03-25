@@ -38,7 +38,9 @@ const Home = () => {
   const videoRef = useRef(null);
   // document.body.getClient
   useEffect(() => {
-    const rect = carouselRef.current.getBoundingClientRect();
+    const el = carouselRef.current;
+    if (!el) return; // section may be conditionally hidden, so ref can stay null
+    const rect = el.getBoundingClientRect();
     // console.log('Carousel dimensions:', rect);
   }, []);
   useEffect(() => {
