@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { ROUTES } from '../../../constants/routerConstants';
+import * as authService from '../../../services/authService';
+import { setAccessToken, setRefreshToken, setRole } from '../../../utils/storage';
 import '../Auth.css';
 
 export default function OAuthCallback() {
@@ -13,6 +15,38 @@ export default function OAuthCallback() {
 
   useEffect(() => {
     const handleOAuth = async () => {
+      // Backend may redirect here with tokens: ?accessToken=...&refreshToken=...
+      const accessTokenParam = searchParams.get('accessToken');
+      const refreshTokenParam = searchParams.get('refreshToken');
+
+      if (accessTokenParam) {
+        try {
+          setAccessToken(accessTokenParam);
+          setRefreshToken(refreshTokenParam ? refreshTokenParam : null);
+
+          const meResponse = await authService.me();
+          const apiUser = meResponse.data;
+          const roles = apiUser.roles;
+          const role = (Array.isArray(roles) && roles.length > 0 ? roles[0] : apiUser.role) ?? null;
+          setRole(role);
+
+          if (role === 'teacher') {
+            navigate(ROUTES.TEACHER_DASHBOARD, { replace: true });
+          } else if (role === 'admin') {
+            navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+          } else {
+            navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
+          }
+          return;
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          setError(`Authentication failed: ${msg}`);
+          setProcessing(false);
+          setTimeout(() => navigate(ROUTES.LOGIN, { replace: true }), 3000);
+          return;
+        }
+      }
+
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       const errorParam = searchParams.get('error');

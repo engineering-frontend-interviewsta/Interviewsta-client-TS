@@ -88,7 +88,13 @@ export default function Login() {
       setError('Google login is not configured.');
       return;
     }
-    const redirectUri = `${window.location.origin}${ROUTES.AUTH_CALLBACK}`;
+    const backendBase = (import.meta.env.VITE_BACKEND_URL ?? '').replace(/\/$/, '');
+    if (!backendBase) {
+      setError('Backend URL is not configured (VITE_BACKEND_URL).');
+      return;
+    }
+    // Google must redirect back to the backend callback route, which then redirects to the frontend.
+    const redirectUri = `${backendBase}/auth/google/callback`;
     const scope = 'profile email';
     const googleAuthUrl =
       'https://accounts.google.com/o/oauth2/v2/auth?' +
