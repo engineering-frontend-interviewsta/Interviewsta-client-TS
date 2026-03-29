@@ -71,12 +71,20 @@ const LandingHeader = () => {
             <div className="ml-auto flex items-center gap-5">
               <nav className="hidden lg:flex items-center space-x-1">
                 {navItems.map((item) => (
-                  <button
+                  <div
                     key={item.id}
                     onClick={() => handleClickNavVisibleItem(item)}
                     className={`px-4 py-2 rounded-lg relative text-sm font-medium transition-all duration-200 ${
                       currentSection.pathname === item.link ? "bg-violet-100 text-violet-700 shadow-sm" : "text-gray-600 hover:text-violet-700 hover:bg-violet-50"
                     } cursor-pointer`}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleClickNavVisibleItem(item);
+                      }
+                    }}
                     onMouseEnter={() => { item.subItems && setCurrentHoveredItem(item.id); item.subItems && setHoveredNavItem((prev) => prev !== "clicked" ? true : "clicked"); }}
                     onMouseLeave={() => { item.subItems && setHoveredNavItem((prev) => prev !== "clicked" ? false : "clicked"); }}
                   >
@@ -96,7 +104,7 @@ const LandingHeader = () => {
                         </motion.div>
                       )}
                     </AnimatePresence>
-                  </button>
+                  </div>
                 ))}
               </nav>
               <div className="hidden lg:flex items-center gap-3">
