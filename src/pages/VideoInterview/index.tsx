@@ -18,11 +18,10 @@ import {
   CONSULTING_TOPIC_TAG,
   CONSULTING_TOPICS_LIST,
 } from '../../constants/interviewTypes';
-import type { ConsultingTopic } from '../../constants/interviewTypes';
 import type { InterviewTest, ParentInterviewType } from '../../types/interviewTest';
 import type { StartInterviewPayload } from '../../types/interview';
 import InterviewLoadingPopup from './components/InterviewLoadingPopup';
-import ConsultingTopicSelector from './components/ConsultingTopicSelector';
+import InterviewStartGateModal from './components/InterviewStartGateModal';
 import './VideoInterview.css';
 
 const START_POLL_MS = 1500;
@@ -34,6 +33,21 @@ function getDifficultyClass(difficulty: string): 'easy' | 'medium' | 'hard' {
   if (d === 'easy') return 'easy';
   if (d === 'hard') return 'hard';
   return 'medium';
+}
+
+const CONSULTING_SLUGS = new Set(CONSULTING_TOPICS_LIST.map((t) => t.slug));
+
+/** Topic slug + display name from the library test (topics include consulting-topic + e.g. operations-cost). */
+function consultingPayloadFromTest(test: InterviewTest): Record<string, unknown> {
+  const slug = (test.topics ?? []).find(
+    (t) => t !== CONSULTING_TOPIC_TAG && CONSULTING_SLUGS.has(t)
+  );
+  if (!slug) return {};
+  const meta = CONSULTING_TOPICS_LIST.find((x) => x.slug === slug);
+  return {
+    consulting_topic: slug,
+    topic_name: meta?.name ?? slug,
+  };
 }
 
 export default function VideoInterview() {
@@ -52,8 +66,9 @@ export default function VideoInterview() {
   const [starting, setStarting] = useState(false);
   const [startProgress, setStartProgress] = useState(0);
   const [startError, setStartError] = useState<string | null>(null);
-  const [topicSelectorOpen, setTopicSelectorOpen] = useState(false);
-  const [pendingTest, setPendingTest] = useState<InterviewTest | null>(null);
+  const [mediaGateOpen, setMediaGateOpen] = useState(false);
+  const [mediaGateTest, setMediaGateTest] = useState<InterviewTest | null>(null);
+  const [mediaGateExtra, setMediaGateExtra] = useState<Record<string, unknown>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const hasMore = page < totalPages;
@@ -204,6 +219,26 @@ export default function VideoInterview() {
     [navigate]
   );
 
+  const openMediaGate = useCallback((test: InterviewTest, extra: Record<string, unknown> = {}) => {
+    setMediaGateTest(test);
+    setMediaGateExtra(extra);
+    setMediaGateOpen(true);
+  }, []);
+
+  const closeMediaGate = useCallback(() => {
+    setMediaGateOpen(false);
+    setMediaGateTest(null);
+    setMediaGateExtra({});
+  }, []);
+
+  const handleMediaGateGranted = useCallback(() => {
+    if (!mediaGateTest) return;
+    const test = mediaGateTest;
+    const extra = { ...mediaGateExtra };
+    closeMediaGate();
+    void launchInterview(test, extra);
+  }, [mediaGateTest, mediaGateExtra, closeMediaGate, launchInterview]);
+
   const handleStart = useCallback(
     async (test: InterviewTest) => {
       if (!user?.email) {
@@ -216,14 +251,13 @@ export default function VideoInterview() {
       const isCompanyGrowth = (test.topics ?? []).includes(COMPANY_GROWTH_TAG);
 
       if (isConsultingTopic) {
-        setPendingTest(test);
-        setTopicSelectorOpen(true);
+        openMediaGate(test, consultingPayloadFromTest(test));
         return;
       }
 
       if (isCompanyGrowth) {
         const companySlug = (test.topics ?? []).find((t) => t !== COMPANY_GROWTH_TAG) ?? '';
-        await launchInterview(test, {
+        openMediaGate(test, {
           company_slug: companySlug,
           company_name: test.company ?? '',
           fun_title: test.title,
@@ -231,38 +265,22 @@ export default function VideoInterview() {
         return;
       }
 
-      await launchInterview(test);
+      openMediaGate(test, {});
     },
-    [user?.email, launchInterview]
+    [user?.email, openMediaGate]
   );
-
-  const handleTopicConfirmed = useCallback(
-    async (topic: ConsultingTopic) => {
-      setTopicSelectorOpen(false);
-      if (!pendingTest) return;
-      await launchInterview(pendingTest, {
-        consulting_topic: topic.slug,
-        topic_name: topic.name,
-      });
-      setPendingTest(null);
-    },
-    [pendingTest, launchInterview]
-  );
-
-  const handleTopicSelectorClose = useCallback(() => {
-    setTopicSelectorOpen(false);
-    setPendingTest(null);
-  }, []);
 
   return (
     <>
       {starting && <InterviewLoadingPopup progress={startProgress} />}
-      <ConsultingTopicSelector
-        isOpen={topicSelectorOpen}
-        topics={CONSULTING_TOPICS_LIST}
-        onSelect={handleTopicConfirmed}
-        onClose={handleTopicSelectorClose}
-      />
+      {mediaGateTest && (
+        <InterviewStartGateModal
+          isOpen={mediaGateOpen}
+          interviewTitle={mediaGateTest.title}
+          onClose={closeMediaGate}
+          onGranted={handleMediaGateGranted}
+        />
+      )}
       <main className="video-interview" role="main" aria-label="Video Interview">
         <div className="video-interview__inner">
           <header className="video-interview__header">
@@ -366,7 +384,7 @@ export default function VideoInterview() {
                     <div className="video-interview__card-footer">
                       <button
                         type="button"
-                        disabled={starting}
+                        disabled={starting || mediaGateOpen}
                         onClick={() => handleStart(test)}
                         className="video-interview__btn-start"
                       >
