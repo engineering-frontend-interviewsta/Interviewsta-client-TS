@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Bot, User } from 'lucide-react';
 import type { InterviewMessage } from '../../../hooks/useInterviewSession';
+import { USER_TRANSCRIPT_PENDING_LABEL } from '../../../constants/interviewSessionUi';
 
 const EASE_SMOOTH = [0.16, 1, 0.3, 1] as const;
 
@@ -38,8 +39,6 @@ export interface TranscriptPanelProps {
   isUserTurnToSpeak?: boolean;
   /** When true, user is currently speaking (VAD detected) */
   userSpeaking?: boolean;
-  /** When false, copy assumes voice-only (no dev text field). */
-  allowDevTextInput?: boolean;
   className?: string;
 }
 
@@ -49,7 +48,6 @@ export default function TranscriptPanel({
   fallbackMessage,
   isUserTurnToSpeak = false,
   userSpeaking = false,
-  allowDevTextInput = false,
   className = '',
 }: TranscriptPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -89,11 +87,7 @@ export default function TranscriptPanel({
               Conversation will appear here
             </p>
             <p className="text-xs text-slate-400 mt-1">
-              {status === 'connecting'
-                ? 'Connecting…'
-                : allowDevTextInput
-                  ? 'Speak or type to respond'
-                  : 'Speak when it is your turn'}
+              {status === 'connecting' ? 'Connecting…' : 'Speak when it is your turn'}
             </p>
           </motion.div>
         )}
@@ -149,6 +143,10 @@ export default function TranscriptPanel({
             <motion.div
               className={`flex-1 min-w-0 max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap shadow-sm ${
                 msg.type === 'user' ? 'bg-blue-50 text-slate-800' : 'bg-slate-100 text-slate-800'
+              } ${
+                msg.type === 'user' && msg.content === USER_TRANSCRIPT_PENDING_LABEL
+                  ? 'italic text-slate-500'
+                  : ''
               }`}
               {...bubbleInner}
             >
@@ -189,9 +187,7 @@ export default function TranscriptPanel({
                     <span className="text-xs text-blue-100">
                       {userSpeaking
                         ? 'Your response will be sent when you finish.'
-                        : allowDevTextInput
-                          ? 'Answer in your own words. Speak or type below.'
-                          : 'Answer in your own words when you see your turn.'}
+                        : 'Answer in your own words when you see your turn.'}
                     </span>
                   </div>
                 </div>

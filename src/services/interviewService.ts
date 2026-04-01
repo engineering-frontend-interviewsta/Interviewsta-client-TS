@@ -415,8 +415,15 @@ export function connectToInterviewStream(
     });
     es.addEventListener('error', (e: Event) => {
       try {
-        const data = JSON.parse((e as MessageEvent).data as string);
-        callbacks.onError?.(data.message);
+        const raw = (e as MessageEvent).data;
+        if (raw == null || raw === '') return;
+        const data = JSON.parse(raw as string) as {
+          error?: string;
+          message?: string;
+          fatal?: boolean;
+        };
+        const msg = data.error ?? data.message;
+        if (msg) callbacks.onError?.(msg);
         if (data.fatal) es.close();
       } catch {
         // ignore

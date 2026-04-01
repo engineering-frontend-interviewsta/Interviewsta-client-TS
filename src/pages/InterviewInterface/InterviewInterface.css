@@ -10,6 +10,86 @@
   background: var(--color-surface-alt);
 }
 
+.interview-interface__body-with-overlay {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.interview-interface__join-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--color-surface-alt) 92%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.interview-interface__join-overlay-inner {
+  max-width: 22rem;
+  text-align: center;
+}
+
+.interview-interface__join-spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0 auto 1rem;
+  display: block;
+  border-color: #6366f1;
+  border-top-color: transparent;
+}
+
+.interview-interface__join-title {
+  margin: 0 0 0.5rem;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.interview-interface__join-sub {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.interview-interface__join-sub--warn {
+  margin-top: 0.75rem;
+  color: #b45309;
+}
+
+.interview-interface__join-continue {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: #fff;
+  background: #4f46e5;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+
+.interview-interface__join-continue:hover {
+  background: #4338ca;
+}
+
+.interview-interface__error-banner {
+  flex-shrink: 0;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--text-sm);
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-lg);
+}
+
 .interview-interface__content {
   flex: 1;
   min-height: 0;
@@ -141,59 +221,63 @@
   object-fit: cover;
 }
 
-.interview-interface__controls {
+/* Live mic spectrum (camera card) */
+.interview-interface__waveform {
+  width: 100%;
+  padding: 0.5rem 0.125rem 0.25rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-primary) 6%, var(--color-surface)) 0%,
+    var(--color-surface-alt) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, var(--color-border-light));
+}
+
+.interview-interface__waveform--inactive {
+  opacity: 0.55;
+  filter: saturate(0.65);
+}
+
+.interview-interface__waveform--glee .interview-interface__waveform-bar {
+  background: linear-gradient(
+    180deg,
+    #c4b5fd 0%,
+    #8b5cf6 45%,
+    #6d28d9 100%
+  );
+  box-shadow: 0 0 12px color-mix(in srgb, #8b5cf6 40%, transparent);
+}
+
+.interview-interface__waveform-inner {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  height: 3.25rem;
+  padding: 0 0.25rem;
 }
 
-.interview-interface__control-btns {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.interview-interface__btn-control {
-  padding: 0.25rem 0.5rem;
-  font-size: var(--text-xs);
-  font-family: var(--font-sans);
-  color: var(--color-text);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
-}
-
-.interview-interface__btn-control:hover {
-  background: var(--color-surface-alt);
-}
-
-.interview-interface__mic-level {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.interview-interface__mic-level-label {
-  font-size: 0.6875rem;
-  color: var(--color-text-subtle);
-}
-
-.interview-interface__mic-level-bar {
-  height: 0.375rem;
-  width: 4rem;
+.interview-interface__waveform-bar {
+  flex: 1;
+  min-width: 2px;
+  max-width: 10px;
+  align-self: flex-end;
   border-radius: 9999px;
-  background: var(--color-border-light);
-  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    #a5b4fc 0%,
+    #6366f1 45%,
+    #4f46e5 100%
+  );
+  box-shadow: 0 0 10px color-mix(in srgb, #6366f1 35%, transparent);
+  transform-origin: bottom center;
+  transition: opacity 0.2s ease;
 }
 
-.interview-interface__mic-level-fill {
-  height: 100%;
-  background: #22c55e;
-  transition: width var(--duration-fast) var(--ease-out);
+.interview-interface__waveform--inactive .interview-interface__waveform-bar {
+  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
+  box-shadow: none;
 }
 
 .interview-interface__vad-status {
@@ -222,6 +306,17 @@
 .interview-interface__vad-status--your-turn {
   font-weight: 500;
   color: #059669;
+}
+
+.interview-interface__vad-status--processing {
+  font-weight: 500;
+  color: #4f46e5;
+}
+
+.interview-interface__vad-status--transcribing {
+  font-weight: 500;
+  color: #64748b;
+  font-style: italic;
 }
 
 .interview-interface__vad-status--muted {
@@ -335,113 +430,10 @@
   color: var(--color-primary-dark);
 }
 
-.interview-interface__form {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.interview-interface__input {
-  flex: 1;
-  padding: 0.5rem 1rem;
-  font-size: var(--text-sm);
-  font-family: var(--font-sans);
-  color: var(--color-text);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  transition: border-color var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out);
-}
-
-.interview-interface__input::placeholder {
-  color: var(--color-text-subtle);
-}
-
-.interview-interface__input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.interview-interface__input:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.interview-interface__btn-send {
-  padding: 0.5rem 1rem;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  font-family: var(--font-sans);
-  color: white;
-  background: var(--color-primary);
-  border: none;
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out),
-    opacity var(--duration-fast) var(--ease-out);
-}
-
-.interview-interface__btn-send:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.interview-interface__btn-send:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .interview-interface__hint {
   margin-bottom: 1rem;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
-}
-
-.interview-interface__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-.interview-interface__btn-primary {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  font-family: var(--font-sans);
-  color: white;
-  background: var(--color-primary);
-  border: none;
-  border-radius: var(--radius-lg);
-  text-decoration: none;
-  transition: background-color var(--duration-fast) var(--ease-out);
-}
-
-.interview-interface__btn-primary:hover {
-  background: var(--color-primary-hover);
-}
-
-.interview-interface__btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  font-family: var(--font-sans);
-  color: var(--color-text);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  text-decoration: none;
-  transition: background-color var(--duration-fast) var(--ease-out),
-    border-color var(--duration-fast) var(--ease-out);
-}
-
-.interview-interface__btn-secondary:hover {
-  background: var(--color-surface-alt);
-  border-color: var(--color-border);
 }
 
 /* Header (shared with InterviewHeader.tsx) */
@@ -584,34 +576,16 @@
   height: 1rem;
 }
 
-.interview-header__icon-btn--dev {
-  color: var(--color-text-subtle);
-}
-
-.interview-header__icon-btn--dev:hover {
-  color: var(--color-text);
-  background: var(--color-surface-alt);
-}
-
-.interview-header__icon-btn--dev-active {
-  background: #fffbeb;
-  color: #b45309;
-}
-
-.interview-header__icon-btn--dev-active:hover {
-  background: #fef3c7;
-}
-
 .interview-header__end-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 600;
   font-family: var(--font-sans);
-  color: white;
-  background: var(--color-primary);
+  color: #ffffff;
+  background: #dc2626;
   border: none;
   border-radius: var(--radius-lg);
   cursor: pointer;
@@ -620,7 +594,7 @@
 }
 
 .interview-header__end-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
+  background: #b91c1c;
 }
 
 .interview-header__end-btn:disabled {

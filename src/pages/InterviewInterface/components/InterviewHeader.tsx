@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Clock, Download, Square, Zap } from 'lucide-react';
+import { Clock, Download, Square } from 'lucide-react';
 import { ROUTES } from '../../../constants/routerConstants';
 import logoImg from '../../../assets/logo.png';
 
@@ -11,8 +11,6 @@ const formatTime = (seconds: number): string => {
 
 export interface InterviewHeaderProps {
   elapsedSeconds: number;
-  devMode: boolean;
-  onToggleDevMode: () => void;
   onExportTranscript?: () => void;
   onEndClick: () => void;
   isEnding: boolean;
@@ -21,8 +19,6 @@ export interface InterviewHeaderProps {
 
 export default function InterviewHeader({
   elapsedSeconds,
-  devMode,
-  onToggleDevMode,
   onExportTranscript,
   onEndClick,
   isEnding,
@@ -56,16 +52,14 @@ export default function InterviewHeader({
               <Download aria-hidden />
             </button>
           )}
-          <button
-            type="button"
-            onClick={onToggleDevMode}
-            className={`interview-header__icon-btn interview-header__icon-btn--dev ${devMode ? 'interview-header__icon-btn--dev-active' : ''}`}
-            title={devMode ? 'Dev mode: ON' : 'Dev mode: OFF'}
-          >
-            <Zap aria-hidden />
-          </button>
           {!isComplete && (
-            <button type="button" onClick={onEndClick} disabled={isEnding} className="interview-header__end-btn">
+            <button
+              type="button"
+              onClick={onEndClick}
+              disabled={isEnding}
+              className="interview-header__end-btn"
+              title="End interview (confirmation required)"
+            >
               <Square aria-hidden />
               End Interview
             </button>

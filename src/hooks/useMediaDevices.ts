@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export interface MediaState {
   videoEnabled: boolean;
   audioEnabled: boolean;
-  micLevel: number;
   error: string | null;
 }
 
@@ -32,13 +31,11 @@ function createStreamPromise(): {
 export function useMediaDevices(): UseMediaDevicesResult {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const audioAnalyserRef = useRef<AnalyserNode | null>(null);
   const [streamReady, setStreamReady] = useState(false);
   const streamReadyRef = useRef(createStreamPromise());
   const [state, setState] = useState<MediaState>({
     videoEnabled: true,
     audioEnabled: true,
-    micLevel: 0,
     error: null,
   });
 
@@ -66,28 +63,6 @@ export function useMediaDevices(): UseMediaDevicesResult {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
-
-        const audioCtx = new AudioContext();
-        const source = audioCtx.createMediaStreamSource(stream);
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 512;
-        source.connect(analyser);
-        audioAnalyserRef.current = analyser;
-
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        const tick = () => {
-          if (!mounted || !audioAnalyserRef.current) return;
-          audioAnalyserRef.current.getByteTimeDomainData(dataArray);
-          let sum = 0;
-          for (let i = 0; i < dataArray.length; i += 1) {
-            const v = dataArray[i] - 128;
-            sum += v * v;
-          }
-          const rms = Math.sqrt(sum / dataArray.length);
-          setState((prev) => ({ ...prev, micLevel: Math.min(1, rms / 50) }));
-          requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to access camera or microphone.';
         // ✅ Also reject the promise on failure so callers don't hang forever
@@ -103,10 +78,6 @@ export function useMediaDevices(): UseMediaDevicesResult {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
-      }
-      if (audioAnalyserRef.current) {
-        audioAnalyserRef.current.disconnect();
-        audioAnalyserRef.current = null;
       }
     };
   }, []);

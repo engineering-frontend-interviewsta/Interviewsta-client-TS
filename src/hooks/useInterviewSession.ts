@@ -11,6 +11,7 @@ import type {
   CommunicationData,
   InterviewAIResponsePayload,
 } from '../types/interview';
+import { USER_TRANSCRIPT_PENDING_LABEL } from '../constants/interviewSessionUi';
 
 const POLL_INTERVAL_MS = 1500;
 const MAX_POLL_ATTEMPTS = 120;
@@ -81,8 +82,6 @@ function mergeCommunicationFromResponse(
 export interface UseInterviewSessionParams {
   sessionId: string;
   interviewType: string;
-  /** When true, TTS audio is skipped (dev mode). */
-  devMode?: boolean;
   /**
    * When `.current` is false at event time, SSE user transcripts are not appended
    * (matches legacy Communication interview: hide STT in main chat during structured rounds).
@@ -104,6 +103,15 @@ export interface UseInterviewSessionResult {
   isSubmitting: boolean;
   /** True while TTS is playing; use to disable VAD so user doesn't speak over AI */
   isPlayingAudio: boolean;
+  /** First AI message/audio has arrived (SSE); use to avoid empty interview flash. */
+  gleeHasJoined: boolean;
+  /** True after ~75s without Glee; UI may offer "continue anyway". */
+  gleeJoinWaitTimedOut: boolean;
+  bypassGleeJoinGate: () => void;
+  /** Real user transcript is shown this turn (after voice: not placeholder). */
+  userTranscriptVisibleThisTurn: boolean;
+  /** Poll finished but last transcript line is still user — waiting for SSE / TTS. */
+  awaitingStreamAi: boolean;
   /** Add a user message to the transcript (e.g. when user sends text input) */
   addUserMessage: (content: string) => void;
   submitText: (text: string) => Promise<void>;
@@ -116,7 +124,6 @@ export interface UseInterviewSessionResult {
 export function useInterviewSession({
   sessionId,
   interviewType,
-  devMode = false,
   appendStreamUserTranscriptRef,
 }: UseInterviewSessionParams): UseInterviewSessionResult {
   const [aiMessage, setAiMessage] = useState('');
@@ -128,7 +135,12 @@ export function useInterviewSession({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [gleeJoined, setGleeJoined] = useState(false);
+  const [gleeJoinWaitTimedOut, setGleeJoinWaitTimedOut] = useState(false);
+  const [userLineCommitted, setUserLineCommitted] = useState(false);
+  const [awaitingStreamAi, setAwaitingStreamAi] = useState(false);
   const streamCloseRef = useRef<(() => void) | null>(null);
+  const prevSessionIdRef = useRef<string | undefined>(undefined);
   const startTimeRef = useRef(Date.now());
   const audioQueueRef = useRef<string[]>([]);
   const isPlayingRef = useRef(false);
@@ -144,13 +156,42 @@ export function useInterviewSession({
     });
   }, []);
 
+  const pushPendingUserLine = useCallback(() => {
+    setMessages((prev) => {
+      const last = prev[prev.length - 1];
+      if (last?.type === 'user' && last.content === USER_TRANSCRIPT_PENDING_LABEL) return prev;
+      return [...prev, { id: nextId(), type: 'user', content: USER_TRANSCRIPT_PENDING_LABEL, timestamp: new Date() }];
+    });
+  }, []);
+
   const addUserMessage = useCallback((content: string) => {
     const t = content?.trim();
     if (!t) return;
     setMessages((prev) => {
       const last = prev[prev.length - 1];
+      if (last?.type === 'user' && last.content === USER_TRANSCRIPT_PENDING_LABEL) {
+        return [...prev.slice(0, -1), { ...last, content: t, timestamp: new Date() }];
+      }
       if (last?.type === 'user' && last.content === t) return prev;
       return [...prev, { id: nextId(), type: 'user', content: t, timestamp: new Date() }];
+    });
+    if (t !== USER_TRANSCRIPT_PENDING_LABEL) {
+      setUserLineCommitted(true);
+    }
+  }, []);
+
+  const bypassGleeJoinGate = useCallback(() => {
+    setGleeJoined(true);
+    setGleeJoinWaitTimedOut(false);
+  }, []);
+
+  const stripPendingUserLine = useCallback(() => {
+    setMessages((prev) => {
+      const last = prev[prev.length - 1];
+      if (last?.type === 'user' && last.content === USER_TRANSCRIPT_PENDING_LABEL) {
+        return prev.slice(0, -1);
+      }
+      return prev;
     });
   }, []);
 
@@ -198,13 +239,14 @@ export function useInterviewSession({
 
   const enqueueAudio = useCallback(
     (base64: string | undefined) => {
-      if (!base64 || devMode) return;
+      if (!base64) return;
+      setGleeJoined(true);
       audioQueueRef.current.push(base64);
       if (!isPlayingRef.current) {
         playNext();
       }
     },
-    [playNext, devMode]
+    [playNext]
   );
 
   useEffect(() => {
@@ -228,9 +270,64 @@ export function useInterviewSession({
 
   useEffect(() => {
     if (!sessionId) return;
+    const prev = prevSessionIdRef.current;
+    prevSessionIdRef.current = sessionId;
+    if (prev === undefined || prev === sessionId) return;
+    setMessages([]);
+    setAiMessage('');
+    setLastNode(null);
+    setCommunicationData(emptyCommunicationData);
+    setGleeJoined(false);
+    setGleeJoinWaitTimedOut(false);
+    setUserLineCommitted(false);
+    setAwaitingStreamAi(false);
+    setStatus('connecting');
+    setError(null);
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionId || gleeJoined) return;
+    const t = window.setTimeout(() => setGleeJoinWaitTimedOut(true), 75_000);
+    return () => window.clearTimeout(t);
+  }, [sessionId, gleeJoined]);
+
+  useEffect(() => {
+    if (isComplete) {
+      setAwaitingStreamAi(false);
+      return;
+    }
+    const last = messages[messages.length - 1];
+    if (!last || last.type === 'ai' || isPlayingAudio) {
+      setAwaitingStreamAi(false);
+      return;
+    }
+    if (last.type !== 'user') {
+      setAwaitingStreamAi(false);
+      return;
+    }
+    if (last.content === USER_TRANSCRIPT_PENDING_LABEL) {
+      setAwaitingStreamAi(false);
+      return;
+    }
+    if (isSubmitting) {
+      setAwaitingStreamAi(false);
+      return;
+    }
+    setAwaitingStreamAi(true);
+  }, [messages, isSubmitting, isPlayingAudio, isComplete]);
+
+  useEffect(() => {
+    if (!sessionId) return;
     try {
       const { close } = connectToInterviewStream(sessionId, {
-        onStatusUpdate: (s) => setStatus(s),
+        onStatusUpdate: (s) => {
+          setStatus(s);
+          // Don’t rely only on ai_response payload (message/audio): if the client connects
+          // after the server already moved to waiting_for_response, we’d never clear the join gate.
+          if (s === 'ai_responded' || s === 'waiting_for_response') {
+            setGleeJoined(true);
+          }
+        },
         onTranscript: (raw) => {
           const text = typeof raw === 'string' ? raw.trim() : '';
           if (!text) return;
@@ -238,6 +335,9 @@ export function useInterviewSession({
           addUserMessage(text);
         },
         onAIResponse: (data: AIResponseData) => {
+          if ((data.message && data.message.trim()) || data.audioBase64) {
+            setGleeJoined(true);
+          }
           if (data.message != null) {
             setAiMessage(data.message);
             addAIMessage(data.message);
@@ -270,18 +370,21 @@ export function useInterviewSession({
   const submitText = useCallback(
     async (text: string) => {
       if (!text.trim() || isSubmitting) return;
+      const trimmed = text.trim();
       setIsSubmitting(true);
       setError(null);
+      addUserMessage(trimmed);
       try {
         const { taskId } = await submitResponse({
           sessionId,
-          textResponse: text.trim(),
+          textResponse: trimmed,
         });
         let attempts = 0;
         const poll = async (): Promise<void> => {
           if (attempts >= MAX_POLL_ATTEMPTS) {
             console.warn(ERROR_LOG_PREFIX, 'submitText poll timeout');
             setError('Response timeout');
+            setUserLineCommitted(false);
             setIsSubmitting(false);
             return;
           }
@@ -297,6 +400,7 @@ export function useInterviewSession({
             const ia = res?.interview_ai_response;
             if (ia?.last_node != null) setLastNode(ia.last_node);
             if (ia) setCommunicationData((prev) => mergeCommunicationFromResponse(prev, ia));
+            setUserLineCommitted(false);
             setIsSubmitting(false);
             return;
           }
@@ -304,6 +408,7 @@ export function useInterviewSession({
             const errMsg = res?.error ?? 'Response failed';
             console.warn(ERROR_LOG_PREFIX, 'submitText poll failed:', errMsg, res);
             setError(errMsg);
+            setUserLineCommitted(false);
             setIsSubmitting(false);
             return;
           }
@@ -314,6 +419,7 @@ export function useInterviewSession({
         const message = err instanceof Error ? err.message : 'Failed to submit';
         console.warn(ERROR_LOG_PREFIX, 'submitText catch:', message, err);
         setError(message);
+        setUserLineCommitted(false);
         setIsSubmitting(false);
       }
     },
@@ -324,6 +430,8 @@ export function useInterviewSession({
     async (audio: Blob) => {
       if (isSubmitting) return;
       setIsSubmitting(true);
+      setUserLineCommitted(false);
+      pushPendingUserLine();
       setError(null);
       try {
         // Backend expects WAV with RIFF header; MediaRecorder gives webm/opus — convert first
@@ -339,6 +447,8 @@ export function useInterviewSession({
           if (attempts >= MAX_POLL_ATTEMPTS) {
             console.warn(ERROR_LOG_PREFIX, 'submitAudio poll timeout');
             setError('Response timeout');
+            stripPendingUserLine();
+            setUserLineCommitted(false);
             setIsSubmitting(false);
             return;
           }
@@ -355,6 +465,7 @@ export function useInterviewSession({
             const ia = res?.interview_ai_response;
             if (ia?.last_node != null) setLastNode(ia.last_node);
             if (ia) setCommunicationData((prev) => mergeCommunicationFromResponse(prev, ia));
+            setUserLineCommitted(false);
             setIsSubmitting(false);
             return;
           }
@@ -362,6 +473,8 @@ export function useInterviewSession({
             const errMsg = res?.error ?? 'Response failed';
             console.warn(ERROR_LOG_PREFIX, 'submitAudio poll failed:', errMsg, res);
             setError(errMsg);
+            stripPendingUserLine();
+            setUserLineCommitted(false);
             setIsSubmitting(false);
             return;
           }
@@ -372,10 +485,12 @@ export function useInterviewSession({
         const message = err instanceof Error ? err.message : 'Failed to submit audio';
         console.warn(ERROR_LOG_PREFIX, 'submitAudio catch:', message, err);
         setError(message);
+        stripPendingUserLine();
+        setUserLineCommitted(false);
         setIsSubmitting(false);
       }
     },
-    [sessionId, isSubmitting, addUserMessage, addAIMessage]
+    [sessionId, isSubmitting, addUserMessage, addAIMessage, pushPendingUserLine, stripPendingUserLine]
   );
 
   const submitCode = useCallback(
@@ -393,6 +508,7 @@ export function useInterviewSession({
           if (attempts >= MAX_POLL_ATTEMPTS) {
             console.warn(ERROR_LOG_PREFIX, 'submitCode poll timeout');
             setError('Response timeout');
+            setUserLineCommitted(false);
             setIsSubmitting(false);
             return;
           }
@@ -409,6 +525,7 @@ export function useInterviewSession({
             const ia = res?.interview_ai_response;
             if (ia?.last_node != null) setLastNode(ia.last_node);
             if (ia) setCommunicationData((prev) => mergeCommunicationFromResponse(prev, ia));
+            setUserLineCommitted(false);
             setIsSubmitting(false);
             return;
           }
@@ -416,6 +533,7 @@ export function useInterviewSession({
             const errMsg = res?.error ?? 'Response failed';
             console.warn(ERROR_LOG_PREFIX, 'submitCode poll failed:', errMsg, res);
             setError(errMsg);
+            setUserLineCommitted(false);
             setIsSubmitting(false);
             return;
           }
@@ -426,6 +544,7 @@ export function useInterviewSession({
         const message = err instanceof Error ? err.message : 'Failed to submit code';
         console.warn(ERROR_LOG_PREFIX, 'submitCode catch:', message, err);
         setError(message);
+        setUserLineCommitted(false);
         setIsSubmitting(false);
       }
     },
@@ -462,6 +581,11 @@ export function useInterviewSession({
     error,
     isSubmitting,
     isPlayingAudio,
+    gleeHasJoined: gleeJoined,
+    gleeJoinWaitTimedOut,
+    bypassGleeJoinGate,
+    userTranscriptVisibleThisTurn: userLineCommitted,
+    awaitingStreamAi,
     addUserMessage,
     submitText,
     submitAudio,

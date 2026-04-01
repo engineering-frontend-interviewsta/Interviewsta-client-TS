@@ -187,8 +187,8 @@ export default function VideoInterview() {
           setStartProgress(progress);
           if (statusResult.status === 'completed') {
             setStartProgress(100);
-            setStarting(false);
             navigate(ROUTES.INTERVIEW_INTERFACE, {
+              replace: true,
               state: {
                 sessionId: result.sessionId,
                 interviewType,

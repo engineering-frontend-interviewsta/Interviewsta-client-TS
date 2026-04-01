@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { clearInterviewAccessToken } from '../../api/axiosInstance';
 import { useInterviewSession } from '../../hooks/useInterviewSession';
 import { useMediaDevices } from '../../hooks/useMediaDevices';
 import { usePlanStatus } from '../../hooks/usePlanStatus';
+import { useUtteranceHold } from '../../hooks/useUtteranceHold';
 import { getInterviewFeedbackStatus } from '../../services/interviewService';
 import { float32ToWavBlob } from '../../utils/blobToWav';
 import { useMicVAD } from '@ricky0123/vad-react';
@@ -13,7 +14,9 @@ import { SpeakingPhase, ComprehensionPhase, MCQPhase, MCQResults } from './compo
 import InterviewHeader from './components/InterviewHeader';
 import EndInterviewModal from './components/EndInterviewModal';
 import TranscriptPanel from './components/TranscriptPanel';
+import MicWaveform from './components/MicWaveform';
 import { ROUTES } from '../../constants/routerConstants';
+import { USER_TRANSCRIPT_PENDING_LABEL } from '../../constants/interviewSessionUi';
 import './InterviewInterface.css';
 
 const FEEDBACK_POLL_INTERVAL_MS = 2000;
@@ -42,8 +45,6 @@ export default function InterviewInterface() {
   const interviewType = state?.interviewType ?? 'Technical';
   const interviewTypeId = state?.interviewTypeId;
 
-  // Dev mode should always start OFF for every new interview session.
-  const [devMode, setDevMode] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
 
   useEffect(() => { 
@@ -61,25 +62,30 @@ export default function InterviewInterface() {
     communicationData,
     status,
     isComplete,
+    error,
     isSubmitting,
     isPlayingAudio,
+    gleeHasJoined,
+    gleeJoinWaitTimedOut,
+    bypassGleeJoinGate,
+    awaitingStreamAi,
     submitText,
     submitAudio,
     submitCode,
     endSession,
-    addUserMessage,
     updateCommunicationData,
   } = useInterviewSession({
     sessionId: sessionId ?? '',
     interviewType,
-    devMode,
     appendStreamUserTranscriptRef,
   });
-
-  const [textInput, setTextInput] = useState('');
-  const { videoRef, videoEnabled, audioEnabled, micLevel, toggleVideo, toggleAudio, getStream, streamReady } =
-    useMediaDevices();
+  const { videoRef, audioEnabled, getStream, streamReady } = useMediaDevices();
   const allowVadSendRef = useRef(true);
+  /** Ignore VAD submissions briefly after AI audio ends (avoids echo/noise firing submitAudio → false "processing"). */
+  const postAiListenGateUntilRef = useRef(0);
+  const prevIsPlayingAudioRef = useRef(false);
+  const limitWarnedRef = useRef(false);
+  const limitAutoEndRef = useRef(false);
   const [activeTab, setActiveTab] = useState<'conversation' | 'code' | 'notes'>('conversation');
   const [notes, setNotes] = useState('');
   const [caseStudyQuestion, setCaseStudyQuestion] = useState<string | null>(null);
@@ -139,6 +145,13 @@ export default function InterviewInterface() {
   allowVadSendRef.current = !isCommunicationSpeakingExercise;
 
   useEffect(() => {
+    if (prevIsPlayingAudioRef.current && !isPlayingAudio) {
+      postAiListenGateUntilRef.current = Date.now() + 700;
+    }
+    prevIsPlayingAudioRef.current = isPlayingAudio;
+  }, [isPlayingAudio]);
+
+  useEffect(() => {
     if (!isCommunication || !communicationPhase) {
       appendStreamUserTranscriptRef.current = true;
       return;
@@ -157,7 +170,8 @@ export default function InterviewInterface() {
     pauseStream: async () => {},
     resumeStream: async (stream: MediaStream) => stream,
     onSpeechEnd: (audio: Float32Array) => {
-      if (!allowVadSendRef.current || devMode) return;
+      if (!allowVadSendRef.current) return;
+      if (Date.now() < postAiListenGateUntilRef.current) return;
       const blob = float32ToWavBlob(audio, 16000);
       void submitAudio(blob);
     },
@@ -169,32 +183,64 @@ export default function InterviewInterface() {
     onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/',
   });
 
-  // Seamless conversation: mic stays on; we only pause *listening* when Glee is speaking so the user
-  // never has to click the mic. When AI audio ends, VAD starts again and we capture/send automatically.
-  // Important: only call vad.start() after VAD has finished loading and we have an active mic stream.
+  // Pause VAD while Glee speaks or we're awaiting the backend; resume after a short post-AI gate against echo.
   useEffect(() => {
     if (isComplete) {
       vad.pause();
       return;
     }
-    if (vad.loading) return; // Wait for model load before starting (matches old frontend)
-    if (audioEnabled && !isPlayingAudio && !isSubmitting) {
-      getStream()
+    if (vad.loading) return;
+
+    if (
+      !audioEnabled ||
+      isPlayingAudio ||
+      isSubmitting ||
+      awaitingStreamAi ||
+      (!gleeHasJoined && !isComplete)
+    ) {
+      vad.pause();
+      return;
+    }
+
+    const gateWait = Math.max(0, postAiListenGateUntilRef.current - Date.now());
+    const startListening = () => {
+      void getStream()
         .then((stream) => {
           if (stream?.active) void vad.start();
         })
         .catch(() => {});
-    } else {
-      vad.pause();
-    }
-  }, [audioEnabled, isPlayingAudio, isSubmitting, isComplete, vad.loading, getStream]);
+    };
 
-  useEffect(() => {
-    // In dev mode, force mic muted so voice input does not run.
-    if (devMode && audioEnabled) {
-      toggleAudio();
+    if (gateWait <= 0) {
+      startListening();
+      return;
     }
-  }, [devMode, audioEnabled, toggleAudio]);
+
+    const t = window.setTimeout(startListening, gateWait);
+    return () => clearTimeout(t);
+  }, [
+    audioEnabled,
+    isPlayingAudio,
+    isSubmitting,
+    awaitingStreamAi,
+    gleeHasJoined,
+    isComplete,
+    vad.loading,
+    getStream,
+    vad,
+  ]);
+
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+  const lastIsTranscribingPlaceholder =
+    lastMessage?.type === 'user' && lastMessage.content === USER_TRANSCRIPT_PENDING_LABEL;
+  const showGleeProcessingSidebar =
+    !isPlayingAudio &&
+    !lastIsTranscribingPlaceholder &&
+    ((isSubmitting && lastMessage?.type === 'user') || awaitingStreamAi);
+
+  /** Block main interview until first SSE from Glee (or connection error). */
+  const showGleeJoinOverlay =
+    Boolean(sessionId) && !isComplete && !gleeHasJoined && !error;
 
   // When it's clearly the user's turn: session active, mic on, VAD ready, AI not speaking, not submitting
   const isUserTurnToSpeak =
@@ -203,7 +249,12 @@ export default function InterviewInterface() {
     audioEnabled &&
     !isPlayingAudio &&
     !isSubmitting &&
+    !awaitingStreamAi &&
+    gleeHasJoined &&
     !isCommunicationSpeakingExercise;
+
+  const utteranceHold = useUtteranceHold(vad.userSpeaking, 480);
+  const displayUserSpeaking = utteranceHold && !isSubmitting && !isPlayingAudio;
 
   useEffect(() => {
     if (!sessionId) {
@@ -212,44 +263,46 @@ export default function InterviewInterface() {
   }, [sessionId, navigate]);
 
   useEffect(() => {
-    if (!planStatus?.has_time_limit || isComplete) return;
-    const key = 'interview_start_ts';
+    limitWarnedRef.current = false;
+    limitAutoEndRef.current = false;
+    setAutoEnded(false);
+    setShowTimeWarning(false);
+  }, [sessionId]);
+
+  // Elapsed clock for all interviews; free-tier cap only when plan reports a time limit.
+  useEffect(() => {
+    if (!sessionId || isComplete) return;
+    const key = `interview_session_started_${sessionId}`;
     if (!sessionStorage.getItem(key)) {
       sessionStorage.setItem(key, String(Date.now()));
     }
-    let cancelled = false;
-    const tick = () => {
-      if (cancelled) return;
-      const storedStart = sessionStorage.getItem(key);
-      const startTs = storedStart ? Number(storedStart) : Date.now();
-      const elapsed = Math.floor((Date.now() - startTs) / 1000);
-      setElapsedSeconds(elapsed);
-      if (elapsed >= 300 && !showTimeWarning) {
-        setShowTimeWarning(true);
-      }
-      if (elapsed >= 600 && !autoEnded) {
-        setAutoEnded(true);
-        setShowTimeWarning(false);
-        sessionStorage.removeItem(key);
-        void endSession({ sessionFinished: true, interviewTestId: interviewTypeId });
-      } else {
-        setTimeout(tick, 1000);
-      }
-    };
-    tick();
-    return () => {
-      cancelled = true;
-    };
-  }, [planStatus?.has_time_limit, isComplete, endSession, showTimeWarning, autoEnded, interviewTypeId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const text = textInput.trim();
-    if (!text) return;
-    addUserMessage(text);
-    setTextInput('');
-    await submitText(text);
-  };
+    const tick = () => {
+      const raw = sessionStorage.getItem(key);
+      const startTs = raw ? Number(raw) : NaN;
+      const t0 = Number.isFinite(startTs) ? startTs : Date.now();
+      const elapsed = Math.floor((Date.now() - t0) / 1000);
+      setElapsedSeconds(elapsed);
+
+      if (planStatus?.has_time_limit) {
+        if (elapsed >= 300 && !limitWarnedRef.current) {
+          limitWarnedRef.current = true;
+          setShowTimeWarning(true);
+        }
+        if (elapsed >= 600 && !limitAutoEndRef.current) {
+          limitAutoEndRef.current = true;
+          setShowTimeWarning(false);
+          setAutoEnded(true);
+          sessionStorage.removeItem(key);
+          void endSession({ sessionFinished: true, interviewTestId: interviewTypeId });
+        }
+      }
+    };
+
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [sessionId, isComplete, planStatus?.has_time_limit, endSession, interviewTypeId]);
 
   const exportTranscript = useCallback(() => {
     const lines = messages.map((m) =>
@@ -263,10 +316,6 @@ export default function InterviewInterface() {
     a.click();
     URL.revokeObjectURL(url);
   }, [messages]);
-
-  const toggleDevMode = useCallback(() => {
-    setDevMode((prev) => !prev);
-  }, []);
 
   const handleEndClick = useCallback(() => {
     setShowEndModal(true);
@@ -344,8 +393,6 @@ export default function InterviewInterface() {
     <div className="interview-interface">
       <InterviewHeader
           elapsedSeconds={elapsedSeconds}
-          devMode={devMode}
-          onToggleDevMode={toggleDevMode}
           onExportTranscript={messages.length > 0 ? exportTranscript : undefined}
           onEndClick={handleEndClick}
           isEnding={isEndingInterview}
@@ -358,56 +405,96 @@ export default function InterviewInterface() {
         isEnding={isEndingInterview}
         isPreparingFeedback={!!endTaskId}
       />
+      <div className="interview-interface__body-with-overlay">
+        {showGleeJoinOverlay && (
+          <div className="interview-interface__join-overlay" role="status" aria-live="polite">
+            <div className="interview-interface__join-overlay-inner">
+              <span className="interview-interface__vad-spinner interview-interface__join-spinner" />
+              <p className="interview-interface__join-title">Starting your interview…</p>
+              <p className="interview-interface__join-sub">
+                Waiting for Glee to connect. You’ll see the conversation as soon as they begin.
+              </p>
+              {gleeJoinWaitTimedOut && (
+                <>
+                  <p className="interview-interface__join-sub interview-interface__join-sub--warn">
+                    This is taking longer than usual. You can continue if the room looks ready.
+                  </p>
+                  <button
+                    type="button"
+                    className="interview-interface__join-continue"
+                    onClick={() => bypassGleeJoinGate()}
+                  >
+                    Continue anyway
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       <div className="interview-interface__content">
+        {error && (
+          <div className="interview-interface__error-banner" role="alert">
+            {error}
+          </div>
+        )}
         <div className="interview-interface__main">
           <aside className="interview-interface__aside">
             <div className="interview-interface__panel">
               <div className="interview-interface__card">
                 <div className="interview-interface__card-header">
                   <h2 className="interview-interface__card-title">Camera</h2>
-              <div className="interview-interface__card-meta">
-                {status && status !== 'waiting_for_response' && <span>{status}</span>}
-                {planStatus?.has_time_limit && (
-                  <span>
-                    {Math.floor(elapsedSeconds / 60)}:
-                    {(elapsedSeconds % 60).toString().padStart(2, '0')} / 10:00
-                  </span>
-                )}
-              </div>
-            </div>
+                  {status && status !== 'waiting_for_response' && (
+                    <div className="interview-interface__card-meta">
+                      <span>{status}</span>
+                    </div>
+                  )}
+                </div>
             <div className="interview-interface__video-wrap">
               <video ref={videoRef} autoPlay playsInline muted />
             </div>
-            <div className="interview-interface__controls">
-              <div className="interview-interface__control-btns">
-                <button type="button" onClick={toggleVideo} className="interview-interface__btn-control">
-                  {videoEnabled ? 'Turn camera off' : 'Turn camera on'}
-                </button>
-                <button type="button" onClick={toggleAudio} className="interview-interface__btn-control">
-                  {audioEnabled ? 'Mute mic' : 'Unmute mic'}
-                </button>
-              </div>
-              <div className="interview-interface__mic-level">
-                <span className="interview-interface__mic-level-label">Mic level</span>
-                <div className="interview-interface__mic-level-bar">
-                  <div className="interview-interface__mic-level-fill" style={{ width: `${Math.round(micLevel * 100)}%` }} />
-                </div>
-              </div>
-            </div>
-            {!isComplete && audioEnabled && (vad.loading || isUserTurnToSpeak || isPlayingAudio || isSubmitting) && (
-              <div className={`interview-interface__vad-status ${
-                vad.loading ? 'interview-interface__vad-status--loading' :
-                isUserTurnToSpeak ? (vad.userSpeaking ? 'interview-interface__vad-status--speaking' : 'interview-interface__vad-status--your-turn') :
-                'interview-interface__vad-status--muted'
-              }`}>
+            <MicWaveform
+              inactive={!audioEnabled || isComplete}
+              gleeSpeaking={isPlayingAudio}
+            />
+            {!isComplete &&
+              audioEnabled &&
+              !isCommunicationSpeakingExercise &&
+              (vad.loading ||
+                isPlayingAudio ||
+                isSubmitting ||
+                showGleeProcessingSidebar ||
+                isUserTurnToSpeak) && (
+              <div
+                className={`interview-interface__vad-status ${
+                  vad.loading
+                    ? 'interview-interface__vad-status--loading'
+                    : isPlayingAudio
+                      ? 'interview-interface__vad-status--muted'
+                      : isSubmitting && lastIsTranscribingPlaceholder
+                        ? 'interview-interface__vad-status--transcribing'
+                        : showGleeProcessingSidebar
+                          ? 'interview-interface__vad-status--processing'
+                          : displayUserSpeaking
+                            ? 'interview-interface__vad-status--speaking'
+                            : 'interview-interface__vad-status--your-turn'
+                }`}
+              >
                 {vad.loading ? (
                   <>
                     <span className="interview-interface__vad-spinner" />
                     Loading voice detection…
                   </>
-                ) : isUserTurnToSpeak ? (
-                  vad.userSpeaking ? "You're speaking…" : 'Your turn — speak now'
-                ) : isPlayingAudio ? 'Interviewer is speaking…' : 'Sending…'}
+                ) : isPlayingAudio ? (
+                  'Glee is speaking…'
+                ) : isSubmitting && lastIsTranscribingPlaceholder ? (
+                  'Transcribing your response…'
+                ) : showGleeProcessingSidebar ? (
+                  'Glee is processing your response…'
+                ) : displayUserSpeaking ? (
+                  "You're speaking…"
+                ) : (
+                  'Your turn — speak now'
+                )}
               </div>
             )}
               </div>
@@ -461,37 +548,16 @@ export default function InterviewInterface() {
                   status={status}
                   fallbackMessage={aiMessage || undefined}
                   isUserTurnToSpeak={isUserTurnToSpeak}
-                  userSpeaking={vad.userSpeaking}
-                  allowDevTextInput={devMode}
+                  userSpeaking={displayUserSpeaking}
                   className="interview-interface__transcript-panel"
                 />
               </div>
 
-              {!isComplete && devMode && (
-                <form onSubmit={handleSubmit} className="interview-interface__form">
-                  <input
-                    type="text"
-                    value={textInput}
-                    onChange={(e) => setTextInput(e.target.value)}
-                    placeholder="Type your response…"
-                    className="interview-interface__input"
-                    disabled={isSubmitting}
-                  />
-                  <button type="submit" disabled={isSubmitting || !textInput.trim()} className="interview-interface__btn-send">
-                    {isSubmitting ? 'Sending…' : 'Send'}
-                  </button>
-                </form>
-              )}
-
               {!isComplete && (
                 <p className="interview-interface__hint">
-                  {devMode
-                    ? audioEnabled
-                      ? 'Dev mode: use Send or mic. In production, only voice is used.'
-                      : 'Dev mode: turn mic on to speak, or type and Send.'
-                    : audioEnabled
-                      ? 'Mic stays on. Speak when you see “Your turn — speak now”; your response is sent automatically. Don’t speak while the interviewer is talking.'
-                      : 'Turn mic on to speak.'}
+                  {audioEnabled
+                    ? 'Mic stays on. Speak when you see “Your turn — speak now”; your response is sent automatically. Don’t speak while the interviewer is talking.'
+                    : 'Turn mic on to speak.'}
                 </p>
               )}
             </>
@@ -505,7 +571,7 @@ export default function InterviewInterface() {
                     instruction={communicationData.speaking?.instruction}
                     paragraph={communicationData.speaking?.paragraph ?? (communicationPhase ? aiMessage : undefined)}
                     onSendResponse={sendCommunicationResponse}
-                    isProcessing={isSubmitting}
+                    isProcessing={isSubmitting || awaitingStreamAi}
                     feedback={communicationData.speakingFeedback}
                     onClearFeedback={() =>
                       updateCommunicationData((prev) => ({ ...prev, speakingFeedback: null }))
@@ -520,7 +586,7 @@ export default function InterviewInterface() {
                     instruction={communicationData.comprehension?.instruction}
                     question={communicationData.comprehension?.question ?? (communicationPhase ? aiMessage : undefined)}
                     onSendResponse={sendCommunicationResponse}
-                    isProcessing={isSubmitting}
+                    isProcessing={isSubmitting || awaitingStreamAi}
                     feedback={communicationData.comprehensionFeedback}
                     onClearFeedback={() =>
                       updateCommunicationData((prev) => ({ ...prev, comprehensionFeedback: null }))
@@ -564,22 +630,12 @@ export default function InterviewInterface() {
 
           {activeTab === 'code' && isCodeInterview && (
             <div className="mb-4 flex-1">
-              <CodeEditorPanel onSend={submitCode} disabled={isSubmitting} />
+              <CodeEditorPanel onSend={submitCode} disabled={isSubmitting || awaitingStreamAi} />
             </div>
           )}
-
-          <div className="interview-interface__actions">
-            {isComplete && (
-              <Link to={ROUTES.STUDENT_DASHBOARD} className="interview-interface__btn-primary">
-                Back to Dashboard
-              </Link>
-            )}
-            <Link to={ROUTES.VIDEO_INTERVIEW} className="interview-interface__btn-secondary">
-              Back to Video Interview
-            </Link>
-          </div>
         </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 export interface EndInterviewModalProps {
   open: boolean;
   onClose: () => void;
@@ -17,6 +16,12 @@ export default function EndInterviewModal({
 }: EndInterviewModalProps) {
   if (!open) return null;
 
+  const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget) return;
+    if (isPreparingFeedback || isEnding) return;
+    onClose();
+  };
+
   if (isPreparingFeedback) {
     return (
       <div
@@ -24,8 +29,12 @@ export default function EndInterviewModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="end-interview-title"
+        onClick={handleBackdrop}
       >
-        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 text-center">
+        <div
+          className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 text-center"
+          onClick={(e) => e.stopPropagation()}
+        >
           <h2 id="end-interview-title" className="text-lg font-semibold text-slate-900 mb-2">
             Preparing your feedback
           </h2>
@@ -46,16 +55,18 @@ export default function EndInterviewModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="end-interview-title"
+      onClick={handleBackdrop}
     >
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-        <h2
-          id="end-interview-title"
-          className="text-lg font-semibold text-slate-900 mb-2"
-        >
-          End interview?
+      <div
+        className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="end-interview-title" className="text-lg font-semibold text-slate-900 mb-2">
+          End this interview?
         </h2>
         <p className="text-slate-600 text-sm mb-6">
-          Your progress will be saved and you&apos;ll be redirected to the feedback page.
+          Your session will end and your progress will be saved. You&apos;ll go to the feedback page. This
+          cannot be undone.
         </p>
         <div className="flex gap-3 justify-end">
           <button
@@ -70,7 +81,7 @@ export default function EndInterviewModal({
             type="button"
             onClick={onConfirm}
             disabled={isEnding}
-            className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold disabled:opacity-50 flex items-center gap-2"
           >
             {isEnding ? (
               <>
@@ -78,7 +89,7 @@ export default function EndInterviewModal({
                 Ending…
               </>
             ) : (
-              'End Interview'
+              'Yes, end interview'
             )}
           </button>
         </div>
