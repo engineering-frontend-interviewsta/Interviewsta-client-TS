@@ -132,6 +132,7 @@ export function useInterviewSession({
   const startTimeRef = useRef(Date.now());
   const audioQueueRef = useRef<string[]>([]);
   const isPlayingRef = useRef(false);
+  const blockedAudioRef = useRef<string | null>(null);
 
   const addAIMessage = useCallback((content: string) => {
     const t = content?.trim();
@@ -159,7 +160,8 @@ export function useInterviewSession({
     if (!next) return;
     isPlayingRef.current = true;
     setIsPlayingAudio(true);
-    const audio = new Audio(`data:audio/wav;base64,${next}`);
+    // Backend TTS is AWS Polly MP3.
+    const audio = new Audio(`data:audio/mpeg;base64,${next}`);
     audio.onended = () => {
       isPlayingRef.current = false;
       setIsPlayingAudio(false);
@@ -168,14 +170,30 @@ export function useInterviewSession({
       }
     };
     audio.onerror = () => {
+      // Fallback if payload is not MP3 for any reason.
+      const fallback = new Audio(`data:audio/wav;base64,${next}`);
+      fallback.onended = () => {
+        isPlayingRef.current = false;
+        setIsPlayingAudio(false);
+        if (audioQueueRef.current.length > 0) playNext();
+      };
+      fallback.onerror = () => {
+        isPlayingRef.current = false;
+        setIsPlayingAudio(false);
+        if (audioQueueRef.current.length > 0) playNext();
+      };
+      void fallback.play().catch(() => {
+        blockedAudioRef.current = next;
+        isPlayingRef.current = false;
+        setIsPlayingAudio(false);
+      });
+    };
+    void audio.play().catch(() => {
+      // Browser autoplay can block until user gesture.
+      blockedAudioRef.current = next;
       isPlayingRef.current = false;
       setIsPlayingAudio(false);
-      if (audioQueueRef.current.length > 0) {
-        playNext();
-      }
-    };
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    audio.play();
+    });
   }, []);
 
   const enqueueAudio = useCallback(
@@ -188,6 +206,25 @@ export function useInterviewSession({
     },
     [playNext, devMode]
   );
+
+  useEffect(() => {
+    const retryBlockedAudio = () => {
+      const blocked = blockedAudioRef.current;
+      if (!blocked || isPlayingRef.current) return;
+      blockedAudioRef.current = null;
+      audioQueueRef.current.unshift(blocked);
+      playNext();
+    };
+
+    window.addEventListener('click', retryBlockedAudio);
+    window.addEventListener('keydown', retryBlockedAudio);
+    window.addEventListener('touchstart', retryBlockedAudio);
+    return () => {
+      window.removeEventListener('click', retryBlockedAudio);
+      window.removeEventListener('keydown', retryBlockedAudio);
+      window.removeEventListener('touchstart', retryBlockedAudio);
+    };
+  }, [playNext]);
 
   useEffect(() => {
     if (!sessionId) return;

@@ -19,8 +19,6 @@ import './InterviewInterface.css';
 const FEEDBACK_POLL_INTERVAL_MS = 2000;
 const FEEDBACK_POLL_MAX_ATTEMPTS = 45;
 
-const DEV_MODE_KEY = 'devMode';
-
 /** Phases where legacy app hid user STT in the main transcript (phase-specific UI instead). */
 const COMMUNICATION_TRANSCRIPT_SUPPRESSED_PHASES = new Set([
   'Speaking',
@@ -44,7 +42,8 @@ export default function InterviewInterface() {
   const interviewType = state?.interviewType ?? 'Technical';
   const interviewTypeId = state?.interviewTypeId;
 
-  const [devMode, setDevMode] = useState(() => typeof localStorage !== 'undefined' && localStorage.getItem(DEV_MODE_KEY) === 'true');
+  // Dev mode should always start OFF for every new interview session.
+  const [devMode, setDevMode] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
 
   useEffect(() => { 
@@ -190,6 +189,13 @@ export default function InterviewInterface() {
     }
   }, [audioEnabled, isPlayingAudio, isSubmitting, isComplete, vad.loading, getStream]);
 
+  useEffect(() => {
+    // In dev mode, force mic muted so voice input does not run.
+    if (devMode && audioEnabled) {
+      toggleAudio();
+    }
+  }, [devMode, audioEnabled, toggleAudio]);
+
   // When it's clearly the user's turn: session active, mic on, VAD ready, AI not speaking, not submitting
   const isUserTurnToSpeak =
     !isComplete &&
@@ -259,14 +265,8 @@ export default function InterviewInterface() {
   }, [messages]);
 
   const toggleDevMode = useCallback(() => {
-    const next = !devMode;
-    setDevMode(next);
-    try {
-      localStorage.setItem(DEV_MODE_KEY, String(next));
-    } catch {
-      // ignore
-    }
-  }, [devMode]);
+    setDevMode((prev) => !prev);
+  }, []);
 
   const handleEndClick = useCallback(() => {
     setShowEndModal(true);
