@@ -13,33 +13,38 @@ export default function TechnicalExtras({ data }: TechnicalExtrasProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-      {transcriptPreview.length > 0 && (
-        <div className="md:col-span-2 rounded-xl bg-white border border-gray-100 p-5 shadow-sm">
-          <h2 className="text-sm font-medium text-gray-800 mb-3">Conversation excerpt</h2>
-          <div className="space-y-2 text-sm text-gray-700 max-h-40 overflow-y-auto">
-            {transcriptPreview.map((entry, idx) => {
-              if (entry.question) {
-                return (
-                  <p key={idx}>
-                    <span className="font-semibold text-gray-900">Interviewer: </span>
-                    {entry.question}
-                  </p>
-                );
-              }
-              if (entry.answer) {
-                return (
-                  <p key={idx}>
-                    <span className="font-semibold text-gray-900">You: </span>
-                    {entry.answer}
-                  </p>
-                );
-              }
-              return null;
-            })}
-          </div>
+    <>
+      <header className="feedback-report__section-header">
+        <div className="feedback-report__eyebrow feedback-report__mono">03 — Transcript</div>
+        <h2 className="feedback-report__section-title">Conversation excerpt</h2>
+        <p className="feedback-report__section-desc">
+          A short slice of your dialogue for context alongside the scores above.
+        </p>
+      </header>
+
+      <div className="feedback-report__card">
+        <div className="feedback-report__transcript">
+          {transcriptPreview.map((entry, idx) => {
+            if (entry.question) {
+              return (
+                <p key={idx}>
+                  <span className="feedback-report__transcript-label">Interviewer: </span>
+                  {entry.question}
+                </p>
+              );
+            }
+            if (entry.answer) {
+              return (
+                <p key={idx}>
+                  <span className="feedback-report__transcript-label">You: </span>
+                  {entry.answer}
+                </p>
+              );
+            }
+            return null;
+          })}
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }

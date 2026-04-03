@@ -6,8 +6,8 @@ import type { InterviewFeedback } from '../../types/feedback';
 import { ArrowLeft } from 'lucide-react';
 import ScoreBreakdown from './components/ScoreBreakdown';
 import StrengthsAndImprovements from './components/StrengthsAndImprovements';
-import TechnicalMetaSummary from './components/TechnicalMetaSummary';
 import TechnicalExtras from './components/TechnicalExtras';
+import FeedbackHero from './components/FeedbackHero';
 import './Feedback.css';
 
 export type FeedbackLocationState = {
@@ -32,6 +32,13 @@ export type FeedbackLocationState = {
     }
 );
 
+function formatReportDate(iso?: string): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
 export default function Feedback() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,10 +54,8 @@ export default function Feedback() {
   useEffect(() => {
     const interviewIdFromParams = params.interviewId ? Number(params.interviewId) : null;
     const videoState = state?.type === 'video-interview' ? state : null;
-    const hasSessionParams =
-      videoState && videoState.session_id && videoState.session_type;
-    const hasInterviewId =
-      videoState && videoState.interview_id != null;
+    const hasSessionParams = videoState && videoState.session_id && videoState.session_type;
+    const hasInterviewId = videoState && videoState.interview_id != null;
     const hasInterviewIdFromParams = interviewIdFromParams != null;
 
     if (!state?.type && !interviewIdFromParams) {
@@ -60,19 +65,16 @@ export default function Feedback() {
 
     const fetchFeedback = () => {
       if (hasSessionParams && videoState) {
-        // Coming from a just-finished interview: use sessionId
         return getSessionHistory({
           sessionId: videoState.session_id!,
         });
       }
       if (hasInterviewId && videoState) {
-        // Opening existing feedback/report by id coming from location state
         return getSessionHistory({
           feedbackId: videoState.interview_id!,
         });
       }
       if (hasInterviewIdFromParams) {
-        // Opening existing feedback/report by id coming from route params
         return getSessionHistory({
           feedbackId: interviewIdFromParams,
         });
@@ -107,7 +109,6 @@ export default function Feedback() {
     return <div className="feedback-page__loading">Loading feedback…</div>;
   }
 
-  // Derive a simple, robust interview type label for technical feedback
   const resolvedInterviewType =
     (state && state.type === 'video-interview' && (state.session_type ?? state.interview_type)) ||
     'Technical Interview';
@@ -123,52 +124,63 @@ export default function Feedback() {
     videoFeedback?.savedAt ||
     (state && 'date' in state ? (state as FeedbackLocationState & { date?: string }).date : undefined);
 
+  const topbarDate = formatReportDate(headerDate);
+  const topbarBadge =
+    effectiveState.type === 'video-interview' ? resolvedInterviewType : 'Resume analysis';
+
   return (
     <div className="feedback-page">
       <div className="feedback-page__inner">
-        <Link to={backPath} className="feedback-page__back">
-          <ArrowLeft aria-hidden />
-          Back
-        </Link>
-
-        <div className="feedback-page__header-card">
-          <h1 className="feedback-page__header-title">{headerTitle}</h1>
-          <div className="feedback-page__header-meta">
-            {headerDate && <span>{new Date(headerDate).toLocaleString()}</span>}
-            {effectiveState.type === 'video-interview' && (
-              <span className="feedback-page__badge feedback-page__badge--video">{resolvedInterviewType}</span>
+        <nav className="feedback-report__topbar" aria-label="Report">
+          <Link to={backPath} className="feedback-report__topbar-back">
+            <ArrowLeft aria-hidden />
+            Back
+          </Link>
+          <div className="feedback-report__topbar-right">
+            {topbarDate && (
+              <span className="feedback-report__topbar-date">{topbarDate}</span>
             )}
-            {effectiveState.type === 'resume-analysis' && (
-              <span className="feedback-page__badge feedback-page__badge--resume">Resume Analysis</span>
-            )}
+            <span className="feedback-report__topbar-badge">{topbarBadge}</span>
           </div>
-        </div>
+        </nav>
+
+        {effectiveState.type === 'resume-analysis' && (
+          <div className="feedback-report__simple-header">
+            <h1 className="feedback-page__header-title">{headerTitle}</h1>
+            <div className="feedback-page__header-meta">
+              {topbarDate && <span>{topbarDate}</span>}
+              <span className="feedback-page__badge feedback-page__badge--resume">
+                Resume Analysis
+              </span>
+            </div>
+          </div>
+        )}
 
         {error && <div className="feedback-page__error" role="alert">{error}</div>}
 
         {effectiveState.type === 'video-interview' && videoFeedback && !error && (
-          <div className="space-y-5">
-            {videoFeedback.overallScore != null && videoFeedback.overallScore >= 0 && (
-              <div className="rounded-xl bg-white border border-gray-100 p-5 shadow-sm">
-                <h2 className="text-sm font-medium text-gray-700 mb-1">Overall score</h2>
-                <p className="text-3xl font-bold text-blue-600">
-                  {Math.round(videoFeedback.overallScore)}%
-                </p>
-              </div>
-            )}
-
-            <TechnicalMetaSummary data={videoFeedback} />
-            <ScoreBreakdown data={videoFeedback} />
-            <TechnicalExtras data={videoFeedback} />
-            <StrengthsAndImprovements data={videoFeedback} />
-          </div>
+          <>
+            <FeedbackHero
+              metaTitle={headerTitle}
+              interviewKind={resolvedInterviewType}
+              duration={videoFeedback.duration}
+              data={videoFeedback}
+            />
+            <div className="feedback-report__body">
+              <ScoreBreakdown data={videoFeedback} />
+              <TechnicalExtras data={videoFeedback} />
+              <StrengthsAndImprovements data={videoFeedback} />
+            </div>
+          </>
         )}
 
         {effectiveState.type === 'resume-analysis' && (
-          <div className="feedback-page__section">
-            <p className="feedback-page__pending" style={{ margin: 0 }}>
-              Resume analysis feedback view can be expanded here (e.g. fetch by resume_id).
-            </p>
+          <div className="feedback-report__body">
+            <div className="feedback-page__section">
+              <p className="feedback-page__pending" style={{ margin: 0 }}>
+                Resume analysis feedback view can be expanded here (e.g. fetch by resume_id).
+              </p>
+            </div>
           </div>
         )}
       </div>

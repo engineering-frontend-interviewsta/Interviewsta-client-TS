@@ -1,3 +1,4 @@
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { InterviewFeedback } from '../../../types/feedback';
 
 interface StrengthsAndImprovementsProps {
@@ -10,28 +11,54 @@ export default function StrengthsAndImprovements({ data }: StrengthsAndImproveme
   if (strengths.length === 0 && improvements.length === 0) return null;
 
   return (
-    <div className="rounded-xl bg-white border border-gray-100 p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-gray-900 mb-3">Summary</h2>
-      {strengths.length > 0 && (
-        <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Strengths</h3>
-          <ul className="list-disc list-inside text-gray-600 text-sm space-y-1">
-            {strengths.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ul>
+    <>
+      <header className="feedback-report__section-header">
+        <div className="feedback-report__eyebrow feedback-report__mono">02 — Summary</div>
+        <h2 className="feedback-report__section-title">Strengths &amp; growth areas</h2>
+        <p className="feedback-report__section-desc">
+          Highlights what came through strongly in your session and where a bit more polish
+          would move the needle in a real loop.
+        </p>
+      </header>
+
+      <div className="feedback-report__card">
+        <div className="feedback-report__str-grid">
+          <div>
+            <h3 className="feedback-report__str-col-title">Strengths</h3>
+            {strengths.length === 0 ? (
+              <p className="feedback-report__section-desc" style={{ marginTop: 0 }}>
+                No strengths listed for this session.
+              </p>
+            ) : (
+              <ul className="feedback-report__str-list">
+                {strengths.map((s, i) => (
+                  <li key={i} className="feedback-report__str-item feedback-report__str-item--strength">
+                    <CheckCircle2 className="feedback-report__str-icon" size={18} aria-hidden />
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <h3 className="feedback-report__str-col-title">Areas to improve</h3>
+            {improvements.length === 0 ? (
+              <p className="feedback-report__section-desc" style={{ marginTop: 0 }}>
+                No improvement notes for this session.
+              </p>
+            ) : (
+              <ul className="feedback-report__str-list">
+                {improvements.map((s, i) => (
+                  <li key={i} className="feedback-report__str-item feedback-report__str-item--gap">
+                    <AlertCircle className="feedback-report__str-icon" size={18} aria-hidden />
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      )}
-      {improvements.length > 0 && (
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Areas to improve</h3>
-          <ul className="list-disc list-inside text-gray-600 text-sm space-y-1">
-            {improvements.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
