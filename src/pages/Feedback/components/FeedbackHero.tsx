@@ -3,8 +3,9 @@ import {
   computeCompositeScorePercent,
   computeSleeveScoreForDisplay,
   formatSleeveTitleForDisplay,
-  normalizeCommunicationMetrics,
-  normalizeGrammarMetrics,
+  getCommunicationMetricsView,
+  getGrammarMetricsView,
+  languageMetricsViewOverall,
   orderTechnicalItemsEntries,
   scorePercentTier,
   scoreTierLabel,
@@ -26,8 +27,8 @@ export default function FeedbackHero({
   duration,
   data,
 }: FeedbackHeroProps) {
-  const comm = normalizeCommunicationMetrics(data.communicationMetrics);
-  const gram = normalizeGrammarMetrics(data.grammarMetrics);
+  const commView = getCommunicationMetricsView(data.communicationMetrics);
+  const gramView = getGrammarMetricsView(data.grammarMetrics);
 
   const composite =
     computeCompositeScorePercent(data) ??
@@ -123,19 +124,21 @@ export default function FeedbackHero({
           </svg>
           <span className="feedback-report__ring-label">Composite score</span>
           <span className="feedback-report__ring-sublabel">
-            Averages communication, grammar, and each category below
+            Technical categories first, then communication and grammar
           </span>
         </div>
 
         <div className="feedback-report__score-pills">
-          {comm && (
-            <HeroPill label="Communication" score={Math.round(comm.overall)} />
-          )}
-          {gram && <HeroPill label="Grammar" score={Math.round(gram.overall)} />}
           {sleevePills.map((p) => (
             <HeroPill key={p.key} label={p.label} score={p.score} />
           ))}
-          {sleevePills.length === 0 && !comm && !gram && composite != null && (
+          {commView && (
+            <HeroPill label="Communication" score={Math.round(languageMetricsViewOverall(commView))} />
+          )}
+          {gramView && (
+            <HeroPill label="Grammar" score={Math.round(languageMetricsViewOverall(gramView))} />
+          )}
+          {sleevePills.length === 0 && !commView && !gramView && composite != null && (
             <HeroPill label="Overall" score={composite} />
           )}
         </div>

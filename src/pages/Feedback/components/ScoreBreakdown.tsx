@@ -5,12 +5,14 @@ import {
   computeSleeveScoreForDisplay,
   filterCodeQualityMetricsForDisplay,
   formatSleeveTitleForDisplay,
+  getCommunicationMetricsView,
+  getGrammarMetricsView,
   isRubricEvaluated,
-  normalizeCommunicationMetrics,
-  normalizeGrammarMetrics,
   orderTechnicalItemsEntries,
   PROBLEM_SOLVING_SLEEVE_KEY,
   scorePercentTier,
+  type NormalizedCommunicationMetrics,
+  type NormalizedGrammarMetrics,
 } from '../reportUtils';
 
 interface ScoreBreakdownProps {
@@ -43,9 +45,9 @@ function sectionIntroForSleeve(sleeveKey: string): string {
 
 export default function ScoreBreakdown({ data }: ScoreBreakdownProps) {
   const items = data.items;
-  const communicationMetrics = normalizeCommunicationMetrics(data.communicationMetrics);
-  const grammarMetrics = normalizeGrammarMetrics(data.grammarMetrics);
-  const hasLanguageMetrics = Boolean(communicationMetrics || grammarMetrics);
+  const communicationView = getCommunicationMetricsView(data.communicationMetrics);
+  const grammarView = getGrammarMetricsView(data.grammarMetrics);
+  const hasLanguageMetrics = Boolean(communicationView || grammarView);
   if ((!items || typeof items !== 'object') && !hasLanguageMetrics) return null;
 
   const entries =
@@ -62,135 +64,13 @@ export default function ScoreBreakdown({ data }: ScoreBreakdownProps) {
         <div className="feedback-report__eyebrow feedback-report__mono">01 — Score breakdown</div>
         <h2 className="feedback-report__section-title">How each dimension scored</h2>
         <p className="feedback-report__section-desc">
-          Each block below uses wording matched to that part of the interview. You will see 0% where
-          the rubric scored an area at zero (evaluated). “Not evaluated” is only for areas with no
-          score for this session.
+          Rubric categories (e.g. problem solving, code quality) are listed first; communication and
+          grammar follow. You will see 0% where the rubric scored an area at zero (evaluated). “Not
+          evaluated” is only for areas with no score for this session.
         </p>
       </header>
 
       <div className="feedback-report__score-section-stack">
-        {communicationMetrics && (
-          <section className="feedback-report__score-section" aria-labelledby="score-comm-heading">
-            <div className="feedback-report__card feedback-report__card--isolated">
-              <div className="feedback-report__score-block-top">
-                <h3 id="score-comm-heading" className="feedback-report__score-block-heading">
-                  Communication
-                </h3>
-                <span
-                  className={badgeClassForTier(
-                    scorePercentTier(Math.round(communicationMetrics.overall)),
-                  )}
-                >
-                  Avg {communicationMetrics.overall.toFixed(1)}%
-                </span>
-              </div>
-              <p className="feedback-report__score-block-lead">
-                Clarity, fluency, how well your answers matched the questions, and how structured your
-                explanations were — from your spoken and written responses.
-              </p>
-              <ScoreSectionRadar
-                dataPoints={(
-                  [
-                    ['Clarity', communicationMetrics.clarity],
-                    ['Fluency', communicationMetrics.fluency],
-                    ['Relevance', communicationMetrics.responseRelevance],
-                    ['Structure', communicationMetrics.structure],
-                  ] as const
-                ).map(([name, value]) => ({ name, value: value as number }))}
-              />
-              <div className="feedback-report__tech-cat feedback-report__tech-cat--flush">
-                {(
-                  [
-                    ['Clarity', communicationMetrics.clarity],
-                    ['Fluency', communicationMetrics.fluency],
-                    ['Response relevance', communicationMetrics.responseRelevance],
-                    ['Structure', communicationMetrics.structure],
-                  ] as Array<[string, number]>
-                ).map(([label, value]) => (
-                  <div
-                    key={label}
-                    className={`feedback-report__metric-row${value === 0 ? ' feedback-report__metric-row--zero' : ''}`}
-                  >
-                    <span className="feedback-report__metric-name">{label}</span>
-                    <div className="feedback-report__metric-bar-wrap">
-                      <div className="feedback-report__metric-track">
-                        <div
-                          className={fillClassForScore(value)}
-                          style={{ width: `${value}%` }}
-                        />
-                      </div>
-                    </div>
-                    <span className="feedback-report__metric-score">{value}%</span>
-                    <span className="feedback-report__metric-note">
-                      {value === 0 ? 'Scored (0%)' : 'Scored'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {grammarMetrics && (
-          <section className="feedback-report__score-section" aria-labelledby="score-grammar-heading">
-            <div className="feedback-report__card feedback-report__card--isolated">
-              <div className="feedback-report__score-block-top">
-                <h3 id="score-grammar-heading" className="feedback-report__score-block-heading">
-                  Grammar
-                </h3>
-                <span
-                  className={badgeClassForTier(scorePercentTier(Math.round(grammarMetrics.overall)))}
-                >
-                  Avg {grammarMetrics.overall.toFixed(1)}%
-                </span>
-              </div>
-              <p className="feedback-report__score-block-lead">
-                Grammar accuracy, sentence construction, vocabulary fit, and conciseness — inferred from
-                what you said or wrote during the interview.
-              </p>
-              <ScoreSectionRadar
-                dataPoints={(
-                  [
-                    ['Grammar', grammarMetrics.grammarCorrectness],
-                    ['Sentences', grammarMetrics.sentenceConstruction],
-                    ['Vocabulary', grammarMetrics.vocabularyControl],
-                    ['Concise', grammarMetrics.conciseness],
-                  ] as const
-                ).map(([name, value]) => ({ name, value: value as number }))}
-              />
-              <div className="feedback-report__tech-cat feedback-report__tech-cat--flush">
-                {(
-                  [
-                    ['Grammar correctness', grammarMetrics.grammarCorrectness],
-                    ['Sentence construction', grammarMetrics.sentenceConstruction],
-                    ['Vocabulary control', grammarMetrics.vocabularyControl],
-                    ['Conciseness', grammarMetrics.conciseness],
-                  ] as Array<[string, number]>
-                ).map(([label, value]) => (
-                  <div
-                    key={label}
-                    className={`feedback-report__metric-row${value === 0 ? ' feedback-report__metric-row--zero' : ''}`}
-                  >
-                    <span className="feedback-report__metric-name">{label}</span>
-                    <div className="feedback-report__metric-bar-wrap">
-                      <div className="feedback-report__metric-track">
-                        <div
-                          className={fillClassForScore(value)}
-                          style={{ width: `${value}%` }}
-                        />
-                      </div>
-                    </div>
-                    <span className="feedback-report__metric-score">{value}%</span>
-                    <span className="feedback-report__metric-note">
-                      {value === 0 ? 'Scored (0%)' : 'Scored'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
         {orderedTechnical.map(([key, metricsObj]) => {
           const metricsRaw = metricsObj || {};
           const displayMetrics =
@@ -218,7 +98,7 @@ export default function ScoreBreakdown({ data }: ScoreBreakdownProps) {
                   <span className={badgeClassForTier(tier)}>Avg {sleeveScore.toFixed(1)}%</span>
                 </div>
                 <p className="feedback-report__score-block-lead">{sectionIntroForSleeve(key)}</p>
-                {radarEvaluatedPoints.length >= 2 ? (
+                {key !== PROBLEM_SOLVING_SLEEVE_KEY && radarEvaluatedPoints.length >= 2 ? (
                   <ScoreSectionRadar
                     dataPoints={radarEvaluatedPoints.map(([subKey, subScore]) => ({
                       name: subKey,
@@ -264,6 +144,231 @@ export default function ScoreBreakdown({ data }: ScoreBreakdownProps) {
             </section>
           );
         })}
+
+        {communicationView && (
+          <section className="feedback-report__score-section" aria-labelledby="score-comm-heading">
+            <div className="feedback-report__card feedback-report__card--isolated">
+              <div className="feedback-report__score-block-top">
+                <h3 id="score-comm-heading" className="feedback-report__score-block-heading">
+                  Communication
+                </h3>
+                <span
+                  className={badgeClassForTier(
+                    scorePercentTier(
+                      Math.round(
+                        communicationView.kind === 'aggregate'
+                          ? communicationView.overall
+                          : communicationView.metrics.overall,
+                      ),
+                    ),
+                  )}
+                >
+                  Avg{' '}
+                  {(communicationView.kind === 'aggregate'
+                    ? communicationView.overall
+                    : communicationView.metrics.overall
+                  ).toFixed(1)}
+                  %
+                </span>
+              </div>
+              <p className="feedback-report__score-block-lead">
+                Clarity, fluency, how well your answers matched the questions, and how structured your
+                explanations were — from your spoken and written responses.
+              </p>
+              {communicationView.kind === 'aggregate' ? (
+                <>
+                  <p className="feedback-report__score-block-lead feedback-report__score-block-lead--tight">
+                    Only an overall communication score was stored for this report (no per-dimension
+                    breakdown in the payload).
+                  </p>
+                  <div className="feedback-report__tech-cat feedback-report__tech-cat--flush">
+                    <div
+                      className={`feedback-report__metric-row${communicationView.overall === 0 ? ' feedback-report__metric-row--zero' : ''}`}
+                    >
+                      <span className="feedback-report__metric-name">Overall (session)</span>
+                      <div className="feedback-report__metric-bar-wrap">
+                        <div className="feedback-report__metric-track">
+                          <div
+                            className={fillClassForScore(communicationView.overall)}
+                            style={{ width: `${communicationView.overall}%` }}
+                          />
+                        </div>
+                      </div>
+                      <span className="feedback-report__metric-score">{communicationView.overall}%</span>
+                      <span className="feedback-report__metric-note">
+                        {communicationView.overall === 0 ? 'Scored (0%)' : 'Scored'}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {(() => {
+                    const m = communicationView.metrics as NormalizedCommunicationMetrics;
+                    const radarPts = (
+                      [
+                        ['Clarity', m.clarity],
+                        ['Fluency', m.fluency],
+                        ['Relevance', m.responseRelevance],
+                        ['Structure', m.structure],
+                      ] as const
+                    )
+                      .filter(([, v]) => typeof v === 'number')
+                      .map(([name, value]) => ({ name, value: value as number }));
+                    return radarPts.length >= 2 ? (
+                      <ScoreSectionRadar dataPoints={radarPts} />
+                    ) : null;
+                  })()}
+                  <div className="feedback-report__tech-cat feedback-report__tech-cat--flush">
+                    {(
+                      [
+                        ['Clarity', (communicationView.metrics as NormalizedCommunicationMetrics).clarity],
+                        ['Fluency', (communicationView.metrics as NormalizedCommunicationMetrics).fluency],
+                        [
+                          'Response relevance',
+                          (communicationView.metrics as NormalizedCommunicationMetrics).responseRelevance,
+                        ],
+                        ['Structure', (communicationView.metrics as NormalizedCommunicationMetrics).structure],
+                      ] as Array<[string, number | undefined]>
+                    )
+                      .filter((row): row is [string, number] => typeof row[1] === 'number')
+                      .map(([label, value]) => (
+                        <div
+                          key={label}
+                          className={`feedback-report__metric-row${value === 0 ? ' feedback-report__metric-row--zero' : ''}`}
+                        >
+                          <span className="feedback-report__metric-name">{label}</span>
+                          <div className="feedback-report__metric-bar-wrap">
+                            <div className="feedback-report__metric-track">
+                              <div
+                                className={fillClassForScore(value)}
+                                style={{ width: `${value}%` }}
+                              />
+                            </div>
+                          </div>
+                          <span className="feedback-report__metric-score">{value}%</span>
+                          <span className="feedback-report__metric-note">
+                            {value === 0 ? 'Scored (0%)' : 'Scored'}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+        )}
+
+        {grammarView && (
+          <section className="feedback-report__score-section" aria-labelledby="score-grammar-heading">
+            <div className="feedback-report__card feedback-report__card--isolated">
+              <div className="feedback-report__score-block-top">
+                <h3 id="score-grammar-heading" className="feedback-report__score-block-heading">
+                  Grammar
+                </h3>
+                <span
+                  className={badgeClassForTier(
+                    scorePercentTier(
+                      Math.round(
+                        grammarView.kind === 'aggregate' ? grammarView.overall : grammarView.metrics.overall,
+                      ),
+                    ),
+                  )}
+                >
+                  Avg{' '}
+                  {(grammarView.kind === 'aggregate' ? grammarView.overall : grammarView.metrics.overall).toFixed(
+                    1,
+                  )}
+                  %
+                </span>
+              </div>
+              <p className="feedback-report__score-block-lead">
+                Grammar accuracy, sentence construction, vocabulary fit, and conciseness — inferred from
+                what you said or wrote during the interview.
+              </p>
+              {grammarView.kind === 'aggregate' ? (
+                <>
+                  <p className="feedback-report__score-block-lead feedback-report__score-block-lead--tight">
+                    Only an overall grammar score was stored for this report (no per-dimension breakdown
+                    in the payload).
+                  </p>
+                  <div className="feedback-report__tech-cat feedback-report__tech-cat--flush">
+                    <div
+                      className={`feedback-report__metric-row${grammarView.overall === 0 ? ' feedback-report__metric-row--zero' : ''}`}
+                    >
+                      <span className="feedback-report__metric-name">Overall (session)</span>
+                      <div className="feedback-report__metric-bar-wrap">
+                        <div className="feedback-report__metric-track">
+                          <div
+                            className={fillClassForScore(grammarView.overall)}
+                            style={{ width: `${grammarView.overall}%` }}
+                          />
+                        </div>
+                      </div>
+                      <span className="feedback-report__metric-score">{grammarView.overall}%</span>
+                      <span className="feedback-report__metric-note">
+                        {grammarView.overall === 0 ? 'Scored (0%)' : 'Scored'}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {(() => {
+                    const m = grammarView.metrics as NormalizedGrammarMetrics;
+                    const radarPts = (
+                      [
+                        ['Grammar', m.grammarCorrectness],
+                        ['Sentences', m.sentenceConstruction],
+                        ['Vocabulary', m.vocabularyControl],
+                        ['Concise', m.conciseness],
+                      ] as const
+                    )
+                      .filter(([, v]) => typeof v === 'number')
+                      .map(([name, value]) => ({ name, value: value as number }));
+                    return radarPts.length >= 2 ? (
+                      <ScoreSectionRadar dataPoints={radarPts} />
+                    ) : null;
+                  })()}
+                  <div className="feedback-report__tech-cat feedback-report__tech-cat--flush">
+                    {(
+                      [
+                        ['Grammar correctness', (grammarView.metrics as NormalizedGrammarMetrics).grammarCorrectness],
+                        [
+                          'Sentence construction',
+                          (grammarView.metrics as NormalizedGrammarMetrics).sentenceConstruction,
+                        ],
+                        ['Vocabulary control', (grammarView.metrics as NormalizedGrammarMetrics).vocabularyControl],
+                        ['Conciseness', (grammarView.metrics as NormalizedGrammarMetrics).conciseness],
+                      ] as Array<[string, number | undefined]>
+                    )
+                      .filter((row): row is [string, number] => typeof row[1] === 'number')
+                      .map(([label, value]) => (
+                        <div
+                          key={label}
+                          className={`feedback-report__metric-row${value === 0 ? ' feedback-report__metric-row--zero' : ''}`}
+                        >
+                          <span className="feedback-report__metric-name">{label}</span>
+                          <div className="feedback-report__metric-bar-wrap">
+                            <div className="feedback-report__metric-track">
+                              <div
+                                className={fillClassForScore(value)}
+                                style={{ width: `${value}%` }}
+                              />
+                            </div>
+                          </div>
+                          <span className="feedback-report__metric-score">{value}%</span>
+                          <span className="feedback-report__metric-note">
+                            {value === 0 ? 'Scored (0%)' : 'Scored'}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+        )}
       </div>
     </>
   );

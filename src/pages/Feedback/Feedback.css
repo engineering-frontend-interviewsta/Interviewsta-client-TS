@@ -754,10 +754,11 @@
   color: var(--color-primary-muted);
 }
 
-/* Conversation excerpt */
+/* Full session transcript (scrollable for long interviews) */
 .feedback-report__transcript {
-  max-height: 10rem;
+  max-height: min(75vh, 48rem);
   overflow-y: auto;
+  padding-right: 0.25rem;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   line-height: 1.55;

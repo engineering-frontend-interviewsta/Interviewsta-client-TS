@@ -6,9 +6,8 @@ interface TechnicalExtrasProps {
 
 export default function TechnicalExtras({ data }: TechnicalExtrasProps) {
   const log = Array.isArray(data.interactionLogs) ? data.interactionLogs : [];
-  const transcriptPreview = log.slice(0, 4);
 
-  if (transcriptPreview.length === 0) {
+  if (log.length === 0) {
     return null;
   }
 
@@ -16,18 +15,18 @@ export default function TechnicalExtras({ data }: TechnicalExtrasProps) {
     <>
       <header className="feedback-report__section-header">
         <div className="feedback-report__eyebrow feedback-report__mono">03 — Transcript</div>
-        <h2 className="feedback-report__section-title">Conversation excerpt</h2>
+        <h2 className="feedback-report__section-title">Interview transcript</h2>
         <p className="feedback-report__section-desc">
-          A short slice of your dialogue for context alongside the scores above.
+          Full dialogue from this session (interviewer prompts and your responses), in order.
         </p>
       </header>
 
       <div className="feedback-report__card">
         <div className="feedback-report__transcript">
-          {transcriptPreview.map((entry, idx) => {
+          {log.map((entry, idx) => {
             if (entry.question) {
               return (
-                <p key={idx}>
+                <p key={`q-${idx}-${entry.timestamp ?? ''}`}>
                   <span className="feedback-report__transcript-label">Interviewer: </span>
                   {entry.question}
                 </p>
@@ -35,7 +34,7 @@ export default function TechnicalExtras({ data }: TechnicalExtrasProps) {
             }
             if (entry.answer) {
               return (
-                <p key={idx}>
+                <p key={`a-${idx}-${entry.timestamp ?? ''}`}>
                   <span className="feedback-report__transcript-label">You: </span>
                   {entry.answer}
                 </p>

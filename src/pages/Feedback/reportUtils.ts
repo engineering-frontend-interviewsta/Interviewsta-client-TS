@@ -165,84 +165,98 @@ export function getUniversalScoreSupplements(data: {
   return supplements;
 }
 
+/** Normalized language metrics; sub-fields only when the API provided a finite score. */
+export type NormalizedCommunicationMetrics = {
+  overall: number;
+  clarity?: number;
+  fluency?: number;
+  responseRelevance?: number;
+  structure?: number;
+};
+
+export type NormalizedGrammarMetrics = {
+  overall: number;
+  grammarCorrectness?: number;
+  sentenceConstruction?: number;
+  vocabularyControl?: number;
+  conciseness?: number;
+};
+
 export function normalizeCommunicationMetrics(
-  group:
-    | {
-        overall: number;
-        clarity: number;
-        fluency: number;
-        responseRelevance: number;
-        structure: number;
-      }
-    | undefined,
-):
-  | {
-      overall: number;
-      clarity: number;
-      fluency: number;
-      responseRelevance: number;
-      structure: number;
-    }
-  | null {
+  group: InterviewFeedback['communicationMetrics'] | undefined,
+): NormalizedCommunicationMetrics | null {
   if (!group) return null;
   const overall = normalizeScore(group.overall);
-  const clarity = normalizeScore(group.clarity);
-  const fluency = normalizeScore(group.fluency);
-  const responseRelevance = normalizeScore(group.responseRelevance);
-  const structure = normalizeScore(group.structure);
-  if (
-    overall == null ||
-    clarity == null ||
-    fluency == null ||
-    responseRelevance == null ||
-    structure == null
-  ) {
-    return null;
-  }
-  return { overall, clarity, fluency, responseRelevance, structure };
+  if (overall == null) return null;
+  const out: NormalizedCommunicationMetrics = { overall };
+  const c = normalizeScore(group.clarity);
+  const f = normalizeScore(group.fluency);
+  const r = normalizeScore(group.responseRelevance);
+  const s = normalizeScore(group.structure);
+  if (c != null) out.clarity = c;
+  if (f != null) out.fluency = f;
+  if (r != null) out.responseRelevance = r;
+  if (s != null) out.structure = s;
+  return out;
 }
 
 export function normalizeGrammarMetrics(
-  group:
-    | {
-        overall: number;
-        grammarCorrectness: number;
-        sentenceConstruction: number;
-        vocabularyControl: number;
-        conciseness: number;
-      }
-    | undefined,
-):
-  | {
-      overall: number;
-      grammarCorrectness: number;
-      sentenceConstruction: number;
-      vocabularyControl: number;
-      conciseness: number;
-    }
-  | null {
+  group: InterviewFeedback['grammarMetrics'] | undefined,
+): NormalizedGrammarMetrics | null {
   if (!group) return null;
   const overall = normalizeScore(group.overall);
-  const grammarCorrectness = normalizeScore(group.grammarCorrectness);
-  const sentenceConstruction = normalizeScore(group.sentenceConstruction);
-  const vocabularyControl = normalizeScore(group.vocabularyControl);
-  const conciseness = normalizeScore(group.conciseness);
-  if (
-    overall == null ||
-    grammarCorrectness == null ||
-    sentenceConstruction == null ||
-    vocabularyControl == null ||
-    conciseness == null
-  ) {
-    return null;
-  }
-  return {
-    overall,
-    grammarCorrectness,
-    sentenceConstruction,
-    vocabularyControl,
-    conciseness,
-  };
+  if (overall == null) return null;
+  const out: NormalizedGrammarMetrics = { overall };
+  const gc = normalizeScore(group.grammarCorrectness);
+  const sc = normalizeScore(group.sentenceConstruction);
+  const vc = normalizeScore(group.vocabularyControl);
+  const co = normalizeScore(group.conciseness);
+  if (gc != null) out.grammarCorrectness = gc;
+  if (sc != null) out.sentenceConstruction = sc;
+  if (vc != null) out.vocabularyControl = vc;
+  if (co != null) out.conciseness = co;
+  return out;
+}
+
+export type LanguageMetricsView =
+  | { kind: 'aggregate'; overall: number; label: 'communication' | 'grammar' }
+  | { kind: 'breakdown'; domain: 'communication' | 'grammar'; metrics: NormalizedCommunicationMetrics | NormalizedGrammarMetrics };
+
+export function languageMetricsViewOverall(view: LanguageMetricsView): number {
+  return view.kind === 'aggregate' ? view.overall : view.metrics.overall;
+}
+
+function communicationSubsArray(m: NormalizedCommunicationMetrics): number[] {
+  return [m.clarity, m.fluency, m.responseRelevance, m.structure].filter(
+    (v): v is number => typeof v === 'number',
+  );
+}
+
+function grammarSubsArray(m: NormalizedGrammarMetrics): number[] {
+  return [m.grammarCorrectness, m.sentenceConstruction, m.vocabularyControl, m.conciseness].filter(
+    (v): v is number => typeof v === 'number',
+  );
+}
+
+/** One row when only `overall` exists (legacy payloads); otherwise show every sub the API sent. */
+export function getCommunicationMetricsView(
+  group: InterviewFeedback['communicationMetrics'] | undefined,
+): LanguageMetricsView | null {
+  const n = normalizeCommunicationMetrics(group);
+  if (!n) return null;
+  const subs = communicationSubsArray(n);
+  if (subs.length === 0) return { kind: 'aggregate', overall: n.overall, label: 'communication' };
+  return { kind: 'breakdown', domain: 'communication', metrics: n };
+}
+
+export function getGrammarMetricsView(
+  group: InterviewFeedback['grammarMetrics'] | undefined,
+): LanguageMetricsView | null {
+  const n = normalizeGrammarMetrics(group);
+  if (!n) return null;
+  const subs = grammarSubsArray(n);
+  if (subs.length === 0) return { kind: 'aggregate', overall: n.overall, label: 'grammar' };
+  return { kind: 'breakdown', domain: 'grammar', metrics: n };
 }
 
 /**
@@ -251,10 +265,13 @@ export function normalizeGrammarMetrics(
  */
 export function computeCompositeScorePercent(data: InterviewFeedback): number | null {
   const parts: number[] = [];
-  const comm = normalizeCommunicationMetrics(data.communicationMetrics);
-  const gram = normalizeGrammarMetrics(data.grammarMetrics);
-  if (comm) parts.push(comm.overall);
-  if (gram) parts.push(gram.overall);
+  const commOv =
+    normalizeCommunicationMetrics(data.communicationMetrics)?.overall ??
+    normalizeScore(data.communicationScore);
+  const gramOv =
+    normalizeGrammarMetrics(data.grammarMetrics)?.overall ?? normalizeScore(data.grammarScore);
+  if (commOv != null) parts.push(commOv);
+  if (gramOv != null) parts.push(gramOv);
 
   const items = data.items && typeof data.items === 'object' ? data.items : {};
   for (const [key, raw] of Object.entries(items)) {

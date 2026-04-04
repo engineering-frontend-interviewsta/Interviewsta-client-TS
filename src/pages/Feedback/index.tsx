@@ -168,8 +168,8 @@ export default function Feedback() {
             />
             <div className="feedback-report__body">
               <ScoreBreakdown data={videoFeedback} />
-              <TechnicalExtras data={videoFeedback} />
               <StrengthsAndImprovements data={videoFeedback} />
+              <TechnicalExtras data={videoFeedback} />
             </div>
           </>
         )}

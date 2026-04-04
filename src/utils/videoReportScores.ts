@@ -18,24 +18,6 @@ export function buildVideoReportScoreRows(report: VideoInterviewReport): Array<{
 }> {
   const rows: Array<{ fullLabel: string; shortLabel: string; score: number }> = [];
 
-  const comm = report.communicationOverall;
-  if (typeof comm === 'number' && Number.isFinite(comm) && comm >= 0) {
-    rows.push({
-      fullLabel: 'Communication',
-      shortLabel: 'Comm',
-      score: Math.round(comm),
-    });
-  }
-
-  const gram = report.grammarOverall;
-  if (typeof gram === 'number' && Number.isFinite(gram) && gram >= 0) {
-    rows.push({
-      fullLabel: 'Grammar',
-      shortLabel: 'Gram',
-      score: Math.round(gram),
-    });
-  }
-
   const sleeves = report.sleeveScores ?? {};
   const seen = new Set<string>();
 
@@ -58,6 +40,24 @@ export function buildVideoReportScoreRows(report: VideoInterviewReport): Array<{
       fullLabel: formatSleeveTitleForDisplay(k),
       shortLabel: shortSleeveLabel(k),
       score: Math.round(v),
+    });
+  }
+
+  const comm = report.communicationOverall;
+  if (typeof comm === 'number' && Number.isFinite(comm) && comm >= 0) {
+    rows.push({
+      fullLabel: 'Communication',
+      shortLabel: 'Comm',
+      score: Math.round(comm),
+    });
+  }
+
+  const gram = report.grammarOverall;
+  if (typeof gram === 'number' && Number.isFinite(gram) && gram >= 0) {
+    rows.push({
+      fullLabel: 'Grammar',
+      shortLabel: 'Gram',
+      score: Math.round(gram),
     });
   }
 

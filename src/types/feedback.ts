@@ -11,20 +11,21 @@ export interface FeedbackInteractionStatusLog {
 
 export type FeedbackItems = Record<string, Record<string, number>>;
 
+/** Overall is always set when present; sub-dimensions may be omitted or only partially filled by the pipeline. */
 export interface CommunicationMetrics {
   overall: number;
-  clarity: number;
-  fluency: number;
-  responseRelevance: number;
-  structure: number;
+  clarity?: number;
+  fluency?: number;
+  responseRelevance?: number;
+  structure?: number;
 }
 
 export interface GrammarMetrics {
   overall: number;
-  grammarCorrectness: number;
-  sentenceConstruction: number;
-  vocabularyControl: number;
-  conciseness: number;
+  grammarCorrectness?: number;
+  sentenceConstruction?: number;
+  vocabularyControl?: number;
+  conciseness?: number;
 }
 
 /** Core interview feedback payload returned under `feedback` */
