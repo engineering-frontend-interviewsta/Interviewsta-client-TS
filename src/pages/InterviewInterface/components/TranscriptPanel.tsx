@@ -72,7 +72,7 @@ export default function TranscriptPanel({
     <div
       className={`flex flex-col min-h-0 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden ${className}`}
     >
-      <div className="flex-1 min-h-[200px] overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-white to-slate-50/30">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain p-4 space-y-4 bg-gradient-to-b from-white to-slate-50/30">
         {messages.length === 0 && !fallbackMessage && (
           <motion.div
             className="flex flex-col items-center justify-center h-full min-h-[180px] text-center text-slate-500"
