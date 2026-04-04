@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { clearInterviewAccessToken } from '../../api/axiosInstance';
 import { useInterviewSession } from '../../hooks/useInterviewSession';
@@ -17,6 +17,8 @@ import TranscriptPanel from './components/TranscriptPanel';
 import MicWaveform from './components/MicWaveform';
 import { ROUTES } from '../../constants/routerConstants';
 import { USER_TRANSCRIPT_PENDING_LABEL } from '../../constants/interviewSessionUi';
+import { useInterviewDevMode } from '../../context/InterviewDevModeContext';
+import { interviewDevToolsVisible } from '../../constants/interviewDevTools';
 import './InterviewInterface.css';
 
 const FEEDBACK_POLL_INTERVAL_MS = 2000;
@@ -46,6 +48,8 @@ export default function InterviewInterface() {
   const interviewTypeId = state?.interviewTypeId;
 
   const [showEndModal, setShowEndModal] = useState(false);
+  const { devMode, toggleDevMode } = useInterviewDevMode();
+  const [devModeDraft, setDevModeDraft] = useState('');
 
   useEffect(() => { 
     
@@ -54,6 +58,12 @@ export default function InterviewInterface() {
   const [isEndingInterview, setIsEndingInterview] = useState(false);
   const [endTaskId, setEndTaskId] = useState<string | null>(null);
   const appendStreamUserTranscriptRef = useRef(true);
+  /** Latest code tab contents; sent as `code_input` on each voice/text respond (legacy landing behavior). */
+  const respondCodeRef = useRef('');
+  const [codeEditorValue, setCodeEditorValue] = useState('');
+  useEffect(() => {
+    respondCodeRef.current = codeEditorValue;
+  }, [codeEditorValue]);
 
   const {
     aiMessage,
@@ -71,13 +81,14 @@ export default function InterviewInterface() {
     awaitingStreamAi,
     submitText,
     submitAudio,
-    submitCode,
     endSession,
     updateCommunicationData,
   } = useInterviewSession({
     sessionId: sessionId ?? '',
     interviewType,
     appendStreamUserTranscriptRef,
+    devMode,
+    respondCodeRef,
   });
   const { videoRef, audioEnabled, getStream, streamReady } = useMediaDevices();
   const allowVadSendRef = useRef(true);
@@ -142,7 +153,7 @@ export default function InterviewInterface() {
     (communicationPhase === 'Speaking' || communicationPhase === 'Speaking_after') &&
     !!communicationData.speaking &&
     !communicationData.speakingFeedback;
-  allowVadSendRef.current = !isCommunicationSpeakingExercise;
+  allowVadSendRef.current = !isCommunicationSpeakingExercise && !devMode;
 
   useEffect(() => {
     if (prevIsPlayingAudioRef.current && !isPlayingAudio) {
@@ -191,6 +202,11 @@ export default function InterviewInterface() {
     }
     if (vad.loading) return;
 
+    if (devMode) {
+      vad.pause();
+      return;
+    }
+
     if (
       !audioEnabled ||
       isPlayingAudio ||
@@ -219,6 +235,7 @@ export default function InterviewInterface() {
     const t = window.setTimeout(startListening, gateWait);
     return () => clearTimeout(t);
   }, [
+    devMode,
     audioEnabled,
     isPlayingAudio,
     isSubmitting,
@@ -240,21 +257,20 @@ export default function InterviewInterface() {
 
   /** Block main interview until first SSE from Glee (or connection error). */
   const showGleeJoinOverlay =
-    Boolean(sessionId) && !isComplete && !gleeHasJoined && !error;
+    Boolean(sessionId) && !isComplete && !gleeHasJoined && !error && !devMode;
 
   // When it's clearly the user's turn: session active, mic on, VAD ready, AI not speaking, not submitting
   const isUserTurnToSpeak =
     !isComplete &&
-    !vad.loading &&
-    audioEnabled &&
-    !isPlayingAudio &&
     !isSubmitting &&
     !awaitingStreamAi &&
     gleeHasJoined &&
-    !isCommunicationSpeakingExercise;
+    !isCommunicationSpeakingExercise &&
+    (devMode ? true : !vad.loading && audioEnabled && !isPlayingAudio);
 
   const utteranceHold = useUtteranceHold(vad.userSpeaking, 480);
-  const displayUserSpeaking = utteranceHold && !isSubmitting && !isPlayingAudio;
+  const displayUserSpeaking =
+    !devMode && utteranceHold && !isSubmitting && !isPlayingAudio;
 
   useEffect(() => {
     if (!sessionId) {
@@ -389,6 +405,16 @@ export default function InterviewInterface() {
     return () => { cancelled = true; };
   }, [endTaskId, sessionId, interviewType, navigate]);
 
+  const handleDevModeSend = useCallback(
+    (e: FormEvent) => {
+      e.preventDefault();
+      const t = devModeDraft.trim();
+      if (!t || isSubmitting) return;
+      void submitText(t).then(() => setDevModeDraft(''));
+    },
+    [devModeDraft, isSubmitting, submitText]
+  );
+
   return (
     <div className="interview-interface">
       <InterviewHeader
@@ -397,6 +423,9 @@ export default function InterviewInterface() {
           onEndClick={handleEndClick}
           isEnding={isEndingInterview}
           isComplete={isComplete}
+          showDevModeControls={interviewDevToolsVisible}
+          devMode={devMode}
+          onDevModeToggle={() => toggleDevMode()}
         />
       <EndInterviewModal
         open={showEndModal}
@@ -453,10 +482,28 @@ export default function InterviewInterface() {
               <video ref={videoRef} autoPlay playsInline muted />
             </div>
             <MicWaveform
-              inactive={!audioEnabled || isComplete}
+              inactive={!audioEnabled || isComplete || devMode}
               gleeSpeaking={isPlayingAudio}
             />
+            {!isComplete && devMode && !isCommunicationSpeakingExercise && (
+              <div
+                className={`interview-interface__vad-status ${
+                  isSubmitting && lastIsTranscribingPlaceholder
+                    ? 'interview-interface__vad-status--transcribing'
+                    : showGleeProcessingSidebar
+                      ? 'interview-interface__vad-status--processing'
+                      : 'interview-interface__vad-status--your-turn'
+                }`}
+              >
+                {isSubmitting && lastIsTranscribingPlaceholder
+                  ? 'Sending your message…'
+                  : showGleeProcessingSidebar
+                    ? 'Waiting for the interviewer…'
+                    : 'Dev mode — type your reply below and press Send.'}
+              </div>
+            )}
             {!isComplete &&
+              !devMode &&
               audioEnabled &&
               !isCommunicationSpeakingExercise &&
               (vad.loading ||
@@ -555,10 +602,31 @@ export default function InterviewInterface() {
 
               {!isComplete && (
                 <p className="interview-interface__hint">
-                  {audioEnabled
-                    ? 'Mic stays on. Speak when you see “Your turn — speak now”; your response is sent automatically. Don’t speak while the interviewer is talking.'
-                    : 'Turn mic on to speak.'}
+                  {devMode
+                    ? 'Dev mode: replies are sent from the text box below. No microphone or AI voice — fastest for local testing.'
+                    : audioEnabled
+                      ? 'Mic stays on. Speak when you see “Your turn — speak now”; your response is sent automatically. Don’t speak while the interviewer is talking.'
+                      : 'Turn mic on to speak.'}
                 </p>
+              )}
+              {!isComplete && devMode && (
+                <form className="interview-interface__dev-mode-form" onSubmit={handleDevModeSend}>
+                  <textarea
+                    className="interview-interface__dev-mode-input"
+                    value={devModeDraft}
+                    onChange={(e) => setDevModeDraft(e.target.value)}
+                    placeholder="Type your answer…"
+                    disabled={isSubmitting || awaitingStreamAi}
+                    aria-label="Your text reply"
+                  />
+                  <button
+                    type="submit"
+                    className="interview-interface__dev-mode-send"
+                    disabled={isSubmitting || awaitingStreamAi || !devModeDraft.trim()}
+                  >
+                    Send
+                  </button>
+                </form>
               )}
             </>
           )}
@@ -576,6 +644,7 @@ export default function InterviewInterface() {
                     onClearFeedback={() =>
                       updateCommunicationData((prev) => ({ ...prev, speakingFeedback: null }))
                     }
+                    devMode={devMode}
                   />
                 )}
               {['Comprehension', 'Comprehension_before', 'Comprehension_after'].includes(
@@ -630,7 +699,7 @@ export default function InterviewInterface() {
 
           {activeTab === 'code' && isCodeInterview && (
             <div className="mb-4 flex-1">
-              <CodeEditorPanel onSend={submitCode} disabled={isSubmitting || awaitingStreamAi} />
+              <CodeEditorPanel value={codeEditorValue} onChange={setCodeEditorValue} />
             </div>
           )}
         </div>

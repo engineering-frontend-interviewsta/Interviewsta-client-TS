@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, Settings, LogOut, ChevronDown, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useInterviewDevMode } from '../context/InterviewDevModeContext';
+import { interviewDevToolsVisible } from '../constants/interviewDevTools';
 import { ROUTES } from '../constants/routerConstants';
 import LoadingFallback from '../components/shared/LoadingFallback';
 import logoImg from '../assets/logo.png';
@@ -21,6 +23,7 @@ function getInitial(name: string | null | undefined, email: string | null | unde
 
 export default function AppLayout() {
   const { user, isLoading, roles, logout } = useAuth();
+  const { devMode, toggleDevMode } = useInterviewDevMode();
   const location = useLocation();
   const hideHeader = HIDE_HEADER_PATHS.includes(location.pathname);
   const isAdmin = roles?.includes('admin');
@@ -141,6 +144,18 @@ export default function AppLayout() {
                 </>
               )}
             </nav>
+
+            {interviewDevToolsVisible && (
+              <button
+                type="button"
+                className={`app-layout__dev-toggle${devMode ? ' app-layout__dev-toggle--on' : ''}`}
+                onClick={() => toggleDevMode()}
+                aria-pressed={devMode}
+                title="Dev mode: type replies instead of speaking; AI replies without voice. For local testing only."
+              >
+                Dev mode
+              </button>
+            )}
 
             <div className="app-layout__user" ref={userMenuRef}>
               <button

@@ -45,9 +45,18 @@ export default function VideoReportsCard({ reports, onReportClick }: VideoReport
                       {report.type} · {report.date} · {report.duration} min
                     </p>
                   </div>
-                  {report.score != null && (
-                    <span className="reports-card__item-score">{report.score}%</span>
-                  )}
+                  <span
+                    className="reports-card__item-score"
+                    title={
+                      report.score != null && Number.isFinite(report.score)
+                        ? `Composite score ${Math.round(report.score)}%`
+                        : undefined
+                    }
+                  >
+                    {report.score != null && Number.isFinite(report.score)
+                      ? `${Math.round(report.score)}%`
+                      : '—'}
+                  </span>
                 </div>
               </li>
             ))}

@@ -1,8 +1,11 @@
 import type { InterviewFeedback } from '../../../types/feedback';
 import {
-  computeSleeveScore,
-  formatSleeveLabel,
-  getUniversalScoreSupplements,
+  computeCompositeScorePercent,
+  computeSleeveScoreForDisplay,
+  formatSleeveTitleForDisplay,
+  normalizeCommunicationMetrics,
+  normalizeGrammarMetrics,
+  orderTechnicalItemsEntries,
   scorePercentTier,
   scoreTierLabel,
 } from '../reportUtils';
@@ -23,15 +26,25 @@ export default function FeedbackHero({
   duration,
   data,
 }: FeedbackHeroProps) {
-  const rawOverall = data.overallScore;
-  const overall =
-    rawOverall != null && rawOverall >= 0 ? Math.round(rawOverall) : null;
+  const comm = normalizeCommunicationMetrics(data.communicationMetrics);
+  const gram = normalizeGrammarMetrics(data.grammarMetrics);
+
+  const composite =
+    computeCompositeScorePercent(data) ??
+    (data.overallScore != null && data.overallScore >= 0 ? Math.round(data.overallScore) : null);
+
   const ringOffset =
-    overall != null ? RING_C * (1 - Math.min(100, Math.max(0, overall)) / 100) : RING_C;
+    composite != null ? RING_C * (1 - Math.min(100, Math.max(0, composite)) / 100) : RING_C;
 
   const items = data.items && typeof data.items === 'object' ? data.items : {};
-  const pillEntries = Object.entries(items).slice(0, 6);
-  const universalSupplements = getUniversalScoreSupplements(data);
+  const technicalEntries = orderTechnicalItemsEntries(
+    Object.entries(items) as [string, Record<string, number>][],
+  );
+  const sleevePills = technicalEntries.map(([key, metrics]) => ({
+    key,
+    label: formatSleeveTitleForDisplay(key),
+    score: Math.round(computeSleeveScoreForDisplay(key, metrics || {})),
+  }));
 
   return (
     <header className="feedback-report__hero">
@@ -50,8 +63,8 @@ export default function FeedbackHero({
         Your <em>Interview Report</em>
       </h1>
       <p className="feedback-report__hero-sub">
-        Structured view of how you showed up across rubric dimensions: technical depth,
-        clarity, and conversation flow — aligned with how hiring loops score candidates.
+        Structured view of how you showed up across technical execution, problem-solving, clarity of
+        explanation, and language quality — aligned with how hiring loops evaluate candidates.
       </p>
 
       <div className="feedback-report__hero-scores">
@@ -71,7 +84,7 @@ export default function FeedbackHero({
               stroke="var(--color-border)"
               strokeWidth={10}
             />
-            {overall != null && (
+            {composite != null && (
               <circle
                 cx={80}
                 cy={80}
@@ -92,7 +105,7 @@ export default function FeedbackHero({
               className="feedback-report__font-display"
               style={{ fontSize: 34, fill: 'var(--color-text)' }}
             >
-              {overall != null ? `${overall}%` : '—'}
+              {composite != null ? `${composite}%` : '—'}
             </text>
             <text
               x={80}
@@ -110,73 +123,49 @@ export default function FeedbackHero({
           </svg>
           <span className="feedback-report__ring-label">Composite score</span>
           <span className="feedback-report__ring-sublabel">
-            Aggregated from rubric dimensions below
+            Averages communication, grammar, and each category below
           </span>
         </div>
 
         <div className="feedback-report__score-pills">
-            {pillEntries.map(([key, metrics]) => {
-              const m = metrics || {};
-              const sleeveScore =
-                data.sleeveScore != null && key in data.sleeveScore
-                  ? data.sleeveScore[key]
-                  : computeSleeveScore(m);
-              const rounded = Math.round(sleeveScore);
-              const tier = scorePercentTier(rounded);
-              const valClass =
-                tier === 'high'
-                  ? 'feedback-report__score-pill-val feedback-report__score-pill-val--high'
-                  : tier === 'mid'
-                    ? 'feedback-report__score-pill-val feedback-report__score-pill-val--mid'
-                    : 'feedback-report__score-pill-val feedback-report__score-pill-val--low';
-              return (
-                <div key={key} className="feedback-report__score-pill feedback-report__fade-up">
-                <span className="feedback-report__score-pill-label feedback-report__mono">
-                  {formatSleeveLabel(key)}
-                </span>
-                <span className={valClass}>{rounded}%</span>
-                <span className="feedback-report__score-pill-sub">
-                  {scoreTierLabel(tier)}
-                </span>
-              </div>
-            );
-          })}
-          {pillEntries.length === 0 && overall != null && (
-            <div className="feedback-report__score-pill feedback-report__fade-up">
-              <span className="feedback-report__score-pill-label feedback-report__mono">
-                Overall
-              </span>
-              <span className="feedback-report__score-pill-val feedback-report__score-pill-val--high">
-                {overall}%
-              </span>
-              <span className="feedback-report__score-pill-sub">
-                {scoreTierLabel(scorePercentTier(overall))}
-              </span>
-            </div>
+          {comm && (
+            <HeroPill label="Communication" score={Math.round(comm.overall)} />
           )}
-          {universalSupplements.map((supplement) => {
-            const rounded = Math.round(supplement.score);
-            const tier = scorePercentTier(rounded);
-            const valClass =
-              tier === 'high'
-                ? 'feedback-report__score-pill-val feedback-report__score-pill-val--high'
-                : tier === 'mid'
-                  ? 'feedback-report__score-pill-val feedback-report__score-pill-val--mid'
-                  : 'feedback-report__score-pill-val feedback-report__score-pill-val--low';
-            return (
-              <div key={supplement.key} className="feedback-report__score-pill feedback-report__fade-up">
-                <span className="feedback-report__score-pill-label feedback-report__mono">
-                  {supplement.label}
-                </span>
-                <span className={valClass}>{rounded}%</span>
-                <span className="feedback-report__score-pill-sub">
-                  {scoreTierLabel(tier)}
-                </span>
-              </div>
-            );
-          })}
+          {gram && <HeroPill label="Grammar" score={Math.round(gram.overall)} />}
+          {sleevePills.map((p) => (
+            <HeroPill key={p.key} label={p.label} score={p.score} />
+          ))}
+          {sleevePills.length === 0 && !comm && !gram && composite != null && (
+            <HeroPill label="Overall" score={composite} />
+          )}
         </div>
       </div>
     </header>
+  );
+}
+
+function HeroPill({ label, score }: { label: string; score: number }) {
+  const tier = scorePercentTier(score);
+  const valClass =
+    tier === 'high'
+      ? 'feedback-report__score-pill-val feedback-report__score-pill-val--high'
+      : tier === 'mid'
+        ? 'feedback-report__score-pill-val feedback-report__score-pill-val--mid'
+        : 'feedback-report__score-pill-val feedback-report__score-pill-val--low';
+  return (
+    <div
+      className="feedback-report__score-pill feedback-report__fade-up"
+      title={
+        score === 0
+          ? `${label}: 0% — evaluated score (not the same as “not evaluated”)`
+          : `${label}: ${score}%`
+      }
+    >
+      <span className="feedback-report__score-pill-label feedback-report__mono">{label}</span>
+      <span className={valClass}>{score}%</span>
+      <span className="feedback-report__score-pill-sub">
+        {score === 0 ? 'Scored (0%)' : scoreTierLabel(tier)}
+      </span>
+    </div>
   );
 }

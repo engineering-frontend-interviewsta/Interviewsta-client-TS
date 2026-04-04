@@ -1,8 +1,64 @@
-/** Average of numeric metrics; ignores -1 (not evaluated). */
+import type { InterviewFeedback } from '../../types/feedback';
+
+/** Rubric: 0–100 = evaluated (including real zero); -1 or non-number = not evaluated. */
+export function isRubricEvaluated(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+/** Average of evaluated rubric leaves only; ignores -1 and invalid values. */
 export function computeSleeveScore(metrics: Record<string, number>): number {
-  const valid = Object.values(metrics).filter((v) => v !== -1);
+  const valid = Object.values(metrics).filter(isRubricEvaluated);
   if (valid.length === 0) return 0;
   return valid.reduce((acc, v) => acc + v, 0) / valid.length;
+}
+
+/** Coding template: verbal communication is scored under Language quality, not under Code Quality. */
+export const CODE_QUALITY_SLEEVE_KEY = 'Code Quality & Communication';
+const VERBAL_COMM_SUBKEY = 'Verbal Communication';
+
+export function filterCodeQualityMetricsForDisplay(
+  metrics: Record<string, number>,
+): Record<string, number> {
+  const { [VERBAL_COMM_SUBKEY]: _removed, ...rest } = metrics;
+  return rest;
+}
+
+export function formatSleeveTitleForDisplay(sleeveKey: string): string {
+  if (sleeveKey === CODE_QUALITY_SLEEVE_KEY) return 'Code Quality';
+  return formatSleeveLabel(sleeveKey);
+}
+
+export function computeSleeveScoreForDisplay(sleeveKey: string, metrics: Record<string, number>): number {
+  const m = sleeveKey === CODE_QUALITY_SLEEVE_KEY ? filterCodeQualityMetricsForDisplay(metrics) : metrics;
+  return computeSleeveScore(m);
+}
+
+/** True when this sleeve has at least one evaluated (0–100) display metric, including real 0%. */
+export function sleeveHasEvaluatedDisplay(sleeveKey: string, metrics: Record<string, number>): boolean {
+  const display =
+    sleeveKey === CODE_QUALITY_SLEEVE_KEY ? filterCodeQualityMetricsForDisplay(metrics) : metrics;
+  return Object.values(display).some(isRubricEvaluated);
+}
+
+export const PROBLEM_SOLVING_SLEEVE_KEY = 'Problem Solving & Technical Logic';
+
+/** Stable ordering for technical sleeves (matches score breakdown). */
+export function orderTechnicalItemsEntries(
+  entries: [string, Record<string, number>][],
+): [string, Record<string, number>][] {
+  const byKey = new Map(entries);
+  const out: [string, Record<string, number>][] = [];
+  const pushIf = (k: string) => {
+    const v = byKey.get(k);
+    if (v) out.push([k, v]);
+  };
+  pushIf(PROBLEM_SOLVING_SLEEVE_KEY);
+  pushIf(CODE_QUALITY_SLEEVE_KEY);
+  for (const [k, v] of entries) {
+    if (k === PROBLEM_SOLVING_SLEEVE_KEY || k === CODE_QUALITY_SLEEVE_KEY) continue;
+    out.push([k, v]);
+  }
+  return out;
 }
 
 export type ScoreTier = 'high' | 'mid' | 'low' | 'concern';
@@ -70,7 +126,7 @@ export function getUniversalScoreSupplements(data: {
 }): Array<{ key: 'communicationScore' | 'grammarScore'; label: string; score: number }> {
   const supplements: Array<{ key: 'communicationScore' | 'grammarScore'; label: string; score: number }> = [];
 
-  const hasCommunicationInRubric = hasAliasedMetric(data.items, [
+  const hasCommunicationInItems = hasAliasedMetric(data.items, [
     'communication',
     'verbalcommunication',
     'professionalcommunication',
@@ -78,7 +134,7 @@ export function getUniversalScoreSupplements(data: {
     'clarity',
     'tone',
   ]);
-  const hasGrammarInRubric = hasAliasedMetric(data.items, [
+  const hasGrammarInItems = hasAliasedMetric(data.items, [
     'grammar',
     'grammarcorrectness',
     'sentenceconstruction',
@@ -89,7 +145,7 @@ export function getUniversalScoreSupplements(data: {
   const communicationScore = normalizeScore(
     data.communicationMetrics?.overall ?? data.communicationScore,
   );
-  if (!hasCommunicationInRubric && communicationScore != null) {
+  if (!hasCommunicationInItems && communicationScore != null) {
     supplements.push({
       key: 'communicationScore',
       label: 'Communication',
@@ -98,7 +154,7 @@ export function getUniversalScoreSupplements(data: {
   }
 
   const grammarScore = normalizeScore(data.grammarMetrics?.overall ?? data.grammarScore);
-  if (!hasGrammarInRubric && grammarScore != null) {
+  if (!hasGrammarInItems && grammarScore != null) {
     supplements.push({
       key: 'grammarScore',
       label: 'Grammar',
@@ -187,4 +243,25 @@ export function normalizeGrammarMetrics(
     vocabularyControl,
     conciseness,
   };
+}
+
+/**
+ * Composite for the hero ring: communication + grammar (when present) + each interview category.
+ * Excludes Verbal Communication from Code Quality to align with Language quality section.
+ */
+export function computeCompositeScorePercent(data: InterviewFeedback): number | null {
+  const parts: number[] = [];
+  const comm = normalizeCommunicationMetrics(data.communicationMetrics);
+  const gram = normalizeGrammarMetrics(data.grammarMetrics);
+  if (comm) parts.push(comm.overall);
+  if (gram) parts.push(gram.overall);
+
+  const items = data.items && typeof data.items === 'object' ? data.items : {};
+  for (const [key, raw] of Object.entries(items)) {
+    const m = raw && typeof raw === 'object' ? (raw as Record<string, number>) : {};
+    parts.push(computeSleeveScoreForDisplay(key, m));
+  }
+
+  if (parts.length === 0) return null;
+  return Math.round(parts.reduce((a, b) => a + b, 0) / parts.length);
 }

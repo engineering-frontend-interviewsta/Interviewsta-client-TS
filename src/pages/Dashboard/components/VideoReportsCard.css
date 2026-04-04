@@ -152,6 +152,8 @@
   font-weight: 600;
   color: var(--color-primary);
   flex-shrink: 0;
+  align-self: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .reports-card__empty {

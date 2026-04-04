@@ -1,20 +1,23 @@
-import Editor from '@monaco-editor/react';
 import { useState } from 'react';
+import Editor, { loader } from '@monaco-editor/react';
+
+/** Match installed `monaco-editor` (see package-lock); keeps worker URLs consistent. */
+const MONACO_VS_BASE = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs';
+
+loader.config({ paths: { vs: MONACO_VS_BASE } });
 
 interface CodeEditorPanelProps {
-  initialCode?: string;
-  onSend: (code: string) => Promise<void> | void;
-  disabled?: boolean;
+  /** Controlled editor value (sync to a ref in parent for respond payloads). */
+  value: string;
+  onChange: (code: string) => void;
 }
 
-export default function CodeEditorPanel({ initialCode = '', onSend, disabled }: CodeEditorPanelProps) {
-  const [code, setCode] = useState(initialCode);
+/**
+ * Same idea as interviewsta-landing-website InterviewInterface: no separate code submit.
+ * Code is attached as `code_input` when the user speaks (VAD) or sends dev text / communication text.
+ */
+export default function CodeEditorPanel({ value, onChange }: CodeEditorPanelProps) {
   const [language, setLanguage] = useState<'javascript' | 'typescript' | 'python'>('javascript');
-
-  const handleSend = async () => {
-    if (!code.trim() || disabled) return;
-    await onSend(code);
-  };
 
   return (
     <div className="flex flex-col h-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -30,13 +33,16 @@ export default function CodeEditorPanel({ initialCode = '', onSend, disabled }: 
           <option value="python">Python</option>
         </select>
       </div>
-      <div className="flex-1 min-h-[220px] border border-gray-100 rounded overflow-hidden mb-3">
+      <p className="text-xs text-gray-500 mb-2">
+        Your code is included automatically when you speak or send a text reply (same as the previous app — no separate submit).
+      </p>
+      <div className="flex-1 min-h-[220px] border border-gray-100 rounded overflow-hidden">
         <Editor
           height="100%"
           defaultLanguage={language}
           language={language}
-          value={code}
-          onChange={(val) => setCode(val ?? '')}
+          value={value}
+          onChange={(val) => onChange(val ?? '')}
           theme="vs-light"
           options={{
             minimap: { enabled: false },
@@ -46,17 +52,6 @@ export default function CodeEditorPanel({ initialCode = '', onSend, disabled }: 
           }}
         />
       </div>
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={disabled || !code.trim()}
-          className="px-4 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium disabled:opacity-50 hover:bg-blue-700"
-        >
-          Send code
-        </button>
-      </div>
     </div>
   );
 }
-

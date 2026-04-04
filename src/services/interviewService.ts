@@ -152,12 +152,15 @@ export async function submitResponse(params: {
   audioData?: string | null;
   codeInput?: string | null;
   sampleRate?: number;
+  /** Dev mode: skip TTS on the server (no AI voice in stream/poll). */
+  skipAudio?: boolean;
 }): Promise<SubmitResponseResult> {
   const body: Record<string, unknown> = {};
   if (params.textResponse != null && params.textResponse !== '') body.text_response = params.textResponse;
   if (params.audioData != null && params.audioData !== '') body.audio_data = params.audioData;
   if (params.codeInput != null && params.codeInput !== '') body.code_input = params.codeInput;
   if (body.audio_data && params.sampleRate != null) body.sample_rate = params.sampleRate;
+  if (params.skipAudio) body.skip_audio = true;
 
   const response = await fastApiClient.post(INTERVIEW_ENDPOINTS.RESPOND(params.sessionId), body);
   const data = response.data as { task_id?: string; status?: string };

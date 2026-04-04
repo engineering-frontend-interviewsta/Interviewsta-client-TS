@@ -87,6 +87,14 @@ export interface UseInterviewSessionParams {
    * (matches legacy Communication interview: hide STT in main chat during structured rounds).
    */
   appendStreamUserTranscriptRef?: MutableRefObject<boolean>;
+  /**
+   * Dev mode: text-only flow — skip Glee join gate, do not play SSE TTS, send skip_audio on responds.
+   */
+  devMode?: boolean;
+  /**
+   * Latest code editor contents; appended as `code_input` on every text/audio respond (legacy landing behavior).
+   */
+  respondCodeRef?: MutableRefObject<string>;
 }
 
 export type EndSessionOpts = { sessionFinished?: boolean; interviewTestId?: number };
@@ -116,7 +124,6 @@ export interface UseInterviewSessionResult {
   addUserMessage: (content: string) => void;
   submitText: (text: string) => Promise<void>;
   submitAudio: (audio: Blob) => Promise<void>;
-  submitCode: (code: string) => Promise<void>;
   endSession: (opts?: EndSessionOpts) => Promise<string | null>;
   updateCommunicationData: (fn: (prev: CommunicationData) => CommunicationData) => void;
 }
@@ -125,6 +132,8 @@ export function useInterviewSession({
   sessionId,
   interviewType,
   appendStreamUserTranscriptRef,
+  devMode = false,
+  respondCodeRef,
 }: UseInterviewSessionParams): UseInterviewSessionResult {
   const [aiMessage, setAiMessage] = useState('');
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
@@ -145,6 +154,14 @@ export function useInterviewSession({
   const audioQueueRef = useRef<string[]>([]);
   const isPlayingRef = useRef(false);
   const blockedAudioRef = useRef<string | null>(null);
+  const devModeRef = useRef(devMode);
+  devModeRef.current = devMode;
+
+  const codeInputSnapshot = (): string | undefined => {
+    const raw = respondCodeRef?.current;
+    const t = typeof raw === 'string' ? raw.trim() : '';
+    return t || undefined;
+  };
 
   const addAIMessage = useCallback((content: string) => {
     const t = content?.trim();
@@ -239,6 +256,10 @@ export function useInterviewSession({
 
   const enqueueAudio = useCallback(
     (base64: string | undefined) => {
+      if (devModeRef.current) {
+        if (base64) setGleeJoined(true);
+        return;
+      }
       if (!base64) return;
       setGleeJoined(true);
       audioQueueRef.current.push(base64);
@@ -277,13 +298,19 @@ export function useInterviewSession({
     setAiMessage('');
     setLastNode(null);
     setCommunicationData(emptyCommunicationData);
-    setGleeJoined(false);
+    setGleeJoined(Boolean(devModeRef.current));
     setGleeJoinWaitTimedOut(false);
     setUserLineCommitted(false);
     setAwaitingStreamAi(false);
     setStatus('connecting');
     setError(null);
   }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionId || !devMode) return;
+    setGleeJoined(true);
+    setGleeJoinWaitTimedOut(false);
+  }, [sessionId, devMode]);
 
   useEffect(() => {
     if (!sessionId || gleeJoined) return;
@@ -378,6 +405,8 @@ export function useInterviewSession({
         const { taskId } = await submitResponse({
           sessionId,
           textResponse: trimmed,
+          codeInput: codeInputSnapshot(),
+          skipAudio: devModeRef.current,
         });
         let attempts = 0;
         const poll = async (): Promise<void> => {
@@ -441,6 +470,8 @@ export function useInterviewSession({
         const { taskId } = await submitResponse({
           sessionId,
           audioData: base64,
+          codeInput: codeInputSnapshot(),
+          skipAudio: devModeRef.current,
         });
         let attempts = 0;
         const poll = async (): Promise<void> => {
@@ -493,64 +524,6 @@ export function useInterviewSession({
     [sessionId, isSubmitting, addUserMessage, addAIMessage, pushPendingUserLine, stripPendingUserLine]
   );
 
-  const submitCode = useCallback(
-    async (code: string) => {
-      if (!code.trim() || isSubmitting) return;
-      setIsSubmitting(true);
-      setError(null);
-      try {
-        const { taskId } = await submitResponse({
-          sessionId,
-          codeInput: code,
-        });
-        let attempts = 0;
-        const poll = async (): Promise<void> => {
-          if (attempts >= MAX_POLL_ATTEMPTS) {
-            console.warn(ERROR_LOG_PREFIX, 'submitCode poll timeout');
-            setError('Response timeout');
-            setUserLineCommitted(false);
-            setIsSubmitting(false);
-            return;
-          }
-          attempts++;
-          const res = (await getRespondTaskStatus(sessionId, taskId)) as RespondTaskResult;
-          if (res?.status === 'completed') {
-            const msg = extractMessage(res);
-            if (res.interview_transcript?.trim()) addUserMessage(res.interview_transcript);
-            if (msg != null) {
-              setAiMessage(msg);
-              addAIMessage(msg);
-            }
-            // Do not enqueue audio here — stream already delivers the same AI response + audio; playing both causes Glee to speak twice
-            const ia = res?.interview_ai_response;
-            if (ia?.last_node != null) setLastNode(ia.last_node);
-            if (ia) setCommunicationData((prev) => mergeCommunicationFromResponse(prev, ia));
-            setUserLineCommitted(false);
-            setIsSubmitting(false);
-            return;
-          }
-          if (res?.status === 'failed') {
-            const errMsg = res?.error ?? 'Response failed';
-            console.warn(ERROR_LOG_PREFIX, 'submitCode poll failed:', errMsg, res);
-            setError(errMsg);
-            setUserLineCommitted(false);
-            setIsSubmitting(false);
-            return;
-          }
-          setTimeout(poll, POLL_INTERVAL_MS);
-        };
-        await poll();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to submit code';
-        console.warn(ERROR_LOG_PREFIX, 'submitCode catch:', message, err);
-        setError(message);
-        setUserLineCommitted(false);
-        setIsSubmitting(false);
-      }
-    },
-    [sessionId, isSubmitting, addUserMessage, addAIMessage]
-  );
-
   const endSession = useCallback(
     async (opts?: EndSessionOpts): Promise<string | null> => {
       streamCloseRef.current?.();
@@ -589,7 +562,6 @@ export function useInterviewSession({
     addUserMessage,
     submitText,
     submitAudio,
-    submitCode,
     endSession,
     updateCommunicationData: setCommunicationData,
   };

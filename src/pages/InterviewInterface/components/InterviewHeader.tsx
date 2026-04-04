@@ -15,6 +15,10 @@ export interface InterviewHeaderProps {
   onEndClick: () => void;
   isEnding: boolean;
   isComplete: boolean;
+  /** When true, show in-header toggle for dev mode (navbar is hidden on this route). */
+  showDevModeControls?: boolean;
+  devMode?: boolean;
+  onDevModeToggle?: () => void;
 }
 
 export default function InterviewHeader({
@@ -23,6 +27,9 @@ export default function InterviewHeader({
   onEndClick,
   isEnding,
   isComplete,
+  showDevModeControls,
+  devMode,
+  onDevModeToggle,
 }: InterviewHeaderProps) {
   return (
     <header className="interview-header">
@@ -47,6 +54,17 @@ export default function InterviewHeader({
           )}
         </div>
         <div className="interview-header__right">
+          {showDevModeControls && onDevModeToggle && (
+            <button
+              type="button"
+              onClick={onDevModeToggle}
+              className={`interview-header__dev-toggle${devMode ? ' interview-header__dev-toggle--on' : ''}`}
+              aria-pressed={Boolean(devMode)}
+              title="Dev mode: type instead of speak; no AI voice. Toggle matches the navbar control."
+            >
+              Dev mode
+            </button>
+          )}
           {onExportTranscript && (
             <button type="button" onClick={onExportTranscript} className="interview-header__icon-btn" title="Export transcript">
               <Download aria-hidden />

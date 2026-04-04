@@ -4,6 +4,7 @@ import { PlayCircle, ArrowLeft } from 'lucide-react';
 import { getInterviewSessions, mapVideoReport } from '../../services/dashboardService';
 import type { VideoInterviewReport } from '../../types/dashboard';
 import { ROUTES } from '../../constants/routerConstants';
+import VideoReportScoreChips from '../../components/shared/VideoReportScoreChips';
 import { ALL_INTERVIEW_OPTIONS } from '../../data/interviewTypesData';
 import './VideoInterviewHistory.css';
 
@@ -109,7 +110,7 @@ export default function VideoInterviewHistory() {
                   <th>Date</th>
                   <th>Duration</th>
                   <th>Difficulty</th>
-                  <th>Score</th>
+                  <th>Scores</th>
                 </tr>
               </thead>
               <tbody>
@@ -120,7 +121,9 @@ export default function VideoInterviewHistory() {
                     <td>{report.date}</td>
                     <td>{report.duration} min</td>
                     <td>{report.difficulty ?? '—'}</td>
-                    <td className="video-history__cell-score">{report.score != null ? `${report.score}%` : '—'}</td>
+                    <td className="video-history__cell-score">
+                      <VideoReportScoreChips report={report} variant="table" />
+                    </td>
                   </tr>
                 ))}
                 {pagedReports.length === 0 && (

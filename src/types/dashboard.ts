@@ -62,6 +62,10 @@ export interface RecentResumeSessionsResponse {
 export interface InterviewSessionRaw {
   id: string;
   overallScore: number;
+  /** Per-sleeve averages (rubric), when returned by API */
+  sleeveScores?: Record<string, number>;
+  communicationOverall?: number | null;
+  grammarOverall?: number | null;
   savedAt: string;
   interviewTest: {
     id: string;
@@ -111,6 +115,9 @@ export interface VideoInterviewReport {
   date: string;
   duration: number;
   score: number | undefined;
+  sleeveScores?: Record<string, number>;
+  communicationOverall?: number | null;
+  grammarOverall?: number | null;
   status: string;
   difficulty?: string;
   topics?: string[];

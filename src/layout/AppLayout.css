@@ -112,7 +112,40 @@
   background-color: rgba(109, 40, 217, 0.12);
 }
 
+.app-layout__dev-toggle {
+  flex-shrink: 0;
+  padding: 0.375rem 0.65rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.app-layout__dev-toggle:hover {
+  color: var(--color-text);
+  border-color: var(--color-primary-muted);
+}
+
+.app-layout__dev-toggle--on {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
 @media (max-width: 640px) {
+  .app-layout__dev-toggle {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.65rem;
+  }
   .app-layout__nav-link span {
     display: none;
   }
