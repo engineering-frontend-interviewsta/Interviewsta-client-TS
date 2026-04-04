@@ -63,11 +63,6 @@ export default function ScoreBreakdown({ data }: ScoreBreakdownProps) {
       <header className="feedback-report__section-header">
         <div className="feedback-report__eyebrow feedback-report__mono">01 — Score breakdown</div>
         <h2 className="feedback-report__section-title">How each dimension scored</h2>
-        <p className="feedback-report__section-desc">
-          Rubric categories (e.g. problem solving, code quality) are listed first; communication and
-          grammar follow. You will see 0% where the rubric scored an area at zero (evaluated). “Not
-          evaluated” is only for areas with no score for this session.
-        </p>
       </header>
 
       <div className="feedback-report__score-section-stack">

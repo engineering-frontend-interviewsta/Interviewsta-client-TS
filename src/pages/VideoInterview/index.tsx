@@ -58,8 +58,6 @@ export default function VideoInterview() {
   const [tests, setTests] = useState<InterviewTest[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [totalAll, setTotalAll] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -92,8 +90,6 @@ export default function VideoInterview() {
           const res = await getInterviewTests({ page: pageNum, limit: PAGE_SIZE });
           setTests((prev) => (append ? [...prev, ...res.data] : res.data));
           setTotalPages(res.totalPages);
-          setTotal(res.total);
-          setTotalAll(res.total);
         } else {
           const res = await getInterviewTestsByParentType(selectedParentId, {
             page: pageNum,
@@ -101,7 +97,6 @@ export default function VideoInterview() {
           });
           setTests((prev) => (append ? [...prev, ...res.data] : res.data));
           setTotalPages(res.totalPages);
-          setTotal(res.total);
         }
       } catch {
         if (!append) setTests([]);
@@ -309,7 +304,7 @@ export default function VideoInterview() {
                   selectedParentId === null ? 'video-interview__pill--active' : ''
                 }`}
               >
-                All{selectedParentId === null ? ` (${total})` : totalAll > 0 ? ` (${totalAll})` : ''}
+                All
               </button>
               {parentTypes.map((p) => (
                 <button

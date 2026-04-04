@@ -328,14 +328,6 @@
   text-align: center;
 }
 
-.feedback-report__ring-sublabel {
-  font-size: 0.6875rem;
-  color: var(--color-text-subtle);
-  text-align: center;
-  max-width: 11rem;
-  line-height: 1.35;
-}
-
 .feedback-report__score-pills {
   display: flex;
   flex-wrap: wrap;

@@ -99,33 +99,32 @@ export default function FeedbackHero({
                 transform="rotate(-90 80 80)"
               />
             )}
-            <text
-              x={80}
-              y={72}
-              textAnchor="middle"
-              className="feedback-report__font-display"
-              style={{ fontSize: 34, fill: 'var(--color-text)' }}
-            >
-              {composite != null ? `${composite}%` : '—'}
-            </text>
-            <text
-              x={80}
-              y={92}
-              textAnchor="middle"
-              className="feedback-report__mono"
-              style={{
-                fontSize: 10,
-                fill: 'var(--color-text-subtle)',
-                letterSpacing: '0.12em',
-              }}
-            >
-              OVERALL
-            </text>
+            <g transform="translate(80 80)">
+              <text
+                textAnchor="middle"
+                dominantBaseline="central"
+                y={-7}
+                className="feedback-report__font-display"
+                style={{ fontSize: 34, fill: 'var(--color-text)' }}
+              >
+                {composite != null ? `${composite}%` : '—'}
+              </text>
+              <text
+                textAnchor="middle"
+                dominantBaseline="central"
+                y={14}
+                className="feedback-report__mono"
+                style={{
+                  fontSize: 10,
+                  fill: 'var(--color-text-subtle)',
+                  letterSpacing: '0.12em',
+                }}
+              >
+                OVERALL
+              </text>
+            </g>
           </svg>
           <span className="feedback-report__ring-label">Composite score</span>
-          <span className="feedback-report__ring-sublabel">
-            Technical categories first, then communication and grammar
-          </span>
         </div>
 
         <div className="feedback-report__score-pills">

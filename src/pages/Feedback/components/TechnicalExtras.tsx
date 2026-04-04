@@ -17,7 +17,7 @@ export default function TechnicalExtras({ data }: TechnicalExtrasProps) {
         <div className="feedback-report__eyebrow feedback-report__mono">03 — Transcript</div>
         <h2 className="feedback-report__section-title">Interview transcript</h2>
         <p className="feedback-report__section-desc">
-          Full dialogue from this session (interviewer prompts and your responses), in order.
+          Full dialogue from this session
         </p>
       </header>
 
