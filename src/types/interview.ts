@@ -131,8 +131,23 @@ export interface PollStatusResult {
   error: string | null;
 }
 
-/** Callbacks for SSE stream */
+/** Payload for SSE `respond_complete` (aligns with GET respond-status success body). */
+export type RespondCompleteSsePayload = RespondTaskResult & { task_id?: string };
+
+/** Callbacks for SSE stream (EventSource-first + legacy message events). */
 export interface InterviewStreamCallbacks {
+  onConnected?: (data: { session_id?: string } & Record<string, unknown>) => void;
+  onHeartbeat?: (data: { t?: number } & Record<string, unknown>) => void;
+  onCeleryStart?: (data: { task_id?: string; phase?: string }) => void;
+  onStartProgress?: (data: { progress?: number; message?: string }) => void;
+  onStartComplete?: (data: unknown) => void;
+  onStartFailed?: (data: { task_id?: string; error?: string }) => void;
+  onCeleryRespond?: (data: { task_id?: string }) => void;
+  onRespondProgress?: (data: { progress?: number; message?: string }) => void;
+  onRespondComplete?: (data: RespondCompleteSsePayload) => void;
+  onRespondFailed?: (data: { task_id?: string; error?: string }) => void;
+  onFeedbackQueued?: (data: { feedback_task_id?: string } & Record<string, unknown>) => void;
+  onFeedbackComplete?: (data: unknown) => void;
   onStatusUpdate?: (status: string) => void;
   onAIResponse?: (data: AIResponseData) => void;
   onTranscript?: (transcript: string) => void;

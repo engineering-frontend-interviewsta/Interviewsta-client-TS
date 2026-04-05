@@ -1,0 +1,740 @@
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useInterviewSession } from '../../../hooks/useInterviewSession';
+import { useMediaDevices } from '../../../hooks/useMediaDevices';
+import { useUtteranceHold } from '../../../hooks/useUtteranceHold';
+import { getInterviewFeedbackStatus } from '../../../services/interviewService';
+import { float32ToWavBlob } from '../../../utils/blobToWav';
+import { useMicVAD } from '@ricky0123/vad-react';
+import CodeEditorPanel from '../../../pages/InterviewInterface/components/CodeEditorPanel';
+import CaseStudyPanel from '../../../pages/InterviewInterface/components/CaseStudyPanel';
+import { SpeakingPhase, ComprehensionPhase, MCQPhase, MCQResults } from '../../../pages/InterviewInterface/components/Communication';
+import InterviewHeader from '../../../pages/InterviewInterface/components/InterviewHeader';
+import EndInterviewModal from '../../../pages/InterviewInterface/components/EndInterviewModal';
+import TranscriptPanel from '../../../pages/InterviewInterface/components/TranscriptPanel';
+import MicWaveform from '../../../pages/InterviewInterface/components/MicWaveform';
+import { ROUTES } from '../../../constants/routerConstants';
+import { USER_TRANSCRIPT_PENDING_LABEL } from '../../../constants/interviewSessionUi';
+import { useInterviewAnalysis } from '../../hooks/useInterviewAnalysis';
+import { LiveAnalysisPanel } from './LiveAnalysisPanel';
+import '../../../pages/InterviewInterface/InterviewInterface.css';
+import './TestVideo.css';
+
+const FEEDBACK_POLL_INTERVAL_MS = 2000;
+const FEEDBACK_POLL_MAX_ATTEMPTS = 45;
+
+const TEST_VIDEO_SESSION_STORAGE_KEY = 'interviewsta_test_video_session_id';
+
+/** Phases where legacy app hid user STT in the main transcript (phase-specific UI instead). */
+const COMMUNICATION_TRANSCRIPT_SUPPRESSED_PHASES = new Set([
+  'Speaking',
+  'Speaking_after',
+  'Comprehension',
+  'Comprehension_before',
+  'Comprehension_after',
+  'MCQ',
+  'MCQ_after',
+]);
+
+/** Test route: mirror of `InterviewInterface` plus live analysis. Session optional — use `location.state`, `?sessionId=`, or persisted key so refresh does not bounce away. */
+export default function TestVideo() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const state = location.state as {
+    sessionId?: string;
+    interviewType?: string;
+    interviewTypeId?: number;
+  } | null;
+  const sessionId = useMemo(() => {
+    const fromState = state?.sessionId?.trim();
+    if (fromState) return fromState;
+    const q = new URLSearchParams(location.search).get('sessionId')?.trim();
+    if (q) return q;
+    try {
+      return sessionStorage.getItem(TEST_VIDEO_SESSION_STORAGE_KEY)?.trim() || undefined;
+    } catch {
+      return undefined;
+    }
+  }, [state?.sessionId, location.search]);
+
+  const interviewType = state?.interviewType ?? 'Technical';
+  const interviewTypeId = state?.interviewTypeId;
+
+  useEffect(() => {
+    const sid = state?.sessionId?.trim();
+    if (!sid) return;
+    try {
+      sessionStorage.setItem(TEST_VIDEO_SESSION_STORAGE_KEY, sid);
+    } catch {
+      /* ignore */
+    }
+  }, [state?.sessionId]);
+
+  useEffect(() => {
+    const q = new URLSearchParams(location.search).get('sessionId')?.trim();
+    if (!q) return;
+    try {
+      sessionStorage.setItem(TEST_VIDEO_SESSION_STORAGE_KEY, q);
+    } catch {
+      /* ignore */
+    }
+  }, [location.search]);
+
+  const sessionIdRef = useRef<string | undefined>(sessionId);
+  sessionIdRef.current = sessionId;
+
+  const [showEndModal, setShowEndModal] = useState(false);
+
+  const [isEndingInterview, setIsEndingInterview] = useState(false);
+  const [endTaskId, setEndTaskId] = useState<string | null>(null);
+  const appendStreamUserTranscriptRef = useRef(true);
+  const hasNavigatedToFeedbackRef = useRef(false);
+  /** True when user clicked End and we're waiting for feedback task — don't navigate until poll completes */
+  const waitingForFeedbackRef = useRef(false);
+
+  const onInterviewFeedbackReady = useCallback(() => {
+    if (!sessionId) return;
+    setEndTaskId(null);
+    setShowEndModal(false);
+    waitingForFeedbackRef.current = false;
+    hasNavigatedToFeedbackRef.current = true;
+    navigate(ROUTES.FEEDBACK, {
+      replace: true,
+      state: {
+        type: 'video-interview',
+        session_id: sessionId,
+        session_type: interviewType,
+      },
+    });
+  }, [navigate, sessionId, interviewType]);
+
+  const {
+    aiMessage,
+    messages,
+    lastNode,
+    communicationData,
+    status,
+    isComplete,
+    error,
+    isSubmitting,
+    isPlayingAudio,
+    gleeHasJoined,
+    gleeJoinWaitTimedOut,
+    bypassGleeJoinGate,
+    awaitingStreamAi,
+    submitText,
+    submitAudio,
+    submitCode,
+    endSession,
+    updateCommunicationData,
+  } = useInterviewSession({
+    sessionId: sessionId ?? '',
+    interviewType,
+    appendStreamUserTranscriptRef,
+    onFeedbackReady: onInterviewFeedbackReady,
+  });
+  const { videoRef, audioEnabled, getStream, streamReady } = useMediaDevices();
+  const {
+    liveMeasurements,
+    isRunning: interviewAnalysisRunning,
+    error: interviewAnalysisError,
+    startAnalysis,
+    stopAnalysis,
+  } = useInterviewAnalysis({ videoTelemetrySessionId: sessionId ?? null });
+  const allowVadSendRef = useRef(true);
+  /** Ignore VAD submissions briefly after AI audio ends (avoids echo/noise firing submitAudio → false "processing"). */
+  const postAiListenGateUntilRef = useRef(0);
+  const prevIsPlayingAudioRef = useRef(false);
+  const [activeTab, setActiveTab] = useState<'conversation' | 'code' | 'notes'>('conversation');
+  const [notes, setNotes] = useState('');
+  const [caseStudyQuestion, setCaseStudyQuestion] = useState<string | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  const isCodeInterview =
+    interviewType === 'technical' ||
+    interviewType === 'coding' ||
+    interviewType === 'role-based' ||
+    interviewType === 'company' ||
+    interviewType === 'subject';
+
+  const isCaseStudy = interviewType === 'case-study';
+  const isCommunication = interviewType === 'miscellaneous'; // TODO: This is a temporary solution due to the backend setup and avoiding tampering a lot of apis, will fix this later as this is an issue avoiding us to add any further miscellaneous interview types.
+
+  // Capture case study question when AI sends it (lastNode === 'CaseStudy')
+  useEffect(() => {
+    if (isCaseStudy && lastNode === 'CaseStudy' && aiMessage && !caseStudyQuestion) {
+      setCaseStudyQuestion(aiMessage);
+    }
+  }, [isCaseStudy, lastNode, aiMessage, caseStudyQuestion]);
+
+  // Communication: send text or audio via existing submit methods
+  const sendCommunicationResponse = useCallback(
+    async (payload: { textResponse?: string; audioData?: string; sampleRate?: number }) => {
+      if (!sessionId) return;
+      if (payload.textResponse != null) await submitText(payload.textResponse);
+      if (payload.audioData != null) {
+        const blob = await fetch(`data:audio/wav;base64,${payload.audioData}`).then((r) => r.blob());
+        await submitAudio(blob);
+      }
+    },
+    [sessionId, submitText, submitAudio]
+  );
+
+  // Derive communication phase for UI (don't override to Results if we're already there)
+  const communicationPhase =
+    lastNode === 'Results' || communicationData.mcqResults?.length
+      ? 'Results'
+      : lastNode ?? null;
+  const showCommunicationPhaseUI =
+    isCommunication &&
+    communicationPhase &&
+    ['Speaking', 'Speaking_after', 'Comprehension', 'Comprehension_before', 'Comprehension_after', 'MCQ', 'MCQ_after', 'Results'].includes(communicationPhase);
+
+  // During Communication Speaking exercise (paragraph shown, no feedback yet), user must use record button — don't auto-send VAD
+  const isCommunicationSpeakingExercise =
+    isCommunication &&
+    (communicationPhase === 'Speaking' || communicationPhase === 'Speaking_after') &&
+    !!communicationData.speaking &&
+    !communicationData.speakingFeedback;
+  allowVadSendRef.current = !isCommunicationSpeakingExercise;
+
+  useEffect(() => {
+    if (prevIsPlayingAudioRef.current && !isPlayingAudio) {
+      postAiListenGateUntilRef.current = Date.now() + 700;
+    }
+    prevIsPlayingAudioRef.current = isPlayingAudio;
+  }, [isPlayingAudio]);
+
+  useEffect(() => {
+    if (!isCommunication || !communicationPhase) {
+      appendStreamUserTranscriptRef.current = true;
+      return;
+    }
+    const inStructuredRound = COMMUNICATION_TRANSCRIPT_SUPPRESSED_PHASES.has(communicationPhase);
+    const afterSpeakingFeedback =
+      communicationPhase === 'Speaking' && Boolean(communicationData.speakingFeedback);
+    appendStreamUserTranscriptRef.current = !inStructuredRound || afterSpeakingFeedback;
+  }, [isCommunication, communicationPhase, communicationData.speakingFeedback]);
+
+  const vad = useMicVAD({
+    startOnLoad: false,
+    getStream: streamReady ? getStream : () => Promise.resolve(new MediaStream()),
+    // Don't stop tracks on pause — we use the same stream for camera/mic level. VAD just disconnects.
+    pauseStream: async () => {},
+    resumeStream: async (stream: MediaStream) => stream,
+    onSpeechEnd: (audio: Float32Array) => {
+      if (!sessionIdRef.current) return;
+      if (!allowVadSendRef.current) return;
+      if (Date.now() < postAiListenGateUntilRef.current) return;
+      const blob = float32ToWavBlob(audio, 16000);
+      void submitAudio(blob);
+    },
+    positiveSpeechThreshold: 0.6,
+    negativeSpeechThreshold: 0.4,
+    redemptionMs: 1400,
+    minSpeechMs: 400,
+    baseAssetPath: 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.27/dist/',
+    onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/',
+  });
+
+  // Pause VAD while Glee speaks or we're awaiting the backend; resume after a short post-AI gate against echo.
+  useEffect(() => {
+    if (isComplete) {
+      vad.pause();
+      return;
+    }
+    if (vad.loading) return;
+
+    if (
+      !audioEnabled ||
+      isPlayingAudio ||
+      isSubmitting ||
+      awaitingStreamAi ||
+      (Boolean(sessionId) && !gleeHasJoined && !isComplete)
+    ) {
+      vad.pause();
+      return;
+    }
+
+    const gateWait = Math.max(0, postAiListenGateUntilRef.current - Date.now());
+    const startListening = () => {
+      void getStream()
+        .then((stream) => {
+          if (stream?.active) void vad.start();
+        })
+        .catch(() => {});
+    };
+
+    if (gateWait <= 0) {
+      startListening();
+      return;
+    }
+
+    const t = window.setTimeout(startListening, gateWait);
+    return () => clearTimeout(t);
+  }, [
+    audioEnabled,
+    isPlayingAudio,
+    isSubmitting,
+    awaitingStreamAi,
+    sessionId,
+    gleeHasJoined,
+    isComplete,
+    vad.loading,
+    getStream,
+    vad,
+  ]);
+
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+  const lastIsTranscribingPlaceholder =
+    lastMessage?.type === 'user' && lastMessage.content === USER_TRANSCRIPT_PENDING_LABEL;
+  const showGleeProcessingSidebar =
+    !isPlayingAudio &&
+    !lastIsTranscribingPlaceholder &&
+    ((isSubmitting && lastMessage?.type === 'user') || awaitingStreamAi);
+
+  /** Block main interview until first SSE from Glee (or connection error). */
+  const showGleeJoinOverlay =
+    Boolean(sessionId) && !isComplete && !gleeHasJoined && !error;
+
+  // When it's clearly the user's turn: session active, mic on, VAD ready, AI not speaking, not submitting
+  const isUserTurnToSpeak =
+    !isComplete &&
+    !vad.loading &&
+    audioEnabled &&
+    !isPlayingAudio &&
+    !isSubmitting &&
+    !awaitingStreamAi &&
+    (sessionId ? gleeHasJoined : true) &&
+    !isCommunicationSpeakingExercise;
+
+  const utteranceHold = useUtteranceHold(vad.userSpeaking, 480);
+  const displayUserSpeaking = utteranceHold && !isSubmitting && !isPlayingAudio;
+
+  // Presence + speech + environment analyzers. `startAnalysis` / `stopAnalysis` must stay
+  // referentially stable (see useInterviewAnalysis) or this effect’s cleanup would stop analysis
+  // every time `isRunning` toggles and cause a redirect/navigation storm.
+  useEffect(() => {
+    if (!streamReady) return;
+    if (sessionId && isComplete) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const stream = await getStream();
+        const video = videoRef.current;
+        if (!stream || !video || cancelled) return;
+
+        await new Promise<void>((resolve) => {
+          if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+            resolve();
+            return;
+          }
+          const onReady = () => resolve();
+          video.addEventListener('loadeddata', onReady, { once: true });
+          window.setTimeout(onReady, 2500);
+        });
+
+        if (cancelled) return;
+        await startAnalysis(video, stream);
+      } catch (err) {
+        console.warn('[experimental/TestVideo] interview analysis failed to start', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      void stopAnalysis();
+    };
+  }, [sessionId, streamReady, isComplete, getStream, videoRef, startAnalysis, stopAnalysis]);
+
+  // Local elapsed clock when a backend session exists (no plan / account API on this page).
+  useEffect(() => {
+    if (!sessionId || isComplete) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const key = `interview_session_started_${sessionId}`;
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, String(Date.now()));
+    }
+
+    const tick = () => {
+      const raw = sessionStorage.getItem(key);
+      const startTs = raw ? Number(raw) : NaN;
+      const t0 = Number.isFinite(startTs) ? startTs : Date.now();
+      setElapsedSeconds(Math.floor((Date.now() - t0) / 1000));
+    };
+
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [sessionId, isComplete]);
+
+  const exportTranscript = useCallback(() => {
+    const lines = messages.map((m) =>
+      `[${m.timestamp.toLocaleTimeString()}] ${m.type === 'ai' ? 'Interviewer' : 'You'}: ${m.content}`
+    );
+    const blob = new Blob([lines.join('\n\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `interview-transcript-${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [messages]);
+
+  const handleEndClick = useCallback(() => {
+    setShowEndModal(true);
+  }, []);
+
+  const handleEndConfirm = useCallback(async () => {
+    if (!sessionId) {
+      setShowEndModal(false);
+      return;
+    }
+    waitingForFeedbackRef.current = true;
+    setIsEndingInterview(true);
+    try {
+      const taskId = await endSession({ sessionFinished: true, interviewTestId: interviewTypeId });
+      if (taskId) setEndTaskId(taskId);
+      else {
+        waitingForFeedbackRef.current = false;
+        setShowEndModal(false);
+      }
+    } catch {
+      waitingForFeedbackRef.current = false;
+      setShowEndModal(false);
+      setIsEndingInterview(false);
+      return;
+    }
+    setIsEndingInterview(false);
+  }, [sessionId, endSession, interviewTypeId]);
+
+  // When session ends: if we're waiting for feedback (End button), poll effect will navigate; else navigate now
+  useEffect(() => {
+    if (!isComplete || !sessionId || hasNavigatedToFeedbackRef.current) return;
+    if (waitingForFeedbackRef.current || endTaskId) return; // wait for feedback poll to finish
+    hasNavigatedToFeedbackRef.current = true;
+    navigate(ROUTES.FEEDBACK, {
+      replace: true,
+      state: {
+        type: 'video-interview',
+        session_id: sessionId,
+        session_type: interviewType,
+      },
+    });
+  }, [isComplete, sessionId, interviewType, endTaskId, navigate]);
+
+  // Poll feedback task after manual End until completed/failed, then navigate (loader stays on interview page)
+  useEffect(() => {
+    if (!endTaskId || !sessionId || hasNavigatedToFeedbackRef.current) return;
+    let cancelled = false;
+    let attempts = 0;
+    const poll = async () => {
+      if (hasNavigatedToFeedbackRef.current) return;
+      if (cancelled || attempts >= FEEDBACK_POLL_MAX_ATTEMPTS) {
+        setEndTaskId(null);
+        setShowEndModal(false);
+        waitingForFeedbackRef.current = false;
+        hasNavigatedToFeedbackRef.current = true;
+        navigate(ROUTES.FEEDBACK, { replace: true, state: { type: 'video-interview', session_id: sessionId, session_type: interviewType } });
+        return;
+      }
+      attempts++;
+      try {
+        const res = await getInterviewFeedbackStatus(endTaskId);
+        if (res.status === 'completed' || res.status === 'failed') {
+          setEndTaskId(null);
+          setShowEndModal(false);
+          waitingForFeedbackRef.current = false;
+          hasNavigatedToFeedbackRef.current = true;
+          navigate(ROUTES.FEEDBACK, { replace: true, state: { type: 'video-interview', session_id: sessionId, session_type: interviewType } });
+          return;
+        }
+      } catch {
+        // ignore, retry
+      }
+      setTimeout(poll, FEEDBACK_POLL_INTERVAL_MS);
+    };
+    poll(); // first check immediately, then retry after interval
+    return () => {
+      cancelled = true;
+    };
+  }, [endTaskId, sessionId, interviewType, navigate]);
+
+  return (
+    <div className="interview-interface">
+      <InterviewHeader
+        elapsedSeconds={elapsedSeconds}
+        onExportTranscript={messages.length > 0 ? exportTranscript : undefined}
+        onEndClick={sessionId ? handleEndClick : () => {}}
+        isEnding={isEndingInterview}
+        isComplete={isComplete}
+      />
+      <EndInterviewModal
+        open={showEndModal}
+        onClose={() => !endTaskId && setShowEndModal(false)}
+        onConfirm={handleEndConfirm}
+        isEnding={isEndingInterview}
+        isPreparingFeedback={!!endTaskId}
+      />
+      <div className="interview-interface__body-with-overlay">
+        {showGleeJoinOverlay && (
+          <div className="interview-interface__join-overlay" role="status" aria-live="polite">
+            <div className="interview-interface__join-overlay-inner">
+              <span className="interview-interface__vad-spinner interview-interface__join-spinner" />
+              <p className="interview-interface__join-title">Starting your interview…</p>
+              <p className="interview-interface__join-sub">
+                Waiting for Glee to connect. You’ll see the conversation as soon as they begin.
+              </p>
+              {gleeJoinWaitTimedOut && (
+                <>
+                  <p className="interview-interface__join-sub interview-interface__join-sub--warn">
+                    This is taking longer than usual. You can continue if the room looks ready.
+                  </p>
+                  <button
+                    type="button"
+                    className="interview-interface__join-continue"
+                    onClick={() => bypassGleeJoinGate()}
+                  >
+                    Continue anyway
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+        <div className="interview-interface__content">
+          {!sessionId && (
+            <div className="interview-interface__info" role="status">
+              No interview session: camera and live analysis only. To connect the AI, open this page with{' '}
+              <code>?sessionId=…</code> or navigate here with <code>sessionId</code> in location state.
+            </div>
+          )}
+          {error && (
+            <div className="interview-interface__error-banner" role="alert">
+              {error}
+            </div>
+          )}
+          <div className="interview-interface__main">
+            <aside className="interview-interface__aside">
+              <div className="interview-interface__panel">
+                <div className="interview-interface__card">
+                  <div className="interview-interface__card-header">
+                    <h2 className="interview-interface__card-title">Camera</h2>
+                    {status && status !== 'waiting_for_response' && (
+                      <div className="interview-interface__card-meta">
+                        <span>{status}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="interview-interface__video-wrap">
+                    <video ref={videoRef} autoPlay playsInline muted />
+                  </div>
+                  <MicWaveform inactive={!audioEnabled || isComplete} gleeSpeaking={isPlayingAudio} />
+                  {!isComplete &&
+                    audioEnabled &&
+                    !isCommunicationSpeakingExercise &&
+                    (vad.loading ||
+                      isPlayingAudio ||
+                      isSubmitting ||
+                      showGleeProcessingSidebar ||
+                      isUserTurnToSpeak) && (
+                      <div
+                        className={`interview-interface__vad-status ${
+                          vad.loading
+                            ? 'interview-interface__vad-status--loading'
+                            : isPlayingAudio
+                              ? 'interview-interface__vad-status--muted'
+                              : isSubmitting && lastIsTranscribingPlaceholder
+                                ? 'interview-interface__vad-status--transcribing'
+                                : showGleeProcessingSidebar
+                                  ? 'interview-interface__vad-status--processing'
+                                  : displayUserSpeaking
+                                    ? 'interview-interface__vad-status--speaking'
+                                    : 'interview-interface__vad-status--your-turn'
+                        }`}
+                      >
+                        {vad.loading ? (
+                          <>
+                            <span className="interview-interface__vad-spinner" />
+                            Loading voice detection…
+                          </>
+                        ) : isPlayingAudio ? (
+                          'Glee is speaking…'
+                        ) : isSubmitting && lastIsTranscribingPlaceholder ? (
+                          'Transcribing your response…'
+                        ) : showGleeProcessingSidebar ? (
+                          'Glee is processing your response…'
+                        ) : displayUserSpeaking ? (
+                          "You're speaking…"
+                        ) : (
+                          'Your turn — speak now'
+                        )}
+                      </div>
+                    )}
+                </div>
+
+                <LiveAnalysisPanel
+                  liveMeasurements={liveMeasurements}
+                  isRunning={interviewAnalysisRunning}
+                  error={interviewAnalysisError}
+                />
+              </div>
+            </aside>
+
+            <div className="interview-interface__body">
+              <div className="interview-interface__body-header">
+                <div className="interview-interface__body-title-row">
+                  <h1 className="interview-interface__body-title">Interview</h1>
+                  <span className="interview-interface__body-type">{interviewType}</span>
+                </div>
+                {isCodeInterview && (
+                  <div className="interview-interface__tabs">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('conversation')}
+                      className={`interview-interface__tab ${activeTab === 'conversation' ? 'interview-interface__tab--active' : ''}`}
+                    >
+                      Conversation
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('code')}
+                      className={`interview-interface__tab ${activeTab === 'code' ? 'interview-interface__tab--active' : ''}`}
+                    >
+                      Code
+                    </button>
+                  </div>
+                )}
+                {isCaseStudy && (
+                  <div className="interview-interface__tabs">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('conversation')}
+                      className={`interview-interface__tab ${activeTab === 'conversation' ? 'interview-interface__tab--active' : ''}`}
+                    >
+                      Conversation
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('notes')}
+                      className={`interview-interface__tab ${activeTab === 'notes' ? 'interview-interface__tab--active' : ''}`}
+                    >
+                      Notes & Question
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {activeTab === 'conversation' && !showCommunicationPhaseUI && (
+                <>
+                  <div className="interview-interface__transcript-area">
+                    <TranscriptPanel
+                      messages={messages}
+                      status={status}
+                      fallbackMessage={aiMessage || undefined}
+                      isUserTurnToSpeak={isUserTurnToSpeak}
+                      userSpeaking={displayUserSpeaking}
+                      className="interview-interface__transcript-panel"
+                    />
+                  </div>
+
+                  {!isComplete && (
+                    <p className="interview-interface__hint">
+                      {sessionId
+                        ? audioEnabled
+                          ? 'Mic stays on. Speak when you see “Your turn — speak now”; your response is sent automatically. Don’t speak while the interviewer is talking.'
+                          : 'Turn mic on to speak.'
+                        : audioEnabled
+                          ? 'No session: mic is on for local testing only; nothing is sent to the server.'
+                          : 'Turn mic on for local testing.'}
+                    </p>
+                  )}
+                </>
+              )}
+
+              {showCommunicationPhaseUI && (
+                <div className="interview-interface__phase-stack mb-4 overflow-y-auto min-h-0">
+                  {(communicationPhase === 'Speaking' || communicationPhase === 'Speaking_after') &&
+                    (communicationData.speaking || communicationPhase) && (
+                      <SpeakingPhase
+                        instruction={communicationData.speaking?.instruction}
+                        paragraph={communicationData.speaking?.paragraph ?? (communicationPhase ? aiMessage : undefined)}
+                        onSendResponse={sendCommunicationResponse}
+                        isProcessing={isSubmitting || awaitingStreamAi}
+                        feedback={communicationData.speakingFeedback}
+                        onClearFeedback={() =>
+                          updateCommunicationData((prev) => ({ ...prev, speakingFeedback: null }))
+                        }
+                      />
+                    )}
+                  {['Comprehension', 'Comprehension_before', 'Comprehension_after'].includes(communicationPhase ?? '') &&
+                    (communicationData.comprehension || communicationPhase) && (
+                      <ComprehensionPhase
+                        instruction={communicationData.comprehension?.instruction}
+                        question={
+                          communicationData.comprehension?.question ?? (communicationPhase ? aiMessage : undefined)
+                        }
+                        onSendResponse={sendCommunicationResponse}
+                        isProcessing={isSubmitting || awaitingStreamAi}
+                        feedback={communicationData.comprehensionFeedback}
+                        onClearFeedback={() =>
+                          updateCommunicationData((prev) => ({ ...prev, comprehensionFeedback: null }))
+                        }
+                      />
+                    )}
+                  {(communicationPhase === 'MCQ' || communicationPhase === 'MCQ_after') &&
+                    (communicationData.mcq || communicationPhase) && (
+                      <MCQPhase
+                        instruction={communicationData.mcq?.instruction}
+                        question={communicationData.mcq?.question ?? (communicationPhase ? aiMessage : undefined)}
+                        options={communicationData.mcq?.options ?? []}
+                        questionNumber={communicationData.mcqCount}
+                        totalQuestions={4}
+                        onSendResponse={sendCommunicationResponse}
+                        onMCQSubmit={() => {}}
+                        feedback={communicationData.mcqFeedback}
+                        onClearFeedback={() =>
+                          updateCommunicationData((prev) => ({ ...prev, mcqFeedback: null }))
+                        }
+                      />
+                    )}
+                  {communicationPhase === 'Results' && communicationData.mcqResults && (
+                    <MCQResults
+                      results={communicationData.mcqResults}
+                      onFinishInterview={() =>
+                        sessionId ? void endSession({ sessionFinished: true, interviewTestId: interviewTypeId }) : undefined
+                      }
+                    />
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'notes' && isCaseStudy && (
+                <div className="mb-4 flex-1 min-h-[280px]">
+                  <CaseStudyPanel
+                    caseStudyQuestion={caseStudyQuestion}
+                    notes={notes}
+                    onNotesChange={setNotes}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'code' && isCodeInterview && (
+                <div className="mb-4 flex-1">
+                  <CodeEditorPanel
+                    onSend={submitCode}
+                    disabled={!sessionId || isSubmitting || awaitingStreamAi}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

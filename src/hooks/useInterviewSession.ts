@@ -10,11 +10,14 @@ import type {
   RespondTaskResult,
   CommunicationData,
   InterviewAIResponsePayload,
+  RespondCompleteSsePayload,
 } from '../types/interview';
 import { USER_TRANSCRIPT_PENDING_LABEL } from '../constants/interviewSessionUi';
 
 const POLL_INTERVAL_MS = 1500;
 const MAX_POLL_ATTEMPTS = 120;
+/** If `respond_complete` SSE is not received (legacy API), fall back to polling respond-status. */
+const RESPOND_SSE_FALLBACK_MS = 12_000;
 
 const ERROR_LOG_PREFIX = '[useInterviewSession] setError';
 
@@ -95,6 +98,8 @@ export interface UseInterviewSessionParams {
    * Latest code editor contents; appended as `code_input` on every text/audio respond (legacy landing behavior).
    */
   respondCodeRef?: MutableRefObject<string>;
+  /** Called when SSE delivers `feedback_complete` after POST /end (optional; poll remains as fallback). */
+  onFeedbackReady?: () => void;
 }
 
 export type EndSessionOpts = { sessionFinished?: boolean; interviewTestId?: number };
@@ -124,6 +129,7 @@ export interface UseInterviewSessionResult {
   addUserMessage: (content: string) => void;
   submitText: (text: string) => Promise<void>;
   submitAudio: (audio: Blob) => Promise<void>;
+  submitCode: (code: string) => Promise<void>;
   endSession: (opts?: EndSessionOpts) => Promise<string | null>;
   updateCommunicationData: (fn: (prev: CommunicationData) => CommunicationData) => void;
 }
@@ -134,6 +140,7 @@ export function useInterviewSession({
   appendStreamUserTranscriptRef,
   devMode = false,
   respondCodeRef,
+  onFeedbackReady,
 }: UseInterviewSessionParams): UseInterviewSessionResult {
   const [aiMessage, setAiMessage] = useState('');
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
@@ -149,6 +156,15 @@ export function useInterviewSession({
   const [userLineCommitted, setUserLineCommitted] = useState(false);
   const [awaitingStreamAi, setAwaitingStreamAi] = useState(false);
   const streamCloseRef = useRef<(() => void) | null>(null);
+  const pendingRespondTaskIdRef = useRef<string | null>(null);
+  const lastSubmitWasAudioRef = useRef(false);
+  const respondFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const completeRespondTurnRef = useRef<(() => void) | null>(null);
+  const streamBridgeRef = useRef({
+    onRespondComplete: (_p: RespondCompleteSsePayload) => {},
+    onRespondFailed: (_d: { task_id?: string; error?: string }) => {},
+    onFeedbackReady: () => {},
+  });
   const prevSessionIdRef = useRef<string | undefined>(undefined);
   const startTimeRef = useRef(Date.now());
   const audioQueueRef = useRef<string[]>([]);
@@ -211,6 +227,92 @@ export function useInterviewSession({
       return prev;
     });
   }, []);
+
+  const clearRespondFallbackTimer = useCallback(() => {
+    if (respondFallbackTimerRef.current != null) {
+      clearTimeout(respondFallbackTimerRef.current);
+      respondFallbackTimerRef.current = null;
+    }
+  }, []);
+
+  const applyFromRespondResult = useCallback(
+    (res: RespondTaskResult | RespondCompleteSsePayload) => {
+      clearRespondFallbackTimer();
+      pendingRespondTaskIdRef.current = null;
+      const msg = extractMessage(res);
+      if (res.interview_transcript?.trim()) addUserMessage(res.interview_transcript);
+      if (msg != null) {
+        setAiMessage(msg);
+        addAIMessage(msg);
+      }
+      const ia = res.interview_ai_response;
+      if (ia?.last_node != null) setLastNode(ia.last_node);
+      if (ia) setCommunicationData((prev) => mergeCommunicationFromResponse(prev, ia));
+      setUserLineCommitted(false);
+      setIsSubmitting(false);
+      completeRespondTurnRef.current?.();
+      completeRespondTurnRef.current = null;
+    },
+    [addUserMessage, addAIMessage, clearRespondFallbackTimer]
+  );
+
+  const pollRespondUntilResolved = useCallback(
+    async (taskId: string, isAudio: boolean) => {
+      let attempts = 0;
+      const loop = async (): Promise<void> => {
+        if (pendingRespondTaskIdRef.current !== taskId) return;
+        if (attempts >= MAX_POLL_ATTEMPTS) {
+          console.warn(ERROR_LOG_PREFIX, 'respond fallback poll timeout');
+          setError('Response timeout');
+          pendingRespondTaskIdRef.current = null;
+          clearRespondFallbackTimer();
+          setUserLineCommitted(false);
+          setIsSubmitting(false);
+          completeRespondTurnRef.current?.();
+          completeRespondTurnRef.current = null;
+          if (isAudio) stripPendingUserLine();
+          return;
+        }
+        attempts++;
+        try {
+          const res = (await getRespondTaskStatus(sessionId, taskId)) as RespondTaskResult;
+          if (pendingRespondTaskIdRef.current !== taskId) return;
+          if (res?.status === 'completed') {
+            lastSubmitWasAudioRef.current = false;
+            applyFromRespondResult(res);
+            return;
+          }
+          if (res?.status === 'failed') {
+            const errMsg = res?.error ?? 'Response failed';
+            console.warn(ERROR_LOG_PREFIX, 'respond fallback poll failed:', errMsg, res);
+            setError(errMsg);
+            pendingRespondTaskIdRef.current = null;
+            clearRespondFallbackTimer();
+            setUserLineCommitted(false);
+            setIsSubmitting(false);
+            completeRespondTurnRef.current?.();
+            completeRespondTurnRef.current = null;
+            if (isAudio) stripPendingUserLine();
+            return;
+          }
+          setTimeout(loop, POLL_INTERVAL_MS);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to get response status';
+          console.warn(ERROR_LOG_PREFIX, 'respond fallback catch:', message, err);
+          setError(message);
+          pendingRespondTaskIdRef.current = null;
+          clearRespondFallbackTimer();
+          setUserLineCommitted(false);
+          setIsSubmitting(false);
+          completeRespondTurnRef.current?.();
+          completeRespondTurnRef.current = null;
+          if (isAudio) stripPendingUserLine();
+        }
+      };
+      await loop();
+    },
+    [sessionId, applyFromRespondResult, clearRespondFallbackTimer, stripPendingUserLine]
+  );
 
   const playNext = useCallback(() => {
     if (isPlayingRef.current) return;
@@ -304,7 +406,14 @@ export function useInterviewSession({
     setAwaitingStreamAi(false);
     setStatus('connecting');
     setError(null);
-  }, [sessionId]);
+    pendingRespondTaskIdRef.current = null;
+    clearRespondFallbackTimer();
+    completeRespondTurnRef.current = null;
+  }, [sessionId, clearRespondFallbackTimer]);
+
+  useEffect(() => {
+    return () => clearRespondFallbackTimer();
+  }, [clearRespondFallbackTimer]);
 
   useEffect(() => {
     if (!sessionId || !devMode) return;
@@ -343,10 +452,47 @@ export function useInterviewSession({
     setAwaitingStreamAi(true);
   }, [messages, isSubmitting, isPlayingAudio, isComplete]);
 
+  streamBridgeRef.current.onRespondComplete = (payload) => {
+    const tid = payload.task_id ?? '';
+    const pending = pendingRespondTaskIdRef.current;
+    if (pending && tid && tid !== pending) return;
+    if (!pending) {
+      const ia = payload.interview_ai_response;
+      if (ia) setCommunicationData((prev) => mergeCommunicationFromResponse(prev, ia));
+      if (ia?.last_node != null) setLastNode(ia.last_node);
+      return;
+    }
+    lastSubmitWasAudioRef.current = false;
+    applyFromRespondResult(payload);
+  };
+
+  streamBridgeRef.current.onRespondFailed = (d) => {
+    if (!pendingRespondTaskIdRef.current) return;
+    const isAudio = lastSubmitWasAudioRef.current;
+    lastSubmitWasAudioRef.current = false;
+    pendingRespondTaskIdRef.current = null;
+    clearRespondFallbackTimer();
+    const errMsg = d.error ?? 'Response failed';
+    console.warn(ERROR_LOG_PREFIX, 'SSE respond_failed:', errMsg, d);
+    setError(errMsg);
+    setUserLineCommitted(false);
+    setIsSubmitting(false);
+    completeRespondTurnRef.current?.();
+    completeRespondTurnRef.current = null;
+    if (isAudio) stripPendingUserLine();
+  };
+
+  streamBridgeRef.current.onFeedbackReady = () => {
+    onFeedbackReady?.();
+  };
+
   useEffect(() => {
     if (!sessionId) return;
     try {
       const { close } = connectToInterviewStream(sessionId, {
+        onRespondComplete: (p) => streamBridgeRef.current.onRespondComplete(p),
+        onRespondFailed: (d) => streamBridgeRef.current.onRespondFailed(d),
+        onFeedbackComplete: () => streamBridgeRef.current.onFeedbackReady(),
         onStatusUpdate: (s) => {
           setStatus(s);
           // Don’t rely only on ai_response payload (message/audio): if the client connects
@@ -362,6 +508,7 @@ export function useInterviewSession({
           addUserMessage(text);
         },
         onAIResponse: (data: AIResponseData) => {
+          const hadPendingRespond = pendingRespondTaskIdRef.current != null;
           if ((data.message && data.message.trim()) || data.audioBase64) {
             setGleeJoined(true);
           }
@@ -371,6 +518,14 @@ export function useInterviewSession({
           }
           if (data.audioBase64) enqueueAudio(data.audioBase64);
           if (data.lastNode != null) setLastNode(data.lastNode);
+          if (hadPendingRespond) {
+            pendingRespondTaskIdRef.current = null;
+            clearRespondFallbackTimer();
+            setUserLineCommitted(false);
+            setIsSubmitting(false);
+            completeRespondTurnRef.current?.();
+            completeRespondTurnRef.current = null;
+          }
         },
         onComplete: () => {
           setIsComplete(true);
@@ -392,11 +547,20 @@ export function useInterviewSession({
       setError(message);
       setStatus('error');
     }
-  }, [sessionId, addAIMessage, enqueueAudio, addUserMessage, appendStreamUserTranscriptRef]);
+  }, [sessionId, addAIMessage, enqueueAudio, addUserMessage, appendStreamUserTranscriptRef, clearRespondFallbackTimer]);
 
   const submitText = useCallback(
     async (text: string) => {
       if (!text.trim() || isSubmitting) return;
+      let settled = false;
+      const turnDone = new Promise<void>((resolve) => {
+        completeRespondTurnRef.current = () => {
+          if (settled) return;
+          settled = true;
+          completeRespondTurnRef.current = null;
+          resolve();
+        };
+      });
       const trimmed = text.trim();
       setIsSubmitting(true);
       setError(null);
@@ -408,43 +572,22 @@ export function useInterviewSession({
           codeInput: codeInputSnapshot(),
           skipAudio: devModeRef.current,
         });
-        let attempts = 0;
-        const poll = async (): Promise<void> => {
-          if (attempts >= MAX_POLL_ATTEMPTS) {
-            console.warn(ERROR_LOG_PREFIX, 'submitText poll timeout');
-            setError('Response timeout');
-            setUserLineCommitted(false);
-            setIsSubmitting(false);
-            return;
-          }
-          attempts++;
-          const res = (await getRespondTaskStatus(sessionId, taskId)) as RespondTaskResult;
-          if (res?.status === 'completed') {
-            const msg = extractMessage(res);
-            if (res.interview_transcript?.trim()) addUserMessage(res.interview_transcript);
-            if (msg != null) {
-              setAiMessage(msg);
-              addAIMessage(msg);
-            }
-            const ia = res?.interview_ai_response;
-            if (ia?.last_node != null) setLastNode(ia.last_node);
-            if (ia) setCommunicationData((prev) => mergeCommunicationFromResponse(prev, ia));
-            setUserLineCommitted(false);
-            setIsSubmitting(false);
-            return;
-          }
-          if (res?.status === 'failed') {
-            const errMsg = res?.error ?? 'Response failed';
-            console.warn(ERROR_LOG_PREFIX, 'submitText poll failed:', errMsg, res);
-            setError(errMsg);
-            setUserLineCommitted(false);
-            setIsSubmitting(false);
-            return;
-          }
-          setTimeout(poll, POLL_INTERVAL_MS);
-        };
-        await poll();
+        lastSubmitWasAudioRef.current = false;
+        clearRespondFallbackTimer();
+        pendingRespondTaskIdRef.current = taskId;
+        respondFallbackTimerRef.current = window.setTimeout(() => {
+          respondFallbackTimerRef.current = null;
+          if (pendingRespondTaskIdRef.current !== taskId) return;
+          void pollRespondUntilResolved(taskId, false);
+        }, RESPOND_SSE_FALLBACK_MS);
+        await turnDone;
       } catch (err) {
+        if (!settled) {
+          settled = true;
+          completeRespondTurnRef.current = null;
+        }
+        pendingRespondTaskIdRef.current = null;
+        clearRespondFallbackTimer();
         const message = err instanceof Error ? err.message : 'Failed to submit';
         console.warn(ERROR_LOG_PREFIX, 'submitText catch:', message, err);
         setError(message);
@@ -452,12 +595,21 @@ export function useInterviewSession({
         setIsSubmitting(false);
       }
     },
-    [sessionId, isSubmitting, addUserMessage, addAIMessage]
+    [sessionId, isSubmitting, addUserMessage, pollRespondUntilResolved, clearRespondFallbackTimer]
   );
 
   const submitAudio = useCallback(
     async (audio: Blob) => {
       if (isSubmitting) return;
+      let settled = false;
+      const turnDone = new Promise<void>((resolve) => {
+        completeRespondTurnRef.current = () => {
+          if (settled) return;
+          settled = true;
+          completeRespondTurnRef.current = null;
+          resolve();
+        };
+      });
       setIsSubmitting(true);
       setUserLineCommitted(false);
       pushPendingUserLine();
@@ -473,46 +625,22 @@ export function useInterviewSession({
           codeInput: codeInputSnapshot(),
           skipAudio: devModeRef.current,
         });
-        let attempts = 0;
-        const poll = async (): Promise<void> => {
-          if (attempts >= MAX_POLL_ATTEMPTS) {
-            console.warn(ERROR_LOG_PREFIX, 'submitAudio poll timeout');
-            setError('Response timeout');
-            stripPendingUserLine();
-            setUserLineCommitted(false);
-            setIsSubmitting(false);
-            return;
-          }
-          attempts++;
-          const res = (await getRespondTaskStatus(sessionId, taskId)) as RespondTaskResult;
-          if (res?.status === 'completed') {
-            const msg = extractMessage(res);
-            if (res.interview_transcript?.trim()) addUserMessage(res.interview_transcript);
-            if (msg != null) {
-              setAiMessage(msg);
-              addAIMessage(msg);
-            }
-            // Do not enqueue audio here — stream already delivers the same AI response + audio; playing both causes Glee to speak twice
-            const ia = res?.interview_ai_response;
-            if (ia?.last_node != null) setLastNode(ia.last_node);
-            if (ia) setCommunicationData((prev) => mergeCommunicationFromResponse(prev, ia));
-            setUserLineCommitted(false);
-            setIsSubmitting(false);
-            return;
-          }
-          if (res?.status === 'failed') {
-            const errMsg = res?.error ?? 'Response failed';
-            console.warn(ERROR_LOG_PREFIX, 'submitAudio poll failed:', errMsg, res);
-            setError(errMsg);
-            stripPendingUserLine();
-            setUserLineCommitted(false);
-            setIsSubmitting(false);
-            return;
-          }
-          setTimeout(poll, POLL_INTERVAL_MS);
-        };
-        await poll();
+        lastSubmitWasAudioRef.current = true;
+        clearRespondFallbackTimer();
+        pendingRespondTaskIdRef.current = taskId;
+        respondFallbackTimerRef.current = window.setTimeout(() => {
+          respondFallbackTimerRef.current = null;
+          if (pendingRespondTaskIdRef.current !== taskId) return;
+          void pollRespondUntilResolved(taskId, true);
+        }, RESPOND_SSE_FALLBACK_MS);
+        await turnDone;
       } catch (err) {
+        if (!settled) {
+          settled = true;
+          completeRespondTurnRef.current = null;
+        }
+        pendingRespondTaskIdRef.current = null;
+        clearRespondFallbackTimer();
         const message = err instanceof Error ? err.message : 'Failed to submit audio';
         console.warn(ERROR_LOG_PREFIX, 'submitAudio catch:', message, err);
         setError(message);
@@ -521,12 +649,56 @@ export function useInterviewSession({
         setIsSubmitting(false);
       }
     },
-    [sessionId, isSubmitting, addUserMessage, addAIMessage, pushPendingUserLine, stripPendingUserLine]
+    [sessionId, isSubmitting, pushPendingUserLine, stripPendingUserLine, pollRespondUntilResolved, clearRespondFallbackTimer]
+  );
+
+  const submitCode = useCallback(
+    async (code: string) => {
+      if (!code.trim() || isSubmitting) return;
+      let settled = false;
+      const turnDone = new Promise<void>((resolve) => {
+        completeRespondTurnRef.current = () => {
+          if (settled) return;
+          settled = true;
+          completeRespondTurnRef.current = null;
+          resolve();
+        };
+      });
+      setIsSubmitting(true);
+      setError(null);
+      try {
+        const { taskId } = await submitResponse({
+          sessionId,
+          codeInput: code,
+        });
+        lastSubmitWasAudioRef.current = false;
+        clearRespondFallbackTimer();
+        pendingRespondTaskIdRef.current = taskId;
+        respondFallbackTimerRef.current = window.setTimeout(() => {
+          respondFallbackTimerRef.current = null;
+          if (pendingRespondTaskIdRef.current !== taskId) return;
+          void pollRespondUntilResolved(taskId, false);
+        }, RESPOND_SSE_FALLBACK_MS);
+        await turnDone;
+      } catch (err) {
+        if (!settled) {
+          settled = true;
+          completeRespondTurnRef.current = null;
+        }
+        pendingRespondTaskIdRef.current = null;
+        clearRespondFallbackTimer();
+        const message = err instanceof Error ? err.message : 'Failed to submit code';
+        console.warn(ERROR_LOG_PREFIX, 'submitCode catch:', message, err);
+        setError(message);
+        setUserLineCommitted(false);
+        setIsSubmitting(false);
+      }
+    },
+    [sessionId, isSubmitting, pollRespondUntilResolved, clearRespondFallbackTimer]
   );
 
   const endSession = useCallback(
     async (opts?: EndSessionOpts): Promise<string | null> => {
-      streamCloseRef.current?.();
       const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
       try {
         const result = (await endInterview({
@@ -562,6 +734,7 @@ export function useInterviewSession({
     addUserMessage,
     submitText,
     submitAudio,
+    submitCode,
     endSession,
     updateCommunicationData: setCommunicationData,
   };

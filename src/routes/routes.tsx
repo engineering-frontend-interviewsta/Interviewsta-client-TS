@@ -26,6 +26,8 @@ const OAuthCallback = lazy(() => import('../pages/Auth/OAuthCallback'));
 const StudentDashboard = lazyWithRetry(() => import('../pages/Dashboard'));
 const VideoInterview = lazyWithRetry(() => import('../pages/VideoInterview'));
 const InterviewInterface = lazyWithRetry(() => import('../pages/InterviewInterface'));
+const TestVideo = lazyWithRetry(() => import('../experimental/pages/TestVideo'));
+const TestFeedback = lazyWithRetry(() => import('../experimental/pages/TestFeedback'));
 const Feedback = lazyWithRetry(() => import('../pages/Feedback'));
 const VideoInterviewHistory = lazyWithRetry(() => import('../pages/VideoInterviewHistory'));
 const ResumeAnalysisHistory = lazyWithRetry(() => import('../pages/ResumeAnalysisHistory'));
@@ -109,6 +111,24 @@ const routeConfig = [
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [{ index: true, element: <InterviewInterface /> }],
+  },
+  {
+    path: ROUTES.TEST_VIDEO,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <TestVideo /> }],
+  },
+  {
+    path: ROUTES.EXPERIMENTAL_TEST_VIDEO,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <TestVideo /> }],
+  },
+  {
+    path: ROUTES.EXPERIMENTAL_TEST_FEEDBACK,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <TestFeedback /> }],
   },
   {
     path: ROUTES.FEEDBACK,

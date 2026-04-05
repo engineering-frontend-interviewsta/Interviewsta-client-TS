@@ -1,5 +1,10 @@
 /// <reference types="vite/client" />
 
+declare module '*.html?raw' {
+  const src: string;
+  export default src;
+}
+
 /** Legacy landing pages (plain JSX); default export is a React page with no required props. */
 declare module '*.jsx' {
   import type { ComponentType } from 'react';

@@ -19,6 +19,7 @@ import { ROUTES } from '../../constants/routerConstants';
 import { USER_TRANSCRIPT_PENDING_LABEL } from '../../constants/interviewSessionUi';
 import { useInterviewDevMode } from '../../context/InterviewDevModeContext';
 import { interviewDevToolsVisible } from '../../constants/interviewDevTools';
+import { useInterviewAnalysis } from '../../experimental/hooks/useInterviewAnalysis';
 import './InterviewInterface.css';
 
 const FEEDBACK_POLL_INTERVAL_MS = 2000;
@@ -64,6 +65,25 @@ export default function InterviewInterface() {
   useEffect(() => {
     respondCodeRef.current = codeEditorValue;
   }, [codeEditorValue]);
+  const hasNavigatedToFeedbackRef = useRef(false);
+  /** True when user clicked End and we're waiting for feedback task — don't navigate until poll completes */
+  const waitingForFeedbackRef = useRef(false);
+
+  const onInterviewFeedbackReady = useCallback(() => {
+    if (!sessionId) return;
+    setEndTaskId(null);
+    setShowEndModal(false);
+    waitingForFeedbackRef.current = false;
+    hasNavigatedToFeedbackRef.current = true;
+    navigate(ROUTES.FEEDBACK, {
+      replace: true,
+      state: {
+        type: 'video-interview',
+        session_id: sessionId,
+        session_type: interviewType,
+      },
+    });
+  }, [navigate, sessionId, interviewType]);
 
   const {
     aiMessage,
@@ -89,8 +109,12 @@ export default function InterviewInterface() {
     appendStreamUserTranscriptRef,
     devMode,
     respondCodeRef,
+    onFeedbackReady: onInterviewFeedbackReady,
   });
   const { videoRef, audioEnabled, getStream, streamReady } = useMediaDevices();
+  const { startAnalysis, stopAnalysis } = useInterviewAnalysis({
+    videoTelemetrySessionId: sessionId ?? null,
+  });
   const allowVadSendRef = useRef(true);
   /** Ignore VAD submissions briefly after AI audio ends (avoids echo/noise firing submitAudio → false "processing"). */
   const postAiListenGateUntilRef = useRef(0);
@@ -104,9 +128,6 @@ export default function InterviewInterface() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [autoEnded, setAutoEnded] = useState(false);
-  const hasNavigatedToFeedbackRef = useRef(false);
-  /** True when user clicked End and we're waiting for feedback task — don't navigate until poll completes */
-  const waitingForFeedbackRef = useRef(false);
 
   const isCodeInterview =
     interviewType === 'technical' ||
@@ -273,6 +294,41 @@ export default function InterviewInterface() {
     !devMode && utteranceHold && !isSubmitting && !isPlayingAudio;
 
   useEffect(() => {
+    if (!streamReady) return;
+    if (!sessionId || isComplete) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const stream = await getStream();
+        const video = videoRef.current;
+        if (!stream || !video || cancelled) return;
+
+        await new Promise<void>((resolve) => {
+          if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+            resolve();
+            return;
+          }
+          const onReady = () => resolve();
+          video.addEventListener('loadeddata', onReady, { once: true });
+          window.setTimeout(onReady, 2500);
+        });
+
+        if (cancelled) return;
+        await startAnalysis(video, stream);
+      } catch (err) {
+        console.warn('[InterviewInterface] interview analysis failed to start', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      void stopAnalysis();
+    };
+  }, [sessionId, streamReady, isComplete, getStream, videoRef, startAnalysis, stopAnalysis]);
+
+  useEffect(() => {
     if (!sessionId) {
       navigate(ROUTES.VIDEO_INTERVIEW, { replace: true });
     }
@@ -377,6 +433,7 @@ export default function InterviewInterface() {
     let cancelled = false;
     let attempts = 0;
     const poll = async () => {
+      if (hasNavigatedToFeedbackRef.current) return;
       if (cancelled || attempts >= FEEDBACK_POLL_MAX_ATTEMPTS) {
         setEndTaskId(null);
         setShowEndModal(false);
