@@ -10,6 +10,8 @@ import {
   isRubricEvaluated,
   orderTechnicalItemsEntries,
   PROBLEM_SOLVING_SLEEVE_KEY,
+  rubricCoversCommunication,
+  rubricCoversGrammar,
   scorePercentTier,
   type NormalizedCommunicationMetrics,
   type NormalizedGrammarMetrics,
@@ -45,8 +47,11 @@ function sectionIntroForSleeve(sleeveKey: string): string {
 
 export default function ScoreBreakdown({ data }: ScoreBreakdownProps) {
   const items = data.items;
-  const communicationView = getCommunicationMetricsView(data.communicationMetrics);
-  const grammarView = getGrammarMetricsView(data.grammarMetrics);
+  const itemsObj = items && typeof items === 'object' ? items : {};
+  const communicationView =
+    !rubricCoversCommunication(itemsObj) ? getCommunicationMetricsView(data.communicationMetrics) : null;
+  const grammarView =
+    !rubricCoversGrammar(itemsObj) ? getGrammarMetricsView(data.grammarMetrics) : null;
   const hasLanguageMetrics = Boolean(communicationView || grammarView);
   if ((!items || typeof items !== 'object') && !hasLanguageMetrics) return null;
 
@@ -93,7 +98,7 @@ export default function ScoreBreakdown({ data }: ScoreBreakdownProps) {
                   <span className={badgeClassForTier(tier)}>Avg {sleeveScore.toFixed(1)}%</span>
                 </div>
                 <p className="feedback-report__score-block-lead">{sectionIntroForSleeve(key)}</p>
-                {key !== PROBLEM_SOLVING_SLEEVE_KEY && radarEvaluatedPoints.length >= 2 ? (
+                {radarEvaluatedPoints.length >= 2 ? (
                   <ScoreSectionRadar
                     dataPoints={radarEvaluatedPoints.map(([subKey, subScore]) => ({
                       name: subKey,

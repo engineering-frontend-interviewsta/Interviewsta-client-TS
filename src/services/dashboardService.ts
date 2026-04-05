@@ -38,10 +38,15 @@ export async function getPerformance(): Promise<PerformanceResponse | null> {
   return res?.data ?? null;
 }
 
-/** Fetch recent-interview-sessions */
-export async function getInterviewSessions(): Promise<RecentInterviewSessionsResponse | null> {
+/**
+ * Fetch recent-interview-sessions. Pass a high `limit` for full history (e.g. video interview history page).
+ * Dashboard widgets typically use the default (5).
+ */
+export async function getInterviewSessions(limit = 5): Promise<RecentInterviewSessionsResponse | null> {
   const res = await nestClient
-    .get<RecentInterviewSessionsResponse>(DASHBOARD_ENDPOINTS.INTERVIEW_SESSIONS)
+    .get<RecentInterviewSessionsResponse>(DASHBOARD_ENDPOINTS.INTERVIEW_SESSIONS, {
+      params: { n: limit },
+    })
     .catch(() => ({ data: null }));
   return res?.data ?? null;
 }
