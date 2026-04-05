@@ -17,11 +17,15 @@ import {
   COMPANY_GROWTH_TAG,
   CONSULTING_TOPIC_TAG,
   CONSULTING_TOPICS_LIST,
+  RESUME_TAILORED_TECHNICAL_TOPIC,
 } from '../../constants/interviewTypes';
 import type { InterviewTest, ParentInterviewType } from '../../types/interviewTest';
 import type { StartInterviewPayload } from '../../types/interview';
 import InterviewLoadingPopup from './components/InterviewLoadingPopup';
 import InterviewStartGateModal from './components/InterviewStartGateModal';
+import TailoredInterviewContextModal, {
+  type TailoredInterviewContextPayload,
+} from './components/TailoredInterviewContextModal';
 import './VideoInterview.css';
 
 const START_POLL_MS = 1500;
@@ -67,6 +71,8 @@ export default function VideoInterview() {
   const [mediaGateOpen, setMediaGateOpen] = useState(false);
   const [mediaGateTest, setMediaGateTest] = useState<InterviewTest | null>(null);
   const [mediaGateExtra, setMediaGateExtra] = useState<Record<string, unknown>>({});
+  const [resumeGateOpen, setResumeGateOpen] = useState(false);
+  const [resumeGateTest, setResumeGateTest] = useState<InterviewTest | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const hasMore = page < totalPages;
@@ -242,6 +248,13 @@ export default function VideoInterview() {
       }
       setStartError(null);
 
+      const isResumeTailored = (test.topics ?? []).includes(RESUME_TAILORED_TECHNICAL_TOPIC);
+      if (isResumeTailored) {
+        setResumeGateTest(test);
+        setResumeGateOpen(true);
+        return;
+      }
+
       const isConsultingTopic = (test.topics ?? []).includes(CONSULTING_TOPIC_TAG);
       const isCompanyGrowth = (test.topics ?? []).includes(COMPANY_GROWTH_TAG);
 
@@ -265,9 +278,38 @@ export default function VideoInterview() {
     [user?.email, openMediaGate]
   );
 
+  const handleTailoredContextContinue = useCallback(
+    (ctx: TailoredInterviewContextPayload) => {
+      const test = resumeGateTest;
+      setResumeGateOpen(false);
+      setResumeGateTest(null);
+      if (!test) return;
+      const title = (ctx.jobTitle ?? '').trim();
+      const jd = (ctx.jobDescription ?? '').trim();
+      openMediaGate(test, {
+        resume: ctx.resumeText,
+        resume_tailored_technical: true,
+        ...(title ? { job_title: title } : {}),
+        ...(jd ? { job_description: jd } : {}),
+      });
+    },
+    [resumeGateTest, openMediaGate],
+  );
+
   return (
     <>
       {starting && <InterviewLoadingPopup progress={startProgress} />}
+      {resumeGateTest && (
+        <TailoredInterviewContextModal
+          isOpen={resumeGateOpen}
+          interviewTitle={resumeGateTest.title}
+          onClose={() => {
+            setResumeGateOpen(false);
+            setResumeGateTest(null);
+          }}
+          onContinue={handleTailoredContextContinue}
+        />
+      )}
       {mediaGateTest && (
         <InterviewStartGateModal
           isOpen={mediaGateOpen}
@@ -379,7 +421,7 @@ export default function VideoInterview() {
                     <div className="video-interview__card-footer">
                       <button
                         type="button"
-                        disabled={starting || mediaGateOpen}
+                        disabled={starting || mediaGateOpen || resumeGateOpen}
                         onClick={() => handleStart(test)}
                         className="video-interview__btn-start"
                       >

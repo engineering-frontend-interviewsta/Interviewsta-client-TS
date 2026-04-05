@@ -17,6 +17,14 @@ export const nestClient: AxiosInstance = axios.create({
   },
 });
 
+/** JSON default breaks multipart: server would not see files. Let the runtime set boundary. */
+nestClient.interceptors.request.use((config) => {
+  if (config.data instanceof FormData) {
+    config.headers.delete('Content-Type');
+  }
+  return config;
+});
+
 nestClient.interceptors.request.use(
   (config) => {
     const token = getAccessToken();

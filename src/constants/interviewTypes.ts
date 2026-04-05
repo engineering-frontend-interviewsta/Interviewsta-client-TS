@@ -28,6 +28,9 @@ export const COMPANY_GROWTH_TAG = 'company-growth' as const;
 /** Value present in InterviewTest.topics[] that identifies consulting topic tests. */
 export const CONSULTING_TOPIC_TAG = 'consulting-topic' as const;
 
+/** Resume PDF → tailored theory/coding banks in FastAPI technical workflow. */
+export const RESUME_TAILORED_TECHNICAL_TOPIC = 'resume-tailored-technical' as const;
+
 // ── Consulting Topics ─────────────────────────────────────────────────────────
 
 export interface ConsultingTopic {

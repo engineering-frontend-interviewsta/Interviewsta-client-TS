@@ -13,6 +13,12 @@ export type InterviewType =
 /** Payload for POST /interview/start (body.payload) */
 export interface StartInterviewPayload {
   resume?: string;
+  /** When true, FastAPI seeds theory/coding question banks from `resume` (and job context when present). */
+  resume_tailored_technical?: boolean;
+  /** Target role title from the tailored-interview-context step (optional if JD is sent). */
+  job_title?: string;
+  /** Job description text (pasted and/or extracted from JD PDF). */
+  job_description?: string;
   /** Backend may accept number or string (e.g. UUID) */
   interview_test_id: number | string;
   Tags?: string[];
