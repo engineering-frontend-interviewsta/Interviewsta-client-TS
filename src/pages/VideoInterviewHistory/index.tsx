@@ -30,7 +30,7 @@ export default function VideoInterviewHistory() {
     const load = async () => {
       try {
         setLoading(true);
-        const raw = await getInterviewSessions();
+        const raw = await getInterviewSessions(250);
         setReports((raw?.sessions ?? []).map((item) => mapVideoReport(item, lookupInterviewMeta)));
       } catch {
         setError('Failed to load video interview history.');

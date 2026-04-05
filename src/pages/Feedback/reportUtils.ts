@@ -98,14 +98,23 @@ function normalizeScore(score: unknown): number | null {
   return Math.min(100, Math.max(0, score));
 }
 
-function hasAliasedMetric(
+/**
+ * Alias match on rubric leaves, optionally skipping sleeves where language-like names are misleading.
+ * Mirrors `interviewsta-backend/src/Data/feedback_items.json` (e.g. `fi-coding-i`): that template nests
+ * "Verbal Communication" and "Syntactic Fluency" under `Code Quality & Communication`, but the report
+ * strips verbal from the Code Quality card and treats syntactic fluency as code — so universal
+ * Communication / Grammar from the LLM must still show for standard technical interviews.
+ */
+function hasAliasedMetricOutsideSleeves(
   items: Record<string, Record<string, number>> | undefined,
   aliases: string[],
+  skipSleeveKeys: ReadonlySet<string>,
 ): boolean {
   if (!items || typeof items !== 'object') return false;
   const normalizedAliases = aliases.map(normalizeMetricKey);
-  return Object.values(items).some((metrics) =>
-    Object.keys(metrics || {}).some((metricKey) => {
+  return Object.entries(items).some(([sleeveKey, metrics]) => {
+    if (skipSleeveKeys.has(sleeveKey)) return false;
+    return Object.keys(metrics || {}).some((metricKey) => {
       const normalizedMetric = normalizeMetricKey(metricKey);
       return normalizedAliases.some(
         (alias) =>
@@ -113,8 +122,91 @@ function hasAliasedMetric(
           normalizedMetric.includes(alias) ||
           alias.includes(normalizedMetric),
       );
-    }),
-  );
+    });
+  });
+}
+
+const SKIP_LANGUAGE_ALIAS_SLEEVES = new Set<string>([CODE_QUALITY_SLEEVE_KEY]);
+
+/** Sub-metrics (outside Code Quality sleeve) that mean the rubric already scores communication. */
+const COMMUNICATION_SUBKEY_ALIASES = [
+  'communication',
+  'verbalcommunication',
+  'professionalcommunication',
+  'clarityofexpression',
+  'clarity',
+  'tone',
+];
+
+/**
+ * Sub-metrics outside Code Quality. Omit bare "vocabulary" so "Technical Vocabulary" (AIML) does not
+ * suppress Grammar; vocabulary-dedicated sleeves still use title matching below.
+ */
+const GRAMMAR_SUBKEY_ALIASES = [
+  'grammar',
+  'grammarcorrectness',
+  'sentenceconstruction',
+  'syntacticfluency',
+  'languageaccuracy',
+  'vocabularyknowledge',
+  'contextualword',
+  'wordselection',
+  'spelling',
+];
+
+function sleeveTitleIndicatesCommunicationCoverage(sleeveKey: string): boolean {
+  if (sleeveKey === CODE_QUALITY_SLEEVE_KEY) return false;
+  const s = normalizeMetricKey(sleeveKey);
+  if (s.includes('communication')) return true;
+  if (s.includes('verbal')) return true;
+  if (s.includes('conversational')) return true;
+  return false;
+}
+
+function sleeveTitleIndicatesGrammarCoverage(sleeveKey: string): boolean {
+  const s = normalizeMetricKey(sleeveKey);
+  if (s.includes('grammar')) return true;
+  if (s.includes('vocabulary')) return true;
+  if (s.includes('languageaccuracy')) return true;
+  if (s.includes('language') && s.includes('accuracy')) return true;
+  if (s.includes('syntactic')) return true;
+  return false;
+}
+
+/** True when rubric already exposes communication-style sleeves or leaves — hide duplicate LLM Communication. */
+export function rubricCoversCommunication(
+  items: Record<string, Record<string, number>> | undefined,
+): boolean {
+  if (hasAliasedMetricOutsideSleeves(items, COMMUNICATION_SUBKEY_ALIASES, SKIP_LANGUAGE_ALIAS_SLEEVES))
+    return true;
+  if (!items || typeof items !== 'object') return false;
+  return Object.keys(items).some((k) => sleeveTitleIndicatesCommunicationCoverage(k));
+}
+
+/** True when rubric already exposes grammar / language-accuracy sleeves or leaves — hide duplicate LLM Grammar. */
+export function rubricCoversGrammar(items: Record<string, Record<string, number>> | undefined): boolean {
+  if (hasAliasedMetricOutsideSleeves(items, GRAMMAR_SUBKEY_ALIASES, SKIP_LANGUAGE_ALIAS_SLEEVES)) return true;
+  if (!items || typeof items !== 'object') return false;
+  return Object.keys(items).some((k) => sleeveTitleIndicatesGrammarCoverage(k));
+}
+
+/**
+ * Dashboard / history often only has `sleeveScores` (no nested rubric leaves). Uses the same sleeve-title
+ * rules as full feedback, but not sub-metric alias matching — aligns list chips with the report page when
+ * sleeves are present; if `sleeveScores` is missing, returns false so universal scores still show.
+ */
+export function rubricCoversCommunicationFromSleeveKeys(
+  sleeveScores: Record<string, number> | undefined | null,
+): boolean {
+  if (!sleeveScores || typeof sleeveScores !== 'object') return false;
+  return Object.keys(sleeveScores).some((k) => sleeveTitleIndicatesCommunicationCoverage(k));
+}
+
+export function rubricCoversGrammarFromSleeveKeys(
+  sleeveScores: Record<string, number> | undefined | null,
+): boolean {
+  if (!sleeveScores || typeof sleeveScores !== 'object') return false;
+  return Object.keys(sleeveScores).some((k) => sleeveTitleIndicatesGrammarCoverage(k));
 }
 
 export function getUniversalScoreSupplements(data: {
@@ -126,21 +218,8 @@ export function getUniversalScoreSupplements(data: {
 }): Array<{ key: 'communicationScore' | 'grammarScore'; label: string; score: number }> {
   const supplements: Array<{ key: 'communicationScore' | 'grammarScore'; label: string; score: number }> = [];
 
-  const hasCommunicationInItems = hasAliasedMetric(data.items, [
-    'communication',
-    'verbalcommunication',
-    'professionalcommunication',
-    'clarityofexpression',
-    'clarity',
-    'tone',
-  ]);
-  const hasGrammarInItems = hasAliasedMetric(data.items, [
-    'grammar',
-    'grammarcorrectness',
-    'sentenceconstruction',
-    'syntacticfluency',
-    'languageaccuracy',
-  ]);
+  const hasCommunicationInItems = rubricCoversCommunication(data.items);
+  const hasGrammarInItems = rubricCoversGrammar(data.items);
 
   const communicationScore = normalizeScore(
     data.communicationMetrics?.overall ?? data.communicationScore,
@@ -265,16 +344,17 @@ export function getGrammarMetricsView(
  */
 export function computeCompositeScorePercent(data: InterviewFeedback): number | null {
   const parts: number[] = [];
+  const items = data.items && typeof data.items === 'object' ? data.items : undefined;
   const commOv =
     normalizeCommunicationMetrics(data.communicationMetrics)?.overall ??
     normalizeScore(data.communicationScore);
   const gramOv =
     normalizeGrammarMetrics(data.grammarMetrics)?.overall ?? normalizeScore(data.grammarScore);
-  if (commOv != null) parts.push(commOv);
-  if (gramOv != null) parts.push(gramOv);
+  if (commOv != null && !rubricCoversCommunication(items)) parts.push(commOv);
+  if (gramOv != null && !rubricCoversGrammar(items)) parts.push(gramOv);
 
-  const items = data.items && typeof data.items === 'object' ? data.items : {};
-  for (const [key, raw] of Object.entries(items)) {
+  const itemsObj = items ?? {};
+  for (const [key, raw] of Object.entries(itemsObj)) {
     const m = raw && typeof raw === 'object' ? (raw as Record<string, number>) : {};
     parts.push(computeSleeveScoreForDisplay(key, m));
   }

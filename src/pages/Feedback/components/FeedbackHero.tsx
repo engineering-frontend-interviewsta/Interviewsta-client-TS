@@ -7,6 +7,8 @@ import {
   getGrammarMetricsView,
   languageMetricsViewOverall,
   orderTechnicalItemsEntries,
+  rubricCoversCommunication,
+  rubricCoversGrammar,
   scorePercentTier,
   scoreTierLabel,
 } from '../reportUtils';
@@ -27,8 +29,11 @@ export default function FeedbackHero({
   duration,
   data,
 }: FeedbackHeroProps) {
-  const commView = getCommunicationMetricsView(data.communicationMetrics);
-  const gramView = getGrammarMetricsView(data.grammarMetrics);
+  const items = data.items && typeof data.items === 'object' ? data.items : {};
+  const commViewRaw = getCommunicationMetricsView(data.communicationMetrics);
+  const gramViewRaw = getGrammarMetricsView(data.grammarMetrics);
+  const commView = commViewRaw && !rubricCoversCommunication(items) ? commViewRaw : null;
+  const gramView = gramViewRaw && !rubricCoversGrammar(items) ? gramViewRaw : null;
 
   const composite =
     computeCompositeScorePercent(data) ??
@@ -37,7 +42,6 @@ export default function FeedbackHero({
   const ringOffset =
     composite != null ? RING_C * (1 - Math.min(100, Math.max(0, composite)) / 100) : RING_C;
 
-  const items = data.items && typeof data.items === 'object' ? data.items : {};
   const technicalEntries = orderTechnicalItemsEntries(
     Object.entries(items) as [string, Record<string, number>][],
   );

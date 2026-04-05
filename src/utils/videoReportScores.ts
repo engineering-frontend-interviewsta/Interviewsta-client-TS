@@ -1,5 +1,9 @@
 import type { VideoInterviewReport } from '../types/dashboard';
-import { formatSleeveTitleForDisplay } from '../pages/Feedback/reportUtils';
+import {
+  formatSleeveTitleForDisplay,
+  rubricCoversCommunicationFromSleeveKeys,
+  rubricCoversGrammarFromSleeveKeys,
+} from '../pages/Feedback/reportUtils';
 
 const ORDERED_SLEEVES = ['Problem Solving & Technical Logic', 'Code Quality & Communication'] as const;
 
@@ -44,7 +48,12 @@ export function buildVideoReportScoreRows(report: VideoInterviewReport): Array<{
   }
 
   const comm = report.communicationOverall;
-  if (typeof comm === 'number' && Number.isFinite(comm) && comm >= 0) {
+  if (
+    typeof comm === 'number' &&
+    Number.isFinite(comm) &&
+    comm >= 0 &&
+    !rubricCoversCommunicationFromSleeveKeys(sleeves)
+  ) {
     rows.push({
       fullLabel: 'Communication',
       shortLabel: 'Comm',
@@ -53,7 +62,12 @@ export function buildVideoReportScoreRows(report: VideoInterviewReport): Array<{
   }
 
   const gram = report.grammarOverall;
-  if (typeof gram === 'number' && Number.isFinite(gram) && gram >= 0) {
+  if (
+    typeof gram === 'number' &&
+    Number.isFinite(gram) &&
+    gram >= 0 &&
+    !rubricCoversGrammarFromSleeveKeys(sleeves)
+  ) {
     rows.push({
       fullLabel: 'Grammar',
       shortLabel: 'Gram',
