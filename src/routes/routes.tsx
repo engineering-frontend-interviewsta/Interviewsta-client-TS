@@ -29,10 +29,6 @@ const InterviewInterface = lazyWithRetry(() => import('../pages/InterviewInterfa
 const Feedback = lazyWithRetry(() => import('../pages/Feedback'));
 const VideoInterviewHistory = lazyWithRetry(() => import('../pages/VideoInterviewHistory'));
 const ResumeAnalysisHistory = lazyWithRetry(() => import('../pages/ResumeAnalysisHistory'));
-const TeacherClasses = lazyWithRetry(() => import('../pages/Teacher/Classes'));
-const TeacherSchedule = lazyWithRetry(() => import('../pages/Teacher/Schedule'));
-const TeacherStudents = lazyWithRetry(() => import('../pages/Teacher/Students'));
-const StudentClasses = lazyWithRetry(() => import('../pages/Student/Classes'));
 const StudentInterviewHistory = lazyWithRetry(() => import('../pages/Student/InterviewHistory'));
 const AdminDashboard = lazyWithRetry(() => import('../pages/Admin/Dashboard'));
 const AdminUsers = lazyWithRetry(() => import('../pages/Admin/Users'));
@@ -123,21 +119,10 @@ const routeConfig = [
     children: [{ index: true, element: <Feedback /> }],
   },
   {
-    path: '/teacher',
-    element: <AppLayout />,
-    errorElement: <RouteError />,
-    children: [
-      { path: 'classes', element: <TeacherClasses /> },
-      { path: 'schedule', element: <TeacherSchedule /> },
-      { path: 'students', element: <TeacherStudents /> },
-    ],
-  },
-  {
     path: '/student',
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [
-      { path: 'classes', element: <StudentClasses /> },
       { path: 'interview-history', element: <StudentInterviewHistory /> },
     ],
   },

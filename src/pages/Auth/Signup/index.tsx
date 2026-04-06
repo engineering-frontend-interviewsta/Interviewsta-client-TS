@@ -14,8 +14,7 @@ export default function Signup() {
 
   useEffect(() => {
     if (!isLoading && user && roles) {
-      if (roles.includes('teacher')) navigate(ROUTES.TEACHER_DASHBOARD, { replace: true });
-      else if (roles.includes('admin')) navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+      if (roles.includes('admin')) navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
       else navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
     }
   }, [isLoading, user, roles, navigate]);
@@ -147,7 +146,6 @@ export default function Signup() {
           >
             <option value="user">User</option>
             <option value="student">Student</option>
-            <option value="teacher">Teacher</option>
             <option value="admin">Admin</option>
           </select>
         </div>

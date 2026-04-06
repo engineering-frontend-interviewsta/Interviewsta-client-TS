@@ -30,9 +30,7 @@ export default function OAuthCallback() {
           const role = (Array.isArray(roles) && roles.length > 0 ? roles[0] : apiUser.role) ?? null;
           setRole(role);
 
-          if (role === 'teacher') {
-            navigate(ROUTES.TEACHER_DASHBOARD, { replace: true });
-          } else if (role === 'admin') {
+          if (role === 'admin') {
             navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
           } else {
             navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
@@ -90,9 +88,7 @@ export default function OAuthCallback() {
             return;
           }
           const primaryRole = result.roles?.[0] ?? result.role;
-          if (primaryRole === 'teacher') {
-            navigate(ROUTES.TEACHER_CLASSES, { replace: true });
-          } else if (primaryRole === 'admin') {
+          if (primaryRole === 'admin') {
             navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
           } else {
             navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });

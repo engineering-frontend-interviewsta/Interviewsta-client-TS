@@ -99,34 +99,6 @@ export const USER_ADMIN_ENDPOINTS = {
   STATS: '/user/admin/stats',
 } as const;
 
-/** Teacher (Django) */
-export const TEACHER_ENDPOINTS = {
-  DASHBOARD_STATS: 'teacher/dashboard-stats/',
-  CLASS_PERFORMANCE: (classId: string) => `teacher/class/${classId}/performance/`,
-  STUDENTS_BATCH: 'teacher/students-batch/',
-} as const;
-
-/** Student (Django) */
-export const STUDENT_ENDPOINTS = {
-  CLASSES: 'classes/student/',
-  JOIN_CLASS: 'student-classes/join/',
-  PERFORMANCE_ANALYSIS: 'student/performance-analysis/',
-} as const;
-
-/** Classes, assignments, time-slots (Django) */
-export const CLASS_ENDPOINTS = {
-  LIST: 'classes/',
-  DETAIL: (id: string) => `classes/${id}/`,
-  ASSIGNMENTS_BY_CLASS: (classId: string) => `assignments/?class_assigned=${classId}`,
-  ASSIGNMENT_DETAIL: (id: string) => `assignments/${id}/`,
-  SUBMISSIONS: 'assignment-submissions/',
-  SUBMISSIONS_BY_ASSIGNMENT: (assignmentId: string) => `assignment-submissions/?assignment=${assignmentId}`,
-  TIME_SLOTS: (classId: string) => `time-slots/?class_obj=${classId}`,
-  TIME_SLOTS_CREATE: 'time-slots/',
-  ANNOUNCEMENTS: (classId: string) => `announcements/?class_obj=${classId}`,
-  ANNOUNCEMENTS_CREATE: 'announcements/',
-} as const;
-
 /** Resume (Django) */
 export const RESUME_APP_ENDPOINTS = {
   UPLOAD_ANALYSIS: 'get-resume-analysis/',

@@ -27,7 +27,6 @@ export default function AppLayout() {
   const location = useLocation();
   const hideHeader = HIDE_HEADER_PATHS.includes(location.pathname);
   const isAdmin = roles?.includes('admin');
-  const isTeacher = roles?.includes('teacher');
   const primaryRole = roles?.[0] ?? null;
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -43,9 +42,7 @@ export default function AppLayout() {
   const dashboardPath =
     primaryRole === 'admin'
       ? ROUTES.ADMIN_DASHBOARD
-      : primaryRole === 'teacher'
-        ? ROUTES.TEACHER_DASHBOARD
-        : ROUTES.STUDENT_DASHBOARD;
+      : ROUTES.STUDENT_DASHBOARD;
 
   /* Header "Dashboard" nav link goes to student dashboard; admin uses dropdown for Admin. */
   const headerDashboardPath = isAdmin ? ROUTES.STUDENT_DASHBOARD : dashboardPath;
@@ -62,9 +59,7 @@ export default function AppLayout() {
               to={
                 isAdmin
                   ? ROUTES.ADMIN_DASHBOARD
-                  : isTeacher
-                    ? ROUTES.TEACHER_DASHBOARD
-                    : ROUTES.STUDENT_DASHBOARD
+                  : ROUTES.STUDENT_DASHBOARD
               }
               className="app-layout__brand"
             >
@@ -103,16 +98,6 @@ export default function AppLayout() {
               >
                 Resume
               </Link>
-              {isTeacher && (
-                <Link
-                  to={ROUTES.TEACHER_CLASSES}
-                  className={`app-layout__nav-link ${
-                    location.pathname === ROUTES.TEACHER_CLASSES ? 'app-layout__nav-link--active' : ''
-                  }`}
-                >
-                  Classes
-                </Link>
-              )}
               {isAdmin && (
                 <>
                   <Link
