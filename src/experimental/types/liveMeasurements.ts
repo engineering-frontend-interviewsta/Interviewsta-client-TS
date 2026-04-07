@@ -31,6 +31,10 @@ export interface LiveMeasurements {
     totalWords: number;
     latestSegmentText: string;
     webSpeechActive: boolean;
+    /** Populated on video telemetry ticks: new finals, else interim, else averaged live `currentWpm` samples for the interval. */
+    currIntSegmentCounts?: number;
+    currIntSegmentWpm?: number[];
+    currIntSegmentWords?: number[];
   };
   environment: EnvironmentReport | null;
 }

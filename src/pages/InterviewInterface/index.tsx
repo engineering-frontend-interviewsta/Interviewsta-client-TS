@@ -85,6 +85,9 @@ export default function InterviewInterface() {
     });
   }, [navigate, sessionId, interviewType]);
 
+
+  
+
   const {
     aiMessage,
     messages,
@@ -112,8 +115,11 @@ export default function InterviewInterface() {
     onFeedbackReady: onInterviewFeedbackReady,
   });
   const { videoRef, audioEnabled, getStream, streamReady } = useMediaDevices();
-  const { startAnalysis, stopAnalysis } = useInterviewAnalysis({
+  // Video telemetry: filter console for `[InterviewVideoTelemetry]` (on in dev; set `debugVideoTelemetry: true` for prod tracing).
+  const { startAnalysis, stopAnalysis, speechRef } = useInterviewAnalysis({
     videoTelemetrySessionId: sessionId ?? null,
+    micEnabled: audioEnabled,
+    exposeTelemetryIntervalDebug: true,
   });
   const allowVadSendRef = useRef(true);
   /** Ignore VAD submissions briefly after AI audio ends (avoids echo/noise firing submitAudio → false "processing"). */
@@ -139,6 +145,20 @@ export default function InterviewInterface() {
   const isCaseStudy = interviewType === 'case-study';
   const isCommunication = interviewType === 'miscellaneous'; // TODO: This is a temporary solution due to the backend setup and avoiding tampering a lot of apis, will fix this later as this is an issue avoiding us to add any further miscellaneous interview types.
 
+  useEffect(() => {
+    console.log('[sessionId changed]', sessionId);
+  }, [sessionId]);
+  
+  useEffect(() => {
+    if (!sessionId) {
+      console.log('[InterviewInterface] sessionId is falsy — would navigate away', {
+        locationState: location.state,
+        locationSearch: location.search,
+      });
+      // navigate(ROUTES.VIDEO_INTERVIEW, { replace: true }); // temporarily comment out
+    }
+  }, [sessionId, navigate]);
+
   // Capture case study question when AI sends it (lastNode === 'CaseStudy')
   useEffect(() => {
     if (isCaseStudy && lastNode === 'CaseStudy' && aiMessage && !caseStudyQuestion) {
@@ -146,6 +166,17 @@ export default function InterviewInterface() {
     }
   }, [isCaseStudy, lastNode, aiMessage, caseStudyQuestion]);
 
+  useEffect(() => {
+    if (prevIsPlayingAudioRef.current === true && isPlayingAudio === false) {
+      // Glee just finished — VAD is about to reinitialize with a new AudioContext
+      // Web Speech needs to restart to reattach to whatever stream VAD now owns
+      const t = window.setTimeout(() => {
+        speechRef?.forceRestartRecognition();
+      }, 1000); // wait for VAD to finish reinitializing
+      return () => clearTimeout(t);
+    }
+    prevIsPlayingAudioRef.current = isPlayingAudio;
+  }, [isPlayingAudio]);
   // Communication: send text or audio via existing submit methods
   const sendCommunicationResponse = useCallback(
     async (payload: { textResponse?: string; audioData?: string; sampleRate?: number }) => {
@@ -202,6 +233,10 @@ export default function InterviewInterface() {
     pauseStream: async () => {},
     resumeStream: async (stream: MediaStream) => stream,
     onSpeechEnd: (audio: Float32Array) => {
+      console.log('[onSpeechEnd] audio ended', {
+        allowVadSendRef: allowVadSendRef.current,
+        postAiListenGateUntilRef: postAiListenGateUntilRef.current,
+      });
       if (!allowVadSendRef.current) return;
       if (Date.now() < postAiListenGateUntilRef.current) return;
       const blob = float32ToWavBlob(audio, 16000);
@@ -293,6 +328,24 @@ export default function InterviewInterface() {
   const displayUserSpeaking =
     !devMode && utteranceHold && !isSubmitting && !isPlayingAudio;
 
+
+  useEffect(() => {
+    console.log('[VAD pause effect]', {
+      isComplete,
+      vadLoading: vad.loading,
+      devMode,
+      audioEnabled,
+      isPlayingAudio,
+      isSubmitting,
+      awaitingStreamAi,
+      gleeHasJoined,
+      willPause: !audioEnabled || isPlayingAudio || isSubmitting || awaitingStreamAi || (!gleeHasJoined && !isComplete),
+    });
+  }, [isComplete, vad.loading, devMode, audioEnabled, isPlayingAudio, isSubmitting, awaitingStreamAi, gleeHasJoined]);
+
+  useEffect(() => {
+    console.log('[gleeHasJoined changed]', gleeHasJoined);
+  }, [gleeHasJoined]);
   useEffect(() => {
     if (!streamReady) return;
     if (!sessionId || isComplete) return;

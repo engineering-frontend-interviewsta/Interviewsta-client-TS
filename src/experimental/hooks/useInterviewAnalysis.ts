@@ -1,6 +1,23 @@
 /**
  * Wires PresenceAnalyzer + SpeechAnalyzer + EnvironmentAnalyzer for an interview session.
  * MediaPipe (face + pose) starts after a delay so the camera preview stays responsive.
+ *
+ * --- Video telemetry / `currInt*` troubleshooting (search console: `[InterviewVideoTelemetry]`) ---
+ * - This file: `startAnalysis` early-return (`isRunningRef`), `runTelemetryTicks` (session id or
+ *   `exposeTelemetryIntervalDebug`), telemetry `setInterval`, `speechRef` null, segment cursor
+ *   `lastVideoTelemetrySegmentIndexRef`, `telemetryWpmSamplesRef` (1s samples → flush on tick),
+ *   interim / live-WPM accumulator after `getNewSegmentsSinceIndex`.
+ * - `src/experimental/types/SpeechAnalyzer.ts` — `handleSpeechResult` (`isFinal` vs interim),
+ *   `peekInterimTelemetrySnapshot`, `segments` / `getSegmentCount`.
+ * - `src/utils/videoTelemetryPayload.ts` — `buildInterviewVideoTelemetrySample` (payload shape).
+ * - `src/services/interviewService.ts` — `postVideoTelemetry` (network, 401, URL session id).
+ * - `src/api/axiosInstance.ts` — `X-Interview-Access-Token` / JWT on `fastApiClient`.
+ * - `src/pages/InterviewInterface/index.tsx` — effect that calls `startAnalysis` / `stopAnalysis`
+ *   (deps: `streamReady`, `sessionId`, `isComplete`); passes `videoTelemetrySessionId`.
+ * - `src/hooks/useMediaDevices.ts` — mic stream passed into `startAnalysis`.
+ *
+ * Verbose logs: automatic in `import.meta.env.DEV`, or pass `debugVideoTelemetry: true` to this hook
+ * (including production builds while debugging).
  */
 
 import { useRef, useState, useCallback, useEffect } from 'react';
@@ -14,6 +31,11 @@ import {
   VIDEO_TELEMETRY_INTERVAL_MS,
 } from '../../utils/videoTelemetryPayload';
 
+function normalizedTelemetrySessionId(raw: unknown): string {
+  if (raw == null) return '';
+  return String(raw).trim();
+}
+
 export type { LiveMeasurements } from '../types/liveMeasurements';
 
 export interface FullAnalysisReport {
@@ -24,10 +46,46 @@ export interface FullAnalysisReport {
   generatedAt: number;
 }
 
+/**
+ * One 20s (or custom) telemetry batch — mirrors payload `speech.currInt*` for debugging (TestVideo).
+ * `currInt*` prefers new Web Speech finals, else interim, else 1s `currentWpm` samples collected while
+ * the mic looks active (`liveWpmAccumulator`).
+ */
+export interface VideoTelemetryIntervalDebugEntry {
+  tickAtMs: number;
+  /** Seconds since analysis start (same idea as telemetry payload `duration`). */
+  payloadDurationSec: number;
+  /** Segment index cursor before this tick (`getNewSegmentsSinceIndex(from)`). */
+  fromSegmentIndex: number;
+  /** `getSegmentCount()` after advancing the cursor. */
+  toSegmentIndexExclusive: number;
+  currIntSegmentCounts: number;
+  currIntSegmentWpm: number[];
+  currIntSegmentWords: number[];
+  /** Whether a FastAPI POST was attempted (session id present). */
+  postedToApi: boolean;
+  /** How this tick filled `currInt*`. */
+  currIntSource?: 'finals' | 'interim' | 'liveWpmAccumulator' | 'none';
+  /** Seconds of live WPM samples consumed when source is `liveWpmAccumulator`. */
+  liveWpmSampleSeconds?: number;
+}
+
 export interface UseInterviewAnalysisOptions {
   /** When set, POSTs telemetry to FastAPI on `VIDEO_TELEMETRY_INTERVAL_MS` while analysis runs. */
   videoTelemetrySessionId?: string | null;
   videoTelemetryIntervalMs?: number;
+  /**
+   * When the interview mic track is disabled, Web Speech must not start; set to false if `audioEnabled` is off.
+   * Nudging when this flips to true helps recognition attach after unmute.
+   */
+  micEnabled?: boolean;
+  /**
+   * Run the same interval as video telemetry even **without** a session id, and append each batch to
+   * `telemetryIntervalDebug`. Use on experimental TestVideo to verify `currIntSegment*` / Web Speech finals.
+   */
+  exposeTelemetryIntervalDebug?: boolean;
+  /** When true (or when `import.meta.env.DEV`), logs `[InterviewVideoTelemetry]` to the console. */
+  debugVideoTelemetry?: boolean;
 }
 
 export interface UseInterviewAnalysisReturn {
@@ -37,6 +95,9 @@ export interface UseInterviewAnalysisReturn {
   liveMeasurements: LiveMeasurements;
   startAnalysis: (videoEl: HTMLVideoElement, stream: MediaStream) => Promise<void>;
   stopAnalysis: () => Promise<FullAnalysisReport>;
+  /** Last N telemetry-interval batches when `exposeTelemetryIntervalDebug` is true; else []. */
+  telemetryIntervalDebug: VideoTelemetryIntervalDebugEntry[];
+  speechRef: SpeechAnalyzer | null;
 }
 
 function defaultLiveMeasurements(): LiveMeasurements {
@@ -75,22 +136,48 @@ function defaultLiveMeasurements(): LiveMeasurements {
   };
 }
 
-const MEDIAPIPE_START_DELAY_MS = 10_000;
+const MEDIAPIPE_START_DELAY_MS = 20_000;
+
+const TEL = '[InterviewVideoTelemetry]';
+
+function telemetryLoggingEnabled(debugOptIn: boolean): boolean {
+  return debugOptIn || import.meta.env.DEV;
+}
 
 export function useInterviewAnalysis(options?: UseInterviewAnalysisOptions): UseInterviewAnalysisReturn {
-  const videoTelemetrySessionIdRef = useRef<string | null>(options?.videoTelemetrySessionId ?? null);
+  const videoTelemetrySessionIdRef = useRef<string | null>(
+    options?.videoTelemetrySessionId != null ? String(options.videoTelemetrySessionId) : null
+  );
   const videoTelemetryIntervalMsRef = useRef(
     options?.videoTelemetryIntervalMs ?? VIDEO_TELEMETRY_INTERVAL_MS
   );
 
   useEffect(() => {
-    videoTelemetrySessionIdRef.current = options?.videoTelemetrySessionId ?? null;
+    const v = options?.videoTelemetrySessionId;
+    videoTelemetrySessionIdRef.current = v != null ? String(v) : null;
   }, [options?.videoTelemetrySessionId]);
 
   useEffect(() => {
     videoTelemetryIntervalMsRef.current =
       options?.videoTelemetryIntervalMs ?? VIDEO_TELEMETRY_INTERVAL_MS;
   }, [options?.videoTelemetryIntervalMs]);
+
+  const micEnabledRef = useRef(options?.micEnabled !== false);
+  useEffect(() => {
+    micEnabledRef.current = options?.micEnabled !== false;
+  }, [options?.micEnabled]);
+
+  const exposeTelemetryDebugRef = useRef(options?.exposeTelemetryIntervalDebug === true);
+  useEffect(() => {
+    exposeTelemetryDebugRef.current = options?.exposeTelemetryIntervalDebug === true;
+  }, [options?.exposeTelemetryIntervalDebug]);
+
+  const debugVideoTelemetryRef = useRef(options?.debugVideoTelemetry === true);
+  useEffect(() => {
+    debugVideoTelemetryRef.current = options?.debugVideoTelemetry === true;
+  }, [options?.debugVideoTelemetry]);
+
+  const [telemetryIntervalDebug, setTelemetryIntervalDebug] = useState<VideoTelemetryIntervalDebugEntry[]>([]);
 
   const [isReady, setIsReady] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -107,6 +194,18 @@ export function useInterviewAnalysis(options?: UseInterviewAnalysisOptions): Use
   const isRunningRef = useRef(false);
   const liveMeasurementsRef = useRef<LiveMeasurements>(defaultLiveMeasurements());
   const analysisStartedAtMsRef = useRef<number>(0);
+  /** Next segment index to include in video telemetry (finals only; see SpeechAnalyzer.segments order). */
+  const lastVideoTelemetrySegmentIndexRef = useRef(0);
+  /**
+   * One `currentWpm` sample per live tick (1s) while speech looks active. Flushed into `currInt*` on
+   * telemetry POST when there are no new finals and no interim snapshot (handles cursor caught up).
+   */
+  const telemetryWpmSamplesRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    if (options?.micEnabled === false) return;
+    speechRef.current?.nudgeSpeechRecognition();
+  }, [options?.micEnabled]);
 
   const clearTelemetryInterval = useCallback(() => {
     if (telemetryTickRef.current) {
@@ -162,12 +261,31 @@ export function useInterviewAnalysis(options?: UseInterviewAnalysisOptions): Use
       environment: envReportRef.current,
     };
     liveMeasurementsRef.current = next;
+
+    if (isRunningRef.current && sa) {
+      const hasInterim = sa.peekInterimTelemetrySnapshot() != null;
+      const likelySpeaking =
+        next.speech.webSpeechActive ||
+        hasInterim ||
+        (next.speech.currentWpm >= 2 && next.speech.rmsDb > -53);
+      if (likelySpeaking) {
+        const buf = telemetryWpmSamplesRef.current;
+        buf.push(Math.min(240, Math.max(0, next.speech.currentWpm)));
+        if (buf.length > 600) telemetryWpmSamplesRef.current = buf.slice(-400);
+      }
+    }
+
     setLiveMeasurements(next);
   }, []);
 
   const startAnalysis = useCallback(
     async (videoEl: HTMLVideoElement, stream: MediaStream): Promise<void> => {
-      if (isRunningRef.current) return;
+      if (isRunningRef.current) {
+        if (telemetryLoggingEnabled(debugVideoTelemetryRef.current)) {
+          console.warn(TEL, 'startAnalysis skipped — already running (check stop/start race or double invoke)');
+        }
+        return;
+      }
       isRunningRef.current = true;
       setError(null);
       const initialLive = defaultLiveMeasurements();
@@ -175,29 +293,154 @@ export function useInterviewAnalysis(options?: UseInterviewAnalysisOptions): Use
       setLiveMeasurements(initialLive);
       envReportRef.current = null;
       analysisStartedAtMsRef.current = Date.now();
+      lastVideoTelemetrySegmentIndexRef.current = 0;
+      telemetryWpmSamplesRef.current = [];
+      setTelemetryIntervalDebug([]);
 
       try {
         const sa = new SpeechAnalyzer();
         await sa.start(stream);
+        // const audioTracks = stream.getAudioTracks();
+        // console.log('[SpeechAnalyzer stream check]', {
+        //   trackCount: audioTracks.length,
+        //   trackEnabled: audioTracks[0]?.enabled,
+        //   trackMuted: audioTracks[0]?.muted,
+        //   trackReadyState: audioTracks[0]?.readyState,
+        //   trackLabel: audioTracks[0]?.label,
+        // });
         speechRef.current = sa;
+        if (micEnabledRef.current) {
+          sa.nudgeSpeechRecognition();
+        }
 
         liveTickRef.current = setInterval(() => {
           updateLiveStats();
         }, 1000);
 
         clearTelemetryInterval();
-        const sid = videoTelemetrySessionIdRef.current?.trim();
-        if (sid) {
-          const tickMs = videoTelemetryIntervalMsRef.current;
+        const sid = normalizedTelemetrySessionId(videoTelemetrySessionIdRef.current);
+        const tickMs = videoTelemetryIntervalMsRef.current;
+        const runTelemetryTicks = Boolean(sid) || exposeTelemetryDebugRef.current;
+        if (telemetryLoggingEnabled(debugVideoTelemetryRef.current)) {
+          if (runTelemetryTicks) {
+            console.warn(TEL, 'telemetry interval armed', {
+              tickMs,
+              hasSessionId: Boolean(sid),
+              sessionIdLen: sid.length,
+              exposeTelemetryIntervalDebug: exposeTelemetryDebugRef.current,
+            });
+          } else {
+            console.warn(
+              TEL,
+              'telemetry interval NOT armed — no normalized session id and exposeTelemetryIntervalDebug is false; currInt POSTs will never run'
+            );
+          }
+        }
+        if (runTelemetryTicks) {
           telemetryTickRef.current = window.setInterval(() => {
             if (!isRunningRef.current) return;
-            const sessionId = videoTelemetrySessionIdRef.current?.trim();
-            if (!sessionId) return;
-            const payload = buildInterviewVideoTelemetrySample(
-              liveMeasurementsRef.current,
-              analysisStartedAtMsRef.current
-            );
-            void postVideoTelemetry(sessionId, payload);
+            const sessionId = normalizedTelemetrySessionId(videoTelemetrySessionIdRef.current);
+            const sa = speechRef.current;
+            const fromIdx = lastVideoTelemetrySegmentIndexRef.current;
+            const intervalSegs = sa?.getNewSegmentsSinceIndex(fromIdx) ?? [];
+            const toIdx = sa?.getSegmentCount() ?? fromIdx;
+            lastVideoTelemetrySegmentIndexRef.current = toIdx;
+
+            let currIntSegmentCounts = intervalSegs.length;
+            let currIntSegmentWpm = intervalSegs.map((s) => s.wpm);
+            let currIntSegmentWords = intervalSegs.map((s) => s.wordCount);
+            let currIntSource: VideoTelemetryIntervalDebugEntry['currIntSource'] =
+              intervalSegs.length > 0 ? 'finals' : 'none';
+            let liveWpmSampleSeconds: number | undefined;
+
+            if (intervalSegs.length > 0) {
+              telemetryWpmSamplesRef.current = [];
+            }
+
+            if (currIntSegmentCounts === 0 && sa) {
+              const interim = sa.peekInterimTelemetrySnapshot();
+              if (interim) {
+                currIntSource = 'interim';
+                currIntSegmentCounts = 1;
+                currIntSegmentWpm = [interim.wpm];
+                currIntSegmentWords = [interim.wordCount];
+                telemetryWpmSamplesRef.current = [];
+              }
+            }
+
+            if (currIntSegmentCounts === 0) {
+              const samples = telemetryWpmSamplesRef.current;
+              if (samples.length > 0) {
+                telemetryWpmSamplesRef.current = [];
+                currIntSource = 'liveWpmAccumulator';
+                liveWpmSampleSeconds = samples.length;
+                const sumWpm = samples.reduce((a, w) => a + w, 0);
+                const avgWpm = Math.round(sumWpm / samples.length);
+                const estWords = Math.max(1, Math.round(samples.reduce((a, w) => a + w / 60, 0)));
+                currIntSegmentCounts = 1;
+                currIntSegmentWpm = [avgWpm];
+                currIntSegmentWords = [estWords];
+              }
+            }
+
+            if (telemetryLoggingEnabled(debugVideoTelemetryRef.current)) {
+              const live = liveMeasurementsRef.current.speech;
+              console.warn(TEL, 'tick', {
+                durationSec: Math.max(0, Math.round((Date.now() - analysisStartedAtMsRef.current) / 1000)),
+                willPost: Boolean(sessionId),
+                speechRefNull: !sa,
+                segmentCursor: { from: fromIdx, toExclusive: toIdx },
+                finalsInBatch: intervalSegs.length,
+                currIntSource,
+                liveWpmSampleSeconds,
+                wpmSamplesBufferedAfterTick: telemetryWpmSamplesRef.current.length,
+                currInt: {
+                  counts: currIntSegmentCounts,
+                  wpm: currIntSegmentWpm,
+                  words: currIntSegmentWords,
+                },
+                liveSpeechSnapshot: {
+                  segmentCount: live.segmentCount,
+                  totalWords: live.totalWords,
+                  currentWpm: live.currentWpm,
+                  webSpeechActive: live.webSpeechActive,
+                  latestSnippet: live.latestSegmentText?.slice(0, 100),
+                },
+              });
+            }
+
+            if (exposeTelemetryDebugRef.current) {
+              const entry: VideoTelemetryIntervalDebugEntry = {
+                tickAtMs: Date.now(),
+                payloadDurationSec: Math.max(
+                  0,
+                  Math.round((Date.now() - analysisStartedAtMsRef.current) / 1000)
+                ),
+                fromSegmentIndex: fromIdx,
+                toSegmentIndexExclusive: toIdx,
+                currIntSegmentCounts,
+                currIntSegmentWpm,
+                currIntSegmentWords,
+                postedToApi: Boolean(sessionId),
+                currIntSource,
+                liveWpmSampleSeconds,
+              };
+              setTelemetryIntervalDebug((prev) => [...prev.slice(-49), entry]);
+            }
+
+            if (sessionId) {
+              const payload = buildInterviewVideoTelemetrySample(
+                liveMeasurementsRef.current,
+                analysisStartedAtMsRef.current
+              );
+              payload.speech = {
+                ...payload.speech,
+                currIntSegmentCounts,
+                currIntSegmentWpm,
+                currIntSegmentWords,
+              };
+              void postVideoTelemetry(sessionId, payload, telemetryLoggingEnabled(debugVideoTelemetryRef.current));
+            }
           }, tickMs);
         }
 
@@ -217,6 +460,12 @@ export function useInterviewAnalysis(options?: UseInterviewAnalysisOptions): Use
               }
               presenceRef.current.start(videoEl);
               await new Promise((r) => setTimeout(r, 500));
+
+              if (isRunningRef.current && speechRef.current) {
+                console.log('[useInterviewAnalysis] nudging Web Speech after MediaPipe init');
+                speechRef.current.forceRestartRecognition();
+              }
+
             } catch (e: unknown) {
               setError(
                 e instanceof Error
@@ -244,6 +493,7 @@ export function useInterviewAnalysis(options?: UseInterviewAnalysisOptions): Use
         }, MEDIAPIPE_START_DELAY_MS);
       } catch (e: unknown) {
         isRunningRef.current = false;
+        telemetryWpmSamplesRef.current = [];
         setIsRunning(false);
         setError(e instanceof Error ? e.message : 'Failed to start analysis');
       }
@@ -252,6 +502,10 @@ export function useInterviewAnalysis(options?: UseInterviewAnalysisOptions): Use
   );
 
   const stopAnalysis = useCallback(async (): Promise<FullAnalysisReport> => {
+    if (telemetryLoggingEnabled(debugVideoTelemetryRef.current)) {
+      console.warn(TEL, 'stopAnalysis — clearing timers and stopping analyzers');
+    }
+
     if (presenceStartTimerRef.current) {
       clearTimeout(presenceStartTimerRef.current);
       presenceStartTimerRef.current = null;
@@ -264,18 +518,24 @@ export function useInterviewAnalysis(options?: UseInterviewAnalysisOptions): Use
 
     clearTelemetryInterval();
 
-    const presence = presenceRef.current?.stop() ?? emptyPresenceReport();
-    const speech = speechRef.current?.stop() ?? emptySpeechReport();
-    const environment = envReportRef.current ?? emptyEnvironmentReport();
-
+    const presenceInst = presenceRef.current;
+    const speechInst = speechRef.current;
+    presenceRef.current = null;
+    speechRef.current = null;
     isRunningRef.current = false;
     setIsRunning(false);
+
+    const presence = presenceInst?.stop() ?? emptyPresenceReport();
+    const speech = speechInst?.stop() ?? emptySpeechReport();
+    const environment = envReportRef.current ?? emptyEnvironmentReport();
 
     const compositeScore = computeComposite(presence, speech, environment);
 
     const cleared = defaultLiveMeasurements();
     liveMeasurementsRef.current = cleared;
     setLiveMeasurements(cleared);
+    setTelemetryIntervalDebug([]);
+    telemetryWpmSamplesRef.current = [];
 
     return {
       presence,
@@ -286,7 +546,16 @@ export function useInterviewAnalysis(options?: UseInterviewAnalysisOptions): Use
     };
   }, [clearTelemetryInterval]);
 
-  return { isReady, isRunning, error, liveMeasurements, startAnalysis, stopAnalysis };
+  return {
+    isReady,
+    isRunning,
+    error,
+    liveMeasurements,
+    startAnalysis,
+    stopAnalysis,
+    telemetryIntervalDebug,
+    speechRef: speechRef.current
+  };
 }
 
 function computeComposite(

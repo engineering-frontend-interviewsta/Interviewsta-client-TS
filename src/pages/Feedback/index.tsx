@@ -8,6 +8,8 @@ import ScoreBreakdown from './components/ScoreBreakdown';
 import StrengthsAndImprovements from './components/StrengthsAndImprovements';
 import TechnicalExtras from './components/TechnicalExtras';
 import FeedbackHero from './components/FeedbackHero';
+import FeedbackTelemetryRichReport from './components/FeedbackTelemetryRichReport';
+import { hasTelemetryRichPayload } from './telemetryRichReportMappers';
 import './Feedback.css';
 
 export type FeedbackLocationState = {
@@ -170,6 +172,10 @@ export default function Feedback() {
               <ScoreBreakdown data={videoFeedback} />
               <StrengthsAndImprovements data={videoFeedback} />
               <TechnicalExtras data={videoFeedback} />
+              {videoFeedback.telemetryData != null &&
+              hasTelemetryRichPayload(videoFeedback.telemetryData) ? (
+                <FeedbackTelemetryRichReport telemetry={videoFeedback.telemetryData} />
+              ) : null}
             </div>
           </>
         )}

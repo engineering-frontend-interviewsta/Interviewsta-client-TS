@@ -1,6 +1,6 @@
 import { nestClient } from '../api/axiosInstance';
 import { FEEDBACK_ENDPOINTS } from '../constants/apiEndpoints';
-import type { InterviewFeedback, SessionHistoryResponse } from '../types/feedback';
+import type { FeedbackTelemetryData, InterviewFeedback, SessionHistoryResponse } from '../types/feedback';
 
 // New feedback API: query by either sessionId (live session) or feedbackId (stored report)
 export type SessionHistoryParams =
@@ -21,5 +21,10 @@ export async function getSessionHistory(
       : { feedbackId: params.feedbackId },
   });
   const data = response.data as SessionHistoryResponse;
-  return data?.feedback ?? null;
+  const fb = data?.feedback ?? null;
+  if (fb && fb.telemetryData == null && 'telemetry_data' in fb) {
+    const snake = (fb as InterviewFeedback & { telemetry_data?: FeedbackTelemetryData | null }).telemetry_data;
+    if (snake != null) (fb as InterviewFeedback).telemetryData = snake;
+  }
+  return fb;
 }

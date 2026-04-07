@@ -140,7 +140,13 @@ export default function TestVideo() {
     error: interviewAnalysisError,
     startAnalysis,
     stopAnalysis,
-  } = useInterviewAnalysis({ videoTelemetrySessionId: sessionId ?? null });
+    telemetryIntervalDebug,
+  } = useInterviewAnalysis({
+    videoTelemetrySessionId: sessionId ?? null,
+    micEnabled: audioEnabled,
+    /** Run 20s batches without requiring a backend session so `currIntSegment*` is visible in the panel. */
+    exposeTelemetryIntervalDebug: true,
+  });
   const allowVadSendRef = useRef(true);
   /** Ignore VAD submissions briefly after AI audio ends (avoids echo/noise firing submitAudio → false "processing"). */
   const postAiListenGateUntilRef = useRef(0);
@@ -581,6 +587,7 @@ export default function TestVideo() {
                   liveMeasurements={liveMeasurements}
                   isRunning={interviewAnalysisRunning}
                   error={interviewAnalysisError}
+                  telemetryIntervalDebug={telemetryIntervalDebug}
                 />
               </div>
             </aside>

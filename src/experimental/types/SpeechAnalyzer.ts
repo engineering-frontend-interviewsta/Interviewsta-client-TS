@@ -97,6 +97,8 @@ export interface SpeechSegment {
     private analyserNode: AnalyserNode | null = null;
     private sourceNode: MediaStreamAudioSourceNode | null = null;
     private recognition: any = null;   // SpeechRecognition
+    /** True between browser `onstart` and `onend` for the current recognition session. */
+    private recognitionListening = false;
     /** Current non-final transcript from Web Speech API (cleared when a final lands). */
     private latestInterimTranscript = '';
     private activationUnsub: (() => void) | null = null;
@@ -124,7 +126,8 @@ export interface SpeechSegment {
     private recognitionPollTimer: ReturnType<typeof setTimeout> | null = null;
     private recognitionKickTimer: ReturnType<typeof setTimeout> | null = null;
     private recognitionEndRestartTimer: ReturnType<typeof setTimeout> | null = null;
-  
+    
+    private restartInProgress = false;
     // ── Init & start ──────────────────────────────────────────────────────────
   
     async start(stream: MediaStream): Promise<void> {
@@ -177,6 +180,25 @@ export interface SpeechSegment {
       return { latestText: '', liveWpm: 0 };
     }
 
+    /**
+     * Word count + WPM for the current **interim** line only (no final yet for this utterance).
+     * Used for video telemetry `currInt*` when `getNewSegmentsSinceIndex` is empty: live UI still
+     * shows `latestSegmentText` / `currentWpm` from interim while Chrome delays `isFinal`.
+     */
+    peekInterimTelemetrySnapshot(): { wordCount: number; wpm: number } | null {
+      if (!this.running) return null;
+      const interim = this.latestInterimTranscript.trim();
+      if (!interim) return null;
+      const words = this.tokenize(interim);
+      if (words.length === 0) return null;
+      const now = performance.now() - this.startTime;
+      const startMs =
+        this.currentSegmentStart > 0 ? this.currentSegmentStart : Math.max(0, now - 1500);
+      const durMs = Math.max(250, now - startMs);
+      const wpm = Math.round((words.length / durMs) * 60_000);
+      return { wordCount: words.length, wpm };
+    }
+
     getTotalFillerCount(): number {
       return this.segments.reduce((a, s) => a + s.fillerCount, 0);
     }
@@ -193,13 +215,30 @@ export interface SpeechSegment {
       return this.segments.reduce((a, s) => a + s.wordCount, 0);
     }
 
-    /** True when Web Speech API recognition is running (Chrome/Edge). */
+    /**
+     * Finalized segments at indices `[startIndex, length)` — for telemetry batching.
+     * Web Speech finals often arrive late; slicing by index avoids losing segments vs time windows.
+     */
+    getNewSegmentsSinceIndex(startIndex: number): SpeechSegment[] {
+      const i = Math.max(0, Math.min(startIndex, this.segments.length));
+      return this.segments.slice(i);
+    }
+
+    /** True while the browser reports an active recognition session (`onstart`…`onend`). */
     isWebSpeechActive(): boolean {
-      return this.recognition != null;
+      return this.recognitionListening;
+    }
+
+    /** Call when the mic track becomes enabled so `start()` is retried without waiting for the poll interval. */
+    nudgeSpeechRecognition(): void {
+      if (!this.running || !this.recognition) return;
+      if (this.recognitionListening) return;
+      this.tryStartSpeechRecognitionLoop();
     }
 
     stop(): SpeechReport {
       this.running = false;
+      this.recognitionListening = false;
   
       // Close any open silence gap
       if (this.inSilence && this.lastSpeechEndMs > 0) {
@@ -245,27 +284,26 @@ export interface SpeechSegment {
 
       // Browsers often start AudioContext suspended unless resumed from a user gesture.
       await this.audioCtx.resume().catch(() => {});
-      this.attachAudioContextActivationHandlers();
+      /**
+       * Always register gesture handlers, even when the context is already "running".
+       * InterviewInterface starts analysis from useEffect after navigation — no user activation.
+       * Web Speech's `start()` often needs a subsequent gesture on *this* document; TestVideo
+       * tends to get one immediately; the main flow may not until the user clicks (e.g. Glee overlay).
+       */
+      this.attachUserGestureHandlers();
     }
 
-    private attachAudioContextActivationHandlers(): void {
-      const ctx = this.audioCtx;
-      if (!ctx || ctx.state === 'closed') return;
-
-      const tryResume = () => {
-        if (!this.running || !this.audioCtx || this.audioCtx.state === 'closed') return;
-        void this.audioCtx.resume().catch(() => {});
-      };
-
-      tryResume();
-      if (ctx.state === 'running') return;
+    /** Resume AudioContext + retry recognition on user input (capture phase so overlays still count). */
+    private attachUserGestureHandlers(): void {
+      if (this.activationUnsub) return;
 
       const onGesture = () => {
-        tryResume();
-        if (this.audioCtx?.state === 'running') {
-          window.removeEventListener('pointerdown', onGesture, true);
-          window.removeEventListener('keydown', onGesture, true);
-          this.activationUnsub = null;
+        if (!this.running) return;
+        if (this.audioCtx && this.audioCtx.state !== 'closed') {
+          void this.audioCtx.resume().catch(() => {});
+        }
+        if (this.recognition) {
+          this.tryStartSpeechRecognitionLoop();
         }
       };
 
@@ -354,6 +392,7 @@ export interface SpeechSegment {
 
     private scheduleRecognitionRestart(): void {
       if (!this.running || !this.recognition) return;
+      if (this.restartInProgress) return;
       this.clearRecognitionTimers();
       this.recognitionEndRestartTimer = window.setTimeout(() => {
         this.recognitionEndRestartTimer = null;
@@ -364,6 +403,7 @@ export interface SpeechSegment {
         }
         try {
           this.recognition.start();
+          console.log('[WebSpeech] start called', new Error().stack?.split('\n')[2]);
         } catch {
           this.recognitionEndRestartTimer = window.setTimeout(() => {
             this.scheduleRecognitionRestart();
@@ -394,6 +434,21 @@ export interface SpeechSegment {
         }, 500);
       }
     }
+
+    forceRestartRecognition(): void {
+      if (!this.running || !this.recognition) return;
+      this.clearRecognitionTimers();
+      this.recognitionListening = false;
+      try {
+        this.recognition.abort();
+      } catch { /* ignore */ }
+      // Fresh start after abort settles
+      this.recognitionEndRestartTimer = window.setTimeout(() => {
+        this.recognitionEndRestartTimer = null;
+        if (!this.running || !this.recognition) return;
+        this.tryStartSpeechRecognitionLoop();
+      }, 300);
+    }
   
     private initSpeechRecognition(): void {
       const SpeechRecognition =
@@ -404,14 +459,29 @@ export interface SpeechSegment {
         return;
       }
   
+      this.recognitionListening = false;
       this.recognition = new SpeechRecognition();
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
-      this.recognition.lang =
-        typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US";
+      const navLang =
+        typeof navigator !== "undefined" && navigator.language ? navigator.language.trim() : "";
+      this.recognition.lang = navLang.length >= 2 ? navLang : "en-US";
       this.recognition.maxAlternatives = 1;
   
+      this.recognition.onstart = () => {
+        this.recognitionListening = true;
+        console.log('[WebSpeech] onstart', { t: Math.round(performance.now() - this.startTime) });
+      };
+
       this.recognition.onresult = (event: any) => {
+        console.log('[WebSpeech] onresult', {
+          resultIndex: event.resultIndex,
+          totalResults: event.results.length,
+          isFinal: event.results[event.resultIndex]?.[0] != null 
+            ? event.results[event.resultIndex].isFinal 
+            : 'n/a',
+          transcript: event.results[event.resultIndex]?.[0]?.transcript?.slice(0, 60)
+        });
         this.handleSpeechResult(event);
       };
   
@@ -434,18 +504,29 @@ export interface SpeechSegment {
       };
   
       this.recognition.onend = () => {
-        if (this.running) {
-          this.scheduleRecognitionRestart();
-        }
+        this.recognitionListening = false;
+        console.log('[WebSpeech] onend', { 
+          t: Math.round(performance.now() - this.startTime),
+          running: this.running,
+          willRestart: this.running && !this.restartInProgress
+        });
+        if (this.running) this.scheduleRecognitionRestart();
       };
   
       this.recognition.onerror = (event: any) => {
+        console.log('[WebSpeech] onerror', { 
+          error: event.error, 
+          t: Math.round(performance.now() - this.startTime),
+          running: this.running
+        });
         const err = event.error as string;
         if (!this.running) return;
 
         if (err === "aborted") {
           return;
         }
+
+        this.recognitionListening = false;
 
         if (err === "not-allowed" || err === "service-not-allowed") {
           console.warn("[SpeechAnalyzer] Web Speech permission / service blocked:", err);
@@ -485,7 +566,7 @@ export interface SpeechSegment {
       }
 
       let runningInterim = "";
-      for (let i = 0; i < event.results.length; i++) {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
         if (!event.results[i].isFinal) {
           runningInterim += event.results[i][0].transcript;
         }
@@ -512,6 +593,15 @@ export interface SpeechSegment {
         };
   
         this.segments.push(segment);
+
+        if (import.meta.env.DEV) {
+          console.warn('[InterviewVideoTelemetry] Web Speech isFinal segment', {
+            segmentIndex: this.segments.length - 1,
+            wordCount: words.length,
+            wpm: segment.wpm,
+            textPreview: finalText.trim().slice(0, 100),
+          });
+        }
 
         // Accumulate filler counts
         for (const w of fillerData.words) {

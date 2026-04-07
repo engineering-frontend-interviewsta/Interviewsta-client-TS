@@ -214,15 +214,25 @@ export async function pollInterviewStatus(sessionId: string): Promise<PollStatus
 /**
  * Append one video telemetry sample (`POST .../video-telemetry`).
  * Uses user JWT + `X-Interview-Access-Token` from `fastApiClient`. Does not throw.
+ * @param logFailure — log `[InterviewVideoTelemetry] POST failed` on error (defaults to `import.meta.env.DEV`).
  */
 export async function postVideoTelemetry(
   sessionId: string,
-  payload: InterviewVideoTelemetrySample
+  payload: InterviewVideoTelemetrySample,
+  logFailure: boolean = import.meta.env.DEV
 ): Promise<void> {
   try {
     await fastApiClient.post(INTERVIEW_ENDPOINTS.VIDEO_TELEMETRY(sessionId), payload);
-  } catch {
-    // Telemetry is non-critical
+  } catch (err: unknown) {
+    if (logFailure) {
+      const ax = err as { response?: { status?: number; data?: unknown } };
+      console.warn('[InterviewVideoTelemetry] POST failed', {
+        httpStatus: ax.response?.status,
+        responseData: ax.response?.data,
+        sessionTail: sessionId.length > 8 ? `…${sessionId.slice(-8)}` : '(short id)',
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 }
 

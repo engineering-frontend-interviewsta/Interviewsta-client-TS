@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import type { LiveMeasurements } from '../../types/liveMeasurements';
+import type { VideoTelemetryIntervalDebugEntry } from '../../hooks/useInterviewAnalysis';
+import { VIDEO_TELEMETRY_INTERVAL_MS } from '../../../utils/videoTelemetryPayload';
 
 function AnalysisRow({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -14,9 +16,16 @@ export interface LiveAnalysisPanelProps {
   liveMeasurements: LiveMeasurements;
   isRunning: boolean;
   error: string | null;
+  /** Experimental: 20s telemetry batches (currInt segment arrays) from `useInterviewAnalysis`. */
+  telemetryIntervalDebug?: VideoTelemetryIntervalDebugEntry[];
 }
 
-export function LiveAnalysisPanel({ liveMeasurements, isRunning, error }: LiveAnalysisPanelProps) {
+export function LiveAnalysisPanel({
+  liveMeasurements,
+  isRunning,
+  error,
+  telemetryIntervalDebug,
+}: LiveAnalysisPanelProps) {
   return (
     <div className="interview-interface__card test-video-analysis-card">
       <div className="interview-interface__card-header">
@@ -100,6 +109,72 @@ export function LiveAnalysisPanel({ liveMeasurements, isRunning, error }: LiveAn
             </li>
           </ul>
         </section>
+
+        {telemetryIntervalDebug != null ? (
+          <section className="test-video-analysis-card__section">
+            <h3 className="test-video-analysis-card__heading">
+              Telemetry interval ({Math.round(VIDEO_TELEMETRY_INTERVAL_MS / 1000)}s batches)
+            </h3>
+            <p className="test-video-analysis-card__pending test-video-analysis-card__telemetry-intro">
+              Each row is one tick: new finals, else interim, else 1s <code>currentWpm</code> samples
+              while the mic looks active (when the segment cursor is already caught up). POSTed{' '}
+              <code>speech.currInt*</code> matches this.
+            </p>
+            {telemetryIntervalDebug.length === 0 ? (
+              <p className="test-video-analysis-card__pending">
+                {isRunning
+                  ? 'Waiting for first interval…'
+                  : 'Start analysis to record intervals.'}
+              </p>
+            ) : (
+              <ul className="test-video-analysis-card__telemetry-log">
+                {telemetryIntervalDebug.map((e, i) => (
+                  <li key={`${e.tickAtMs}-${i}`} className="test-video-analysis-card__telemetry-entry">
+                    <div className="test-video-analysis-card__telemetry-entry-meta">
+                      <span>
+                        #{i + 1} · ~{e.payloadDurationSec}s elapsed
+                      </span>
+                      <span className="test-video-analysis-card__telemetry-posted">
+                        {e.postedToApi ? 'POST' : 'local only'}
+                      </span>
+                    </div>
+                    <div className="test-video-analysis-card__telemetry-entry-row">
+                      <span className="test-video-analysis-card__telemetry-k">segment cursor</span>
+                      <span className="test-video-analysis-card__telemetry-v">
+                        [{e.fromSegmentIndex} → {e.toSegmentIndexExclusive})
+                      </span>
+                    </div>
+                    <div className="test-video-analysis-card__telemetry-entry-row">
+                      <span className="test-video-analysis-card__telemetry-k">currInt source</span>
+                      <span className="test-video-analysis-card__telemetry-v">
+                        {e.currIntSource ?? '—'}
+                        {e.liveWpmSampleSeconds != null
+                          ? ` · ${e.liveWpmSampleSeconds}s WPM samples`
+                          : ''}
+                      </span>
+                    </div>
+                    <div className="test-video-analysis-card__telemetry-entry-row">
+                      <span className="test-video-analysis-card__telemetry-k">currIntSegmentCounts</span>
+                      <span className="test-video-analysis-card__telemetry-v">{e.currIntSegmentCounts}</span>
+                    </div>
+                    <div className="test-video-analysis-card__telemetry-entry-row">
+                      <span className="test-video-analysis-card__telemetry-k">currIntSegmentWpm</span>
+                      <span className="test-video-analysis-card__telemetry-v">
+                        [{e.currIntSegmentWpm.join(', ') || ' '}]
+                      </span>
+                    </div>
+                    <div className="test-video-analysis-card__telemetry-entry-row">
+                      <span className="test-video-analysis-card__telemetry-k">currIntSegmentWords</span>
+                      <span className="test-video-analysis-card__telemetry-v">
+                        [{e.currIntSegmentWords.join(', ') || ' '}]
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ) : null}
 
         <section className="test-video-analysis-card__section">
           <h3 className="test-video-analysis-card__heading">Environment (snapshot)</h3>
