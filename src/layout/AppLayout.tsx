@@ -9,7 +9,11 @@ import LoadingFallback from '../components/shared/LoadingFallback';
 import logoImg from '../assets/logo.png';
 import './AppLayout.css';
 
-const HIDE_HEADER_PATHS: string[] = [ROUTES.INTERVIEW_INTERFACE];
+const HIDE_HEADER_PATHS: string[] = [
+  ROUTES.INTERVIEW_INTERFACE,
+  ROUTES.TEST_VIDEO,
+  ROUTES.EXPERIMENTAL_TEST_VIDEO,
+];
 
 function getInitial(name: string | null | undefined, email: string | null | undefined): string {
   if (name?.trim()) {

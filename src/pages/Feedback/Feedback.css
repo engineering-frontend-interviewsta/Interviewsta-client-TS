@@ -417,6 +417,12 @@
   padding-bottom: 4rem;
 }
 
+.feedback-page__telemetry-rich {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-border);
+}
+
 .feedback-report__section-header {
   margin: 2.25rem 0 1rem;
 }

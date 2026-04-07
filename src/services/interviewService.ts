@@ -11,11 +11,14 @@ import type {
   PollStatusResult,
   AIResponseData,
   InterviewStreamCallbacks,
+  RespondCompleteSsePayload,
+  InterviewAIResponsePayload,
 } from '../types/interview';
 import type {
   InterviewTestsPaginatedResponse,
   ParentInterviewType,
 } from '../types/interviewTest';
+import type { InterviewVideoTelemetrySample } from '../types/videoTelemetry';
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -209,16 +212,27 @@ export async function pollInterviewStatus(sessionId: string): Promise<PollStatus
 }
 
 /**
- * Post video telemetry. Does not throw so telemetry failure does not break the interview.
+ * Append one video telemetry sample (`POST .../video-telemetry`).
+ * Uses user JWT + `X-Interview-Access-Token` from `fastApiClient`. Does not throw.
+ * @param logFailure — log `[InterviewVideoTelemetry] POST failed` on error (defaults to `import.meta.env.DEV`).
  */
 export async function postVideoTelemetry(
   sessionId: string,
-  payload: Record<string, unknown>
+  payload: InterviewVideoTelemetrySample,
+  logFailure: boolean = import.meta.env.DEV
 ): Promise<void> {
   try {
     await fastApiClient.post(INTERVIEW_ENDPOINTS.VIDEO_TELEMETRY(sessionId), payload);
-  } catch {
-    // Telemetry is non-critical
+  } catch (err: unknown) {
+    if (logFailure) {
+      const ax = err as { response?: { status?: number; data?: unknown } };
+      console.warn('[InterviewVideoTelemetry] POST failed', {
+        httpStatus: ax.response?.status,
+        responseData: ax.response?.data,
+        sessionTail: sessionId.length > 8 ? `…${sessionId.slice(-8)}` : '(short id)',
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 }
 
@@ -309,6 +323,8 @@ function processAIResponse(data: {
   question_number?: number;
   total_questions?: number;
   last_node?: string;
+  lastNode?: string;
+  type?: string;
 }): AIResponseData {
   const audioBase64 = data.audio_base64 ?? data.audio ?? data.audioBase64;
   return {
@@ -316,8 +332,86 @@ function processAIResponse(data: {
     audioBase64,
     questionNumber: data.question_number,
     totalQuestions: data.total_questions,
-    lastNode: data.last_node,
+    lastNode: data.last_node ?? data.lastNode,
   };
+}
+
+/**
+ * Backend often sends the AI turn as raw JSON (message + audio + last_node) on the default SSE
+ * `message` event without a `type` field. Only treat as AI when it is clearly not another envelope.
+ */
+function isDirectAiResponsePayload(data: Record<string, unknown>): boolean {
+  const d = unwrapNestedAiEnvelope(data);
+  if (typeof d.message !== 'string' || d.message.trim() === '') return false;
+  if (typeof d.type === 'string' && d.type !== '') return false;
+  return (
+    typeof d.audio === 'string' ||
+    typeof d.audio_base64 === 'string' ||
+    typeof d.audioBase64 === 'string' ||
+    typeof d.last_node === 'string' ||
+    typeof d.lastNode === 'string' ||
+    typeof d.question_number === 'number' ||
+    typeof d.total_questions === 'number'
+  );
+}
+
+function parseSseJsonObject(raw: string): Record<string, unknown> | null {
+  try {
+    const v = JSON.parse(raw) as unknown;
+    return v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Backend sometimes wraps AI payloads as `{ "data": { "message", "audio", ... } }` on `ai_response`.
+ */
+function unwrapNestedAiEnvelope(data: Record<string, unknown>): Record<string, unknown> {
+  const inner = data.data;
+  if (inner !== null && typeof inner === 'object' && !Array.isArray(inner)) {
+    const o = inner as Record<string, unknown>;
+    if (
+      typeof o.message === 'string' ||
+      typeof o.audio === 'string' ||
+      typeof o.audio_base64 === 'string' ||
+      typeof o.audioBase64 === 'string' ||
+      typeof o.last_node === 'string' ||
+      typeof o.lastNode === 'string'
+    ) {
+      return o;
+    }
+  }
+  return data;
+}
+
+function toRespondCompletePayload(raw: Record<string, unknown>): RespondCompleteSsePayload {
+  return {
+    task_id: raw.task_id as string | undefined,
+    status: raw.status as string | undefined,
+    result: raw.result as RespondCompleteSsePayload['result'],
+    interview_ai_response:
+      (raw.interview_ai_response as InterviewAIResponsePayload | undefined) ??
+      (raw.interviewAiResponse as InterviewAIResponsePayload | undefined),
+    interview_transcript:
+      (raw.interview_transcript as string | undefined) ??
+      (raw.interviewTranscript as string | undefined),
+    error: raw.error as string | undefined,
+  };
+}
+
+function bindSseJsonHandler(
+  es: EventSource,
+  eventName: string,
+  handler: (data: Record<string, unknown>) => void
+): void {
+  es.addEventListener(eventName, (e: Event) => {
+    const me = e as MessageEvent;
+    const raw = me.data;
+    if (raw == null || raw === '') return;
+    const data = parseSseJsonObject(String(raw));
+    if (data) handler(data);
+  });
 }
 
 /**
@@ -345,22 +439,31 @@ export function connectToInterviewStream(
   const setupHandlers = (es: EventSource) => {
     es.onmessage = (event: MessageEvent) => {
       try {
-        const data = JSON.parse(event.data as string) as Record<string, unknown>;
-        if (data.status === 'ai_responded' && data.message) {
-          callbacks.onAIResponse?.(processAIResponse({
-            message: data.message as string,
-            audio_base64: data.audio as string | undefined,
-            last_node: data.last_node as string | undefined,
-          }));
+        const raw = event.data;
+        if (raw == null || raw === '') return;
+        const data = parseSseJsonObject(String(raw));
+        if (!data) return;
+        const flatForAi = unwrapNestedAiEnvelope(data);
+        if (data.status === 'ai_responded' && typeof flatForAi.message === 'string') {
+          callbacks.onAIResponse?.(
+            processAIResponse(flatForAi as Parameters<typeof processAIResponse>[0])
+          );
+          return;
+        }
+        if (isDirectAiResponsePayload(data)) {
+          const flat = unwrapNestedAiEnvelope(data);
+          callbacks.onAIResponse?.(processAIResponse(flat as Parameters<typeof processAIResponse>[0]));
           return;
         }
         switch (data.type) {
           case 'status':
             callbacks.onStatusUpdate?.(data.status as string);
             break;
-          case 'ai_response':
-            callbacks.onAIResponse?.(processAIResponse(data as Record<string, unknown>));
+          case 'ai_response': {
+            const flat = unwrapNestedAiEnvelope(data);
+            callbacks.onAIResponse?.(processAIResponse(flat as Parameters<typeof processAIResponse>[0]));
             break;
+          }
           case 'transcription':
             callbacks.onTranscript?.(data.transcript as string);
             break;
@@ -385,8 +488,14 @@ export function connectToInterviewStream(
 
     es.addEventListener('ai_response', (e: Event) => {
       try {
-        const data = JSON.parse((e as MessageEvent).data as string);
-        callbacks.onAIResponse?.(processAIResponse(data));
+        const me = e as MessageEvent;
+        const raw = me.data;
+        if (raw == null || raw === '') return;
+        const data = parseSseJsonObject(String(raw));
+        if (data) {
+          const flat = unwrapNestedAiEnvelope(data);
+          callbacks.onAIResponse?.(processAIResponse(flat as Parameters<typeof processAIResponse>[0]));
+        }
       } catch {
         // ignore
       }
@@ -432,6 +541,72 @@ export function connectToInterviewStream(
         // ignore
       }
     });
+
+    bindSseJsonHandler(es, 'connected', (data) => callbacks.onConnected?.(data));
+    bindSseJsonHandler(es, 'heartbeat', (data) => callbacks.onHeartbeat?.(data));
+    bindSseJsonHandler(es, 'celery_start', (data) =>
+      callbacks.onCeleryStart?.({
+        task_id: data.task_id as string | undefined,
+        phase: data.phase as string | undefined,
+      })
+    );
+    bindSseJsonHandler(es, 'start_progress', (data) =>
+      callbacks.onStartProgress?.({
+        progress: typeof data.progress === 'number' ? data.progress : undefined,
+        message: typeof data.message === 'string' ? data.message : undefined,
+      })
+    );
+    /** Many backends emit `event: progress` for start (and sometimes respond) instead of `start_progress`. */
+    bindSseJsonHandler(es, 'progress', (data) => {
+      const progress = typeof data.progress === 'number' ? data.progress : undefined;
+      const message = typeof data.message === 'string' ? data.message : undefined;
+      const status = typeof data.status === 'string' ? data.status : undefined;
+      callbacks.onStartProgress?.({ progress, message });
+      if (status === 'completed') {
+        callbacks.onStartComplete?.(data);
+      }
+      if (status === 'failed') {
+        const err =
+          (typeof data.error === 'string' ? data.error : null) ??
+          (typeof data.message === 'string' ? data.message : null) ??
+          'Task failed';
+        callbacks.onStartFailed?.({
+          task_id: data.task_id as string | undefined,
+          error: err,
+        });
+      }
+    });
+    bindSseJsonHandler(es, 'start_complete', (data) => callbacks.onStartComplete?.(data));
+    bindSseJsonHandler(es, 'start_failed', (data) =>
+      callbacks.onStartFailed?.({
+        task_id: data.task_id as string | undefined,
+        error:
+          (typeof data.error === 'string' ? data.error : undefined) ??
+          (typeof data.message === 'string' ? data.message : undefined),
+      })
+    );
+    bindSseJsonHandler(es, 'celery_respond', (data) =>
+      callbacks.onCeleryRespond?.({ task_id: data.task_id as string | undefined })
+    );
+    bindSseJsonHandler(es, 'respond_progress', (data) =>
+      callbacks.onRespondProgress?.({
+        progress: typeof data.progress === 'number' ? data.progress : undefined,
+        message: typeof data.message === 'string' ? data.message : undefined,
+      })
+    );
+    bindSseJsonHandler(es, 'respond_complete', (data) =>
+      callbacks.onRespondComplete?.(toRespondCompletePayload(data))
+    );
+    bindSseJsonHandler(es, 'respond_failed', (data) =>
+      callbacks.onRespondFailed?.({
+        task_id: data.task_id as string | undefined,
+        error:
+          (typeof data.error === 'string' ? data.error : undefined) ??
+          (typeof data.message === 'string' ? data.message : undefined),
+      })
+    );
+    bindSseJsonHandler(es, 'feedback_queued', (data) => callbacks.onFeedbackQueued?.(data));
+    bindSseJsonHandler(es, 'feedback_complete', (data) => callbacks.onFeedbackComplete?.(data));
 
     es.onerror = () => {
       if (es.readyState === EventSource.CLOSED && !isManuallyClosed && reconnectAttempts < maxReconnectAttempts) {

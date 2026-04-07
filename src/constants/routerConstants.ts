@@ -10,6 +10,11 @@ export const ROUTES = {
   VIDEO_INTERVIEW: '/video-interview',
   VIDEO_INTERVIEW_REPORTS: '/video-interview-reports',
   INTERVIEW_INTERFACE: '/interview-interface',
+  /** Dev/test duplicate of interview UI; same state contract as `INTERVIEW_INTERFACE`. */
+  TEST_VIDEO: '/test-video',
+  /** Experimental routes (authenticated AppLayout). */
+  EXPERIMENTAL_TEST_VIDEO: '/experimental/test-video',
+  EXPERIMENTAL_TEST_FEEDBACK: '/experimental/test-feedback',
   LEARNING: '/learning',
   LEARNING_ARRAYS: '/learning/arrays',
   RESUME_ANALYSIS: '/resume-analysis',

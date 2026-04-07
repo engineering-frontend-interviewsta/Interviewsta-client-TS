@@ -19,6 +19,7 @@ import { ROUTES } from '../../constants/routerConstants';
 import { USER_TRANSCRIPT_PENDING_LABEL } from '../../constants/interviewSessionUi';
 import { useInterviewDevMode } from '../../context/InterviewDevModeContext';
 import { interviewDevToolsVisible } from '../../constants/interviewDevTools';
+import { useInterviewAnalysis } from '../../experimental/hooks/useInterviewAnalysis';
 import './InterviewInterface.css';
 
 const FEEDBACK_POLL_INTERVAL_MS = 2000;
@@ -64,6 +65,28 @@ export default function InterviewInterface() {
   useEffect(() => {
     respondCodeRef.current = codeEditorValue;
   }, [codeEditorValue]);
+  const hasNavigatedToFeedbackRef = useRef(false);
+  /** True when user clicked End and we're waiting for feedback task — don't navigate until poll completes */
+  const waitingForFeedbackRef = useRef(false);
+
+  const onInterviewFeedbackReady = useCallback(() => {
+    if (!sessionId) return;
+    setEndTaskId(null);
+    setShowEndModal(false);
+    waitingForFeedbackRef.current = false;
+    hasNavigatedToFeedbackRef.current = true;
+    navigate(ROUTES.FEEDBACK, {
+      replace: true,
+      state: {
+        type: 'video-interview',
+        session_id: sessionId,
+        session_type: interviewType,
+      },
+    });
+  }, [navigate, sessionId, interviewType]);
+
+
+  
 
   const {
     aiMessage,
@@ -89,8 +112,15 @@ export default function InterviewInterface() {
     appendStreamUserTranscriptRef,
     devMode,
     respondCodeRef,
+    onFeedbackReady: onInterviewFeedbackReady,
   });
   const { videoRef, audioEnabled, getStream, streamReady } = useMediaDevices();
+  // Video telemetry: filter console for `[InterviewVideoTelemetry]` (on in dev; set `debugVideoTelemetry: true` for prod tracing).
+  const { startAnalysis, stopAnalysis, speechRef } = useInterviewAnalysis({
+    videoTelemetrySessionId: sessionId ?? null,
+    micEnabled: audioEnabled,
+    exposeTelemetryIntervalDebug: true,
+  });
   const allowVadSendRef = useRef(true);
   /** Ignore VAD submissions briefly after AI audio ends (avoids echo/noise firing submitAudio → false "processing"). */
   const postAiListenGateUntilRef = useRef(0);
@@ -104,9 +134,6 @@ export default function InterviewInterface() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [autoEnded, setAutoEnded] = useState(false);
-  const hasNavigatedToFeedbackRef = useRef(false);
-  /** True when user clicked End and we're waiting for feedback task — don't navigate until poll completes */
-  const waitingForFeedbackRef = useRef(false);
 
   const isCodeInterview =
     interviewType === 'technical' ||
@@ -118,6 +145,20 @@ export default function InterviewInterface() {
   const isCaseStudy = interviewType === 'case-study';
   const isCommunication = interviewType === 'miscellaneous'; // TODO: This is a temporary solution due to the backend setup and avoiding tampering a lot of apis, will fix this later as this is an issue avoiding us to add any further miscellaneous interview types.
 
+  useEffect(() => {
+    console.log('[sessionId changed]', sessionId);
+  }, [sessionId]);
+  
+  useEffect(() => {
+    if (!sessionId) {
+      console.log('[InterviewInterface] sessionId is falsy — would navigate away', {
+        locationState: location.state,
+        locationSearch: location.search,
+      });
+      // navigate(ROUTES.VIDEO_INTERVIEW, { replace: true }); // temporarily comment out
+    }
+  }, [sessionId, navigate]);
+
   // Capture case study question when AI sends it (lastNode === 'CaseStudy')
   useEffect(() => {
     if (isCaseStudy && lastNode === 'CaseStudy' && aiMessage && !caseStudyQuestion) {
@@ -125,6 +166,17 @@ export default function InterviewInterface() {
     }
   }, [isCaseStudy, lastNode, aiMessage, caseStudyQuestion]);
 
+  useEffect(() => {
+    if (prevIsPlayingAudioRef.current === true && isPlayingAudio === false) {
+      // Glee just finished — VAD is about to reinitialize with a new AudioContext
+      // Web Speech needs to restart to reattach to whatever stream VAD now owns
+      const t = window.setTimeout(() => {
+        speechRef?.forceRestartRecognition();
+      }, 1000); // wait for VAD to finish reinitializing
+      return () => clearTimeout(t);
+    }
+    prevIsPlayingAudioRef.current = isPlayingAudio;
+  }, [isPlayingAudio]);
   // Communication: send text or audio via existing submit methods
   const sendCommunicationResponse = useCallback(
     async (payload: { textResponse?: string; audioData?: string; sampleRate?: number }) => {
@@ -181,6 +233,10 @@ export default function InterviewInterface() {
     pauseStream: async () => {},
     resumeStream: async (stream: MediaStream) => stream,
     onSpeechEnd: (audio: Float32Array) => {
+      console.log('[onSpeechEnd] audio ended', {
+        allowVadSendRef: allowVadSendRef.current,
+        postAiListenGateUntilRef: postAiListenGateUntilRef.current,
+      });
       if (!allowVadSendRef.current) return;
       if (Date.now() < postAiListenGateUntilRef.current) return;
       const blob = float32ToWavBlob(audio, 16000);
@@ -271,6 +327,59 @@ export default function InterviewInterface() {
   const utteranceHold = useUtteranceHold(vad.userSpeaking, 480);
   const displayUserSpeaking =
     !devMode && utteranceHold && !isSubmitting && !isPlayingAudio;
+
+
+  useEffect(() => {
+    console.log('[VAD pause effect]', {
+      isComplete,
+      vadLoading: vad.loading,
+      devMode,
+      audioEnabled,
+      isPlayingAudio,
+      isSubmitting,
+      awaitingStreamAi,
+      gleeHasJoined,
+      willPause: !audioEnabled || isPlayingAudio || isSubmitting || awaitingStreamAi || (!gleeHasJoined && !isComplete),
+    });
+  }, [isComplete, vad.loading, devMode, audioEnabled, isPlayingAudio, isSubmitting, awaitingStreamAi, gleeHasJoined]);
+
+  useEffect(() => {
+    console.log('[gleeHasJoined changed]', gleeHasJoined);
+  }, [gleeHasJoined]);
+  useEffect(() => {
+    if (!streamReady) return;
+    if (!sessionId || isComplete) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const stream = await getStream();
+        const video = videoRef.current;
+        if (!stream || !video || cancelled) return;
+
+        await new Promise<void>((resolve) => {
+          if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+            resolve();
+            return;
+          }
+          const onReady = () => resolve();
+          video.addEventListener('loadeddata', onReady, { once: true });
+          window.setTimeout(onReady, 2500);
+        });
+
+        if (cancelled) return;
+        await startAnalysis(video, stream);
+      } catch (err) {
+        console.warn('[InterviewInterface] interview analysis failed to start', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      void stopAnalysis();
+    };
+  }, [sessionId, streamReady, isComplete, getStream, videoRef, startAnalysis, stopAnalysis]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -377,6 +486,7 @@ export default function InterviewInterface() {
     let cancelled = false;
     let attempts = 0;
     const poll = async () => {
+      if (hasNavigatedToFeedbackRef.current) return;
       if (cancelled || attempts >= FEEDBACK_POLL_MAX_ATTEMPTS) {
         setEndTaskId(null);
         setShowEndModal(false);

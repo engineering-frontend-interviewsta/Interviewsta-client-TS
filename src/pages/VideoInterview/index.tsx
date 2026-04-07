@@ -68,6 +68,7 @@ export default function VideoInterview() {
   const [mediaGateTest, setMediaGateTest] = useState<InterviewTest | null>(null);
   const [mediaGateExtra, setMediaGateExtra] = useState<Record<string, unknown>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const launchGenRef = useRef(0);
 
   const hasMore = page < totalPages;
 
@@ -162,45 +163,79 @@ export default function VideoInterview() {
         ...(tags.length > 0 && { Tags: tags }),
         ...extraPayload,
       };
+      const myGen = ++launchGenRef.current;
+      const doneRef = { current: false };
+
+      const finishWithError = (msg: string) => {
+        if (doneRef.current || myGen !== launchGenRef.current) return;
+        doneRef.current = true;
+        setStartError(msg);
+        setStarting(false);
+      };
+
+      const finishSuccess = (sessionIdForNav: string) => {
+        if (doneRef.current || myGen !== launchGenRef.current) return;
+        doneRef.current = true;
+        setStartProgress(100);
+        navigate(ROUTES.INTERVIEW_INTERFACE, {
+          replace: true,
+          state: {
+            sessionId: sessionIdForNav,
+            interviewType,
+            interviewTypeId: test.id,
+            sessionLabel: (extraPayload.fun_title as string | undefined) ?? (extraPayload.topic_name as string | undefined),
+          },
+        });
+      };
+
       try {
-        const token = await getInterviewAccessToken(String(test.id));
-        setInterviewAccessToken(token);
+        const accessToken = await getInterviewAccessToken(String(test.id));
+        setInterviewAccessToken(accessToken);
         setStarting(true);
         setStartProgress(0);
-        const result = await startInterview({ payload });
-        let attempts = 0;
-        const poll = async (): Promise<void> => {
-          if (attempts >= START_POLL_MAX) {
-            setStartError('Session start timed out.');
-            setStarting(false);
-            return;
-          }
-          attempts++;
-          const statusResult = await getStartTaskStatus(result.taskId);
-          const progress =
-            typeof statusResult.progress === 'number' ? statusResult.progress : Math.min(90, attempts * 15);
-          setStartProgress(progress);
-          if (statusResult.status === 'completed') {
-            setStartProgress(100);
-            navigate(ROUTES.INTERVIEW_INTERFACE, {
-              replace: true,
-              state: {
-                sessionId: result.sessionId,
-                interviewType,
-                interviewTypeId: test.id,
-                sessionLabel: (extraPayload.fun_title as string | undefined) ?? (extraPayload.topic_name as string | undefined),
-              },
-            });
-            return;
-          }
-          if (statusResult.status === 'failed') {
-            setStartError(statusResult.error ?? 'Failed to start session.');
-            setStarting(false);
-            return;
-          }
-          setTimeout(poll, START_POLL_MS);
-        };
-        await poll();
+
+        const sessionId = crypto.randomUUID();
+
+        const result = await startInterview({ sessionId, payload });
+        const effectiveSessionId = result.sessionId || sessionId;
+
+        if (myGen !== launchGenRef.current) {
+          setStarting(false);
+          return;
+        }
+
+        /** One EventSource per session lives in `useInterviewSession` on the interview page — avoid opening a second stream here. */
+        void (async () => {
+          let attempts = 0;
+          const poll = async (): Promise<void> => {
+            if (doneRef.current || myGen !== launchGenRef.current) return;
+            if (attempts >= START_POLL_MAX) {
+              finishWithError('Session start timed out.');
+              return;
+            }
+            attempts++;
+            try {
+              const statusResult = await getStartTaskStatus(result.taskId);
+              const progress =
+                typeof statusResult.progress === 'number'
+                  ? statusResult.progress
+                  : Math.min(90, attempts * 15);
+              setStartProgress(progress);
+              if (statusResult.status === 'completed') {
+                finishSuccess(effectiveSessionId);
+                return;
+              }
+              if (statusResult.status === 'failed') {
+                finishWithError(statusResult.error ?? 'Failed to start session.');
+                return;
+              }
+              setTimeout(poll, START_POLL_MS);
+            } catch {
+              finishWithError('Failed to check start status.');
+            }
+          };
+          await poll();
+        })();
       } catch (err) {
         clearInterviewAccessToken();
         if (err instanceof InterviewAccessTokenError) {

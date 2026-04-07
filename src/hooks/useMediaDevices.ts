@@ -41,6 +41,8 @@ export function useMediaDevices(): UseMediaDevicesResult {
 
   useEffect(() => {
     let mounted = true;
+    const pending = createStreamPromise();
+    streamReadyRef.current = pending;
 
     const setup = async () => {
       try {
@@ -55,9 +57,7 @@ export function useMediaDevices(): UseMediaDevicesResult {
         }
 
         streamRef.current = stream;
-
-        // ✅ Resolve the promise HERE, inside setup(), where stream is defined
-        streamReadyRef.current?.resolve(stream);
+        pending.resolve(stream);
         setStreamReady(true);
 
         if (videoRef.current) {
@@ -65,8 +65,7 @@ export function useMediaDevices(): UseMediaDevicesResult {
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to access camera or microphone.';
-        // ✅ Also reject the promise on failure so callers don't hang forever
-        streamReadyRef.current?.reject(new Error(msg));
+        pending.reject(new Error(msg));
         setState((prev) => ({ ...prev, error: msg, videoEnabled: false, audioEnabled: false }));
       }
     };
@@ -75,6 +74,7 @@ export function useMediaDevices(): UseMediaDevicesResult {
 
     return () => {
       mounted = false;
+      setStreamReady(false);
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
