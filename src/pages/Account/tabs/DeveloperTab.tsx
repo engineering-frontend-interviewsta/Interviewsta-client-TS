@@ -30,7 +30,7 @@ export default function DeveloperTab() {
         <span className="account-tab__badge account-tab__badge--active">Unlimited credits</span>
       </div>
 
-      <div className="account-tab__dev-section">
+      {/* <div className="account-tab__dev-section">
         <p className="account-tab__dev-section-title">
           <Terminal size={15} aria-hidden />
           API Key
@@ -60,7 +60,7 @@ export default function DeveloperTab() {
         <p className="account-tab__dev-note">
           Keep your API key secret. Do not expose it in client-side code or public repositories.
         </p>
-      </div>
+      </div> */}
 
       <div className="account-tab__dev-section">
         <p className="account-tab__dev-section-title">
