@@ -54,6 +54,10 @@ export interface InterviewFeedback {
   updatedAt?: string;
   /** Rich video telemetry + AI narrative (when backend attaches it to stored feedback). */
   telemetryData?: FeedbackTelemetryData | null;
+  /** True when this was the user's first free interview. Detailed sections are locked. */
+  isFreeInterview?: boolean;
+  /** True when detailed feedback sections should be hidden (first free interview). */
+  isFeedbackLocked?: boolean;
 }
 
 /** Video telemetry timeline bucket (duration = cumulative seconds since session start). */

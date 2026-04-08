@@ -34,8 +34,8 @@ export const TOKEN = {
 
 export const PLAN_TIERS = {
   FREE:     { tier: 0, slug: 'free',         name: 'Free',         credits: 4,   priceInr: 0,    priceDisplay: 'Free'    },
-  PRO:      { tier: 1, slug: 'pro',          name: 'Pro',          credits: 20,  priceInr: 830,  priceDisplay: '₹830/mo' },
-  PRO_PLUS: { tier: 2, slug: 'pro-plus',     name: 'Pro+',         credits: 60,  priceInr: 1660, priceDisplay: '₹1660/mo'},
+  PRO:      { tier: 1, slug: 'pro',          name: 'Pro',          credits: 40,  priceInr: 1660, priceDisplay: '₹1660/mo' },
+  PRO_PLUS: { tier: 2, slug: 'pro-plus',     name: 'Pro+',         credits: 100, priceInr: 2499, priceDisplay: '₹2499/mo'},
   ORG:      { tier: 3, slug: 'organisation', name: 'Organization', credits: -1,  priceInr: -1,   priceDisplay: 'Custom'  },
   DEV:      { tier: 4, slug: 'developer',    name: 'Developer',    credits: -1,  priceInr: 0,    priceDisplay: 'Internal'},
 } as const;

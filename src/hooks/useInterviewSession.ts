@@ -5,6 +5,8 @@ import {
   getRespondTaskStatus,
   endInterview,
 } from '../services/interviewService';
+import { nestClient } from '../api/axiosInstance';
+import { CREDIT_ENDPOINTS } from '../constants/apiEndpoints';
 import type {
   AIResponseData,
   RespondTaskResult,
@@ -18,6 +20,8 @@ const POLL_INTERVAL_MS = 1500;
 const MAX_POLL_ATTEMPTS = 120;
 /** If `respond_complete` SSE is not received (legacy API), fall back to polling respond-status. */
 const RESPOND_SSE_FALLBACK_MS = 12_000;
+/** Deduct credits after interview has been live for this long. */
+const CREDIT_DEDUCTION_DELAY_MS = 120_000;
 
 const ERROR_LOG_PREFIX = '[useInterviewSession] setError';
 
@@ -85,6 +89,8 @@ function mergeCommunicationFromResponse(
 export interface UseInterviewSessionParams {
   sessionId: string;
   interviewType: string;
+  /** UUID of the interview test — used for credit deduction after 2 minutes. */
+  interviewTestId?: string;
   /**
    * When `.current` is false at event time, SSE user transcripts are not appended
    * (matches legacy Communication interview: hide STT in main chat during structured rounds).
@@ -137,6 +143,7 @@ export interface UseInterviewSessionResult {
 export function useInterviewSession({
   sessionId,
   interviewType,
+  interviewTestId,
   appendStreamUserTranscriptRef,
   devMode = false,
   respondCodeRef,
@@ -167,6 +174,8 @@ export function useInterviewSession({
   });
   const prevSessionIdRef = useRef<string | undefined>(undefined);
   const startTimeRef = useRef(Date.now());
+  /** Prevents double-deduction if the component remounts while the timer is still pending. */
+  const creditDeductedRef = useRef(false);
   const audioQueueRef = useRef<string[]>([]);
   const isPlayingRef = useRef(false);
   const blockedAudioRef = useRef<string | null>(null);
@@ -409,6 +418,7 @@ export function useInterviewSession({
     pendingRespondTaskIdRef.current = null;
     clearRespondFallbackTimer();
     completeRespondTurnRef.current = null;
+    creditDeductedRef.current = false;
   }, [sessionId, clearRespondFallbackTimer]);
 
   useEffect(() => {
@@ -426,6 +436,22 @@ export function useInterviewSession({
     const t = window.setTimeout(() => setGleeJoinWaitTimedOut(true), 75_000);
     return () => window.clearTimeout(t);
   }, [sessionId, gleeJoined]);
+
+  // Start the 2-minute credit deduction timer once the interview is confirmed live (gleeJoined).
+  // Deduction is skipped if the interview ends before 2 minutes.
+  useEffect(() => {
+    if (!sessionId || !interviewTestId || !gleeJoined || creditDeductedRef.current) return;
+    const t = window.setTimeout(() => {
+      if (creditDeductedRef.current) return;
+      creditDeductedRef.current = true;
+      nestClient
+        .post(CREDIT_ENDPOINTS.DEDUCT_FOR_INTERVIEW, { interviewTestId, sessionId })
+        .catch((err) => {
+          console.warn('[useInterviewSession] credit deduction failed:', err);
+        });
+    }, CREDIT_DEDUCTION_DELAY_MS);
+    return () => window.clearTimeout(t);
+  }, [sessionId, interviewTestId, gleeJoined]);
 
   useEffect(() => {
     if (isComplete) {

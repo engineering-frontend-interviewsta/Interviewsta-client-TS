@@ -42,7 +42,7 @@ export default function InterviewInterface() {
   const state = location.state as {
     sessionId?: string;
     interviewType?: string;
-    interviewTypeId?: number;
+    interviewTypeId?: string;
   } | null;
   const sessionId = state?.sessionId;
   const interviewType = state?.interviewType ?? 'Technical';
@@ -109,6 +109,7 @@ export default function InterviewInterface() {
   } = useInterviewSession({
     sessionId: sessionId ?? '',
     interviewType,
+    interviewTestId: interviewTypeId,
     appendStreamUserTranscriptRef,
     devMode,
     respondCodeRef,

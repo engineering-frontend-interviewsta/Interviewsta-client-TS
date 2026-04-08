@@ -146,6 +146,7 @@ export interface CreateOrderPayload {
   tierId?: string;
   amountPaise?: number;
   billingInterval?: 'monthly' | 'annual';
+  couponCode?: string;
 }
 
 export interface RazorpayOrderResult {
@@ -163,6 +164,7 @@ export interface VerifyPaymentPayload {
   tierId?: string;
   billingInterval?: 'monthly' | 'annual';
   amountPaise?: number;
+  couponCode?: string;
 }
 
 export interface VerifyPaymentResult {

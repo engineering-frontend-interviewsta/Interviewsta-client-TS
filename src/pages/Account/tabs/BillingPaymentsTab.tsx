@@ -13,6 +13,8 @@ import { createOrder, verifyPayment, getPaymentPlans } from '../../../services/p
 import { useRazorpay } from '../../../hooks/useRazorpay';
 import { CREDITS_PER_DOLLAR, USD_TO_INR } from '../../../constants/appConstants';
 
+const DEV_COUPON_CODE = 'dev1';
+
 interface Props {
   account: LatestSubscriptionResult;
   displayName: string;
@@ -45,7 +47,10 @@ function UpgradeModal({
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponStatus, setCouponStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const { openCheckout, isLoaded } = useRazorpay();
+  const isCouponApplied = couponStatus === 'valid';
 
   useEffect(() => {
     getPaymentPlans()
@@ -67,6 +72,7 @@ function UpgradeModal({
         type: 'plan_upgrade',
         tierId: selected.id,
         billingInterval: interval,
+        couponCode: isCouponApplied ? DEV_COUPON_CODE : undefined,
       });
 
       openCheckout({
@@ -85,6 +91,7 @@ function UpgradeModal({
               type: 'plan_upgrade',
               tierId: selected.id,
               billingInterval: interval,
+              couponCode: isCouponApplied ? DEV_COUPON_CODE : undefined,
             });
             onSuccess(result.creditsAdded);
             onClose();
@@ -102,13 +109,19 @@ function UpgradeModal({
       setError('Could not initiate payment.');
       setPaying(false);
     }
-  }, [selected, interval, openCheckout, displayName, email, onSuccess, onClose]);
+  }, [selected, interval, isCouponApplied, openCheckout, displayName, email, onSuccess, onClose]);
+
+  const handleCouponApply = useCallback(() => {
+    const normalized = couponCode.trim().toLowerCase();
+    setCouponStatus(normalized === DEV_COUPON_CODE ? 'valid' : 'invalid');
+  }, [couponCode]);
 
   const price = selected
     ? interval === 'annual'
       ? selected.annualPaise
       : selected.monthlyPaise
     : 0;
+  const effectivePrice = isCouponApplied ? 100 : price;
   const isIntervalPriceAvailable = price > 0;
   const hasAnyAnnualPricing = plans.some((plan) => plan.annualPaise > 0);
 
@@ -189,6 +202,35 @@ function UpgradeModal({
                 );
               })}
             </div>
+            <div className="account-modal__credit-input-wrap">
+              <label htmlFor="upgrade-coupon-code" className="account-modal__label">Coupon code (optional)</label>
+              <div className="account-modal__input-row">
+                <input
+                  id="upgrade-coupon-code"
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => {
+                    setCouponCode(e.target.value);
+                    setCouponStatus('idle');
+                  }}
+                  className="account-modal__amount-input"
+                  placeholder="Enter coupon code"
+                />
+                <button
+                  type="button"
+                  className="account-modal__coupon-btn"
+                  onClick={handleCouponApply}
+                >
+                  Apply
+                </button>
+              </div>
+              {couponStatus === 'valid' && (
+                <p className="account-modal__coupon-status account-modal__coupon-status--valid">Coupon applied. Payable amount updated to ₹1.</p>
+              )}
+              {couponStatus === 'invalid' && (
+                <p className="account-modal__coupon-status account-modal__coupon-status--invalid">Invalid coupon code.</p>
+              )}
+            </div>
             {!isIntervalPriceAvailable && selected && (
               <p className="account-modal__error" role="alert">
                 Selected billing interval is not configured for this plan yet.
@@ -206,7 +248,7 @@ function UpgradeModal({
               ) : (
                 <>
                   <CreditCard size={16} aria-hidden />
-                  Pay ₹{(price / 100).toFixed(0)} &amp; Upgrade
+                  Pay ₹{(effectivePrice / 100).toFixed(0)} &amp; Upgrade
                   <ArrowRight size={16} aria-hidden />
                 </>
               )}
@@ -234,21 +276,28 @@ function BuyCreditsModal({
   const [amountRupees, setAmountRupees] = useState<string>('415');
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponStatus, setCouponStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const { openCheckout, isLoaded } = useRazorpay();
+  const isCouponApplied = couponStatus === 'valid';
 
   const parsedRupees = Math.max(1, parseInt(amountRupees || '0', 10) || 0);
-  // Convert rupees → dollars → credits (2 credits per $1)
-  const creditsPreview = Math.floor((parsedRupees / USD_TO_INR) * CREDITS_PER_DOLLAR);
   const amountPaise = parsedRupees * 100;
+  const effectiveAmountPaise = isCouponApplied ? 100 : amountPaise;
+  // Convert rupees → dollars → credits (2 credits per $1)
+  const creditsPreview = isCouponApplied
+    ? 1
+    : Math.floor((parsedRupees / USD_TO_INR) * CREDITS_PER_DOLLAR);
 
   const handlePay = useCallback(async () => {
-    if (amountPaise < USD_TO_INR * 100) return;
+    if (!isCouponApplied && amountPaise < USD_TO_INR * 100) return;
     setError(null);
     setPaying(true);
     try {
       const orderData: RazorpayOrderResult = await createOrder({
         type: 'credit_purchase',
         amountPaise,
+        couponCode: isCouponApplied ? DEV_COUPON_CODE : undefined,
       });
 
       openCheckout({
@@ -266,6 +315,7 @@ function BuyCreditsModal({
               ...response,
               type: 'credit_purchase',
               amountPaise,
+              couponCode: isCouponApplied ? DEV_COUPON_CODE : undefined,
             });
             onSuccess(result.creditsAdded);
             onClose();
@@ -283,7 +333,12 @@ function BuyCreditsModal({
       setError('Could not initiate payment.');
       setPaying(false);
     }
-  }, [amountPaise, creditsPreview, openCheckout, displayName, email, onSuccess, onClose]);
+  }, [amountPaise, creditsPreview, isCouponApplied, openCheckout, displayName, email, onSuccess, onClose]);
+
+  const handleCouponApply = useCallback(() => {
+    const normalized = couponCode.trim().toLowerCase();
+    setCouponStatus(normalized === DEV_COUPON_CODE ? 'valid' : 'invalid');
+  }, [couponCode]);
 
   return (
     <div className="account-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="credits-title">
@@ -325,6 +380,35 @@ function BuyCreditsModal({
             />
           </div>
         </div>
+        <div className="account-modal__credit-input-wrap">
+          <label htmlFor="credit-coupon-code" className="account-modal__label">Coupon code (optional)</label>
+          <div className="account-modal__input-row">
+            <input
+              id="credit-coupon-code"
+              type="text"
+              value={couponCode}
+              onChange={(e) => {
+                setCouponCode(e.target.value);
+                setCouponStatus('idle');
+              }}
+              className="account-modal__amount-input"
+              placeholder="Enter coupon code"
+            />
+            <button
+              type="button"
+              className="account-modal__coupon-btn"
+              onClick={handleCouponApply}
+            >
+              Apply
+            </button>
+          </div>
+          {couponStatus === 'valid' && (
+            <p className="account-modal__coupon-status account-modal__coupon-status--valid">Coupon applied. Payable amount updated to ₹1.</p>
+          )}
+          {couponStatus === 'invalid' && (
+            <p className="account-modal__coupon-status account-modal__coupon-status--invalid">Invalid coupon code.</p>
+          )}
+        </div>
 
         <div className="account-modal__credit-preview">
           <Zap size={18} aria-hidden />
@@ -359,7 +443,7 @@ function BuyCreditsModal({
           ) : (
             <>
               <CreditCard size={16} aria-hidden />
-              Pay ₹{parsedRupees} for {creditsPreview} credits
+              Pay ₹{(effectiveAmountPaise / 100).toFixed(0)} for {creditsPreview} credits
             </>
           )}
         </button>

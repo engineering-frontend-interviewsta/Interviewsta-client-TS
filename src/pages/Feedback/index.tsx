@@ -168,15 +168,25 @@ export default function Feedback() {
               duration={videoFeedback.duration}
               data={videoFeedback}
             />
-            <div className="feedback-report__body">
-              <ScoreBreakdown data={videoFeedback} />
-              <StrengthsAndImprovements data={videoFeedback} />
-              <TechnicalExtras data={videoFeedback} />
-              {videoFeedback.telemetryData != null &&
-              hasTelemetryRichPayload(videoFeedback.telemetryData) ? (
-                <FeedbackTelemetryRichReport telemetry={videoFeedback.telemetryData} />
-              ) : null}
-            </div>
+            {videoFeedback.isFeedbackLocked ? (
+              <div className="feedback-report__locked-banner" role="status">
+                <span className="feedback-report__locked-banner-icon" aria-hidden>🔒</span>
+                <div className="feedback-report__locked-banner-text">
+                  <strong>Detailed feedback is locked</strong>
+                  <p>This was your complimentary first interview. Add credits to unlock the full breakdown — scores, strengths, improvements, and transcript.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="feedback-report__body">
+                <ScoreBreakdown data={videoFeedback} />
+                <StrengthsAndImprovements data={videoFeedback} />
+                <TechnicalExtras data={videoFeedback} />
+                {videoFeedback.telemetryData != null &&
+                hasTelemetryRichPayload(videoFeedback.telemetryData) ? (
+                  <FeedbackTelemetryRichReport telemetry={videoFeedback.telemetryData} />
+                ) : null}
+              </div>
+            )}
           </>
         )}
 

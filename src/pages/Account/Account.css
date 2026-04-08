@@ -551,6 +551,38 @@
   margin-top: 0.3rem;
 }
 
+.account-modal__coupon-btn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.account-modal__coupon-btn:hover {
+  background: #eef2ff;
+  border-color: #a5b4fc;
+}
+
+.account-modal__coupon-status {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.account-modal__coupon-status--valid {
+  color: #15803d;
+}
+
+.account-modal__coupon-status--invalid {
+  color: #dc2626;
+}
+
 .account-tab__reset-note {
   font-size: 0.8rem;
   color: var(--color-text-muted, #64748b);

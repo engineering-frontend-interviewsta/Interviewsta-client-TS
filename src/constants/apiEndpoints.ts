@@ -51,6 +51,11 @@ export const DASHBOARD_ENDPOINTS = {
   // ASSIGNMENTS: 'assignments/',
 } as const;
 
+/** Credit management (NestJS) */
+export const CREDIT_ENDPOINTS = {
+  DEDUCT_FOR_INTERVIEW: '/credit-management/deduct-for-interview',
+} as const;
+
 /** Feedback (Django) */
 export const FEEDBACK_ENDPOINTS = {
   // Fetch interview feedback either by sessionId (just-finished interview)

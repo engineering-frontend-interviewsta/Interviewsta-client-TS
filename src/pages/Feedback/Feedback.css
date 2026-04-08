@@ -767,6 +767,44 @@
   color: var(--color-text);
 }
 
+/* Locked feedback banner (first free interview) */
+.feedback-report__locked-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-left: 4px solid var(--color-warning, #f59e0b);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.feedback-report__locked-banner-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.feedback-report__locked-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.feedback-report__locked-banner-text strong {
+  font-size: var(--text-base);
+  color: var(--color-text);
+}
+
+.feedback-report__locked-banner-text p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
 /* Simple header for resume / non-video */
 .feedback-report__simple-header {
   margin-bottom: 1.5rem;
