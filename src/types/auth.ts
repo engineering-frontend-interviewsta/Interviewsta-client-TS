@@ -33,4 +33,4 @@ export interface AuthResult {
   error?: string;
 }
 
-export type Role = 'student' | 'teacher' | 'admin';
+export type Role = 'student' | 'teacher' | 'org_admin' | 'admin';

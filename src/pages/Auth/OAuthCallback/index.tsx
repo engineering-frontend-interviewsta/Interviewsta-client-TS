@@ -6,6 +6,14 @@ import * as authService from '../../../services/authService';
 import { setAccessToken, setRefreshToken, setRole } from '../../../utils/storage';
 import '../Auth.css';
 
+function redirectByRole(navigate: (path: string, opts?: { replace: boolean }) => void, role: string | null) {
+  if (role === 'admin') navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+  else if (role === 'org_admin') navigate(ROUTES.ORG_SETUP, { replace: true });
+  else if (role === 'teacher') navigate(ROUTES.TEACHER_ONBOARDING, { replace: true });
+  else if (role === 'student') navigate(ROUTES.STUDENT_MY_CLASSES, { replace: true });
+  else navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
+}
+
 export default function OAuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -30,11 +38,7 @@ export default function OAuthCallback() {
           const role = (Array.isArray(roles) && roles.length > 0 ? roles[0] : apiUser.role) ?? null;
           setRole(role);
 
-          if (role === 'admin') {
-            navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-          } else {
-            navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
-          }
+          redirectByRole(navigate, role);
           return;
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
@@ -88,11 +92,7 @@ export default function OAuthCallback() {
             return;
           }
           const primaryRole = result.roles?.[0] ?? result.role;
-          if (primaryRole === 'admin') {
-            navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-          } else {
-            navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
-          }
+          redirectByRole(navigate, primaryRole ?? null);
         } else {
           setError(result.error ?? 'Authentication failed');
           setProcessing(false);

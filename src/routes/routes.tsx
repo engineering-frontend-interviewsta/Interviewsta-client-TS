@@ -39,6 +39,16 @@ const LearningArrays = lazyWithRetry(() => import('../pages/Learning/Arrays'));
 const ResumeAnalysisFlow = lazyWithRetry(() => import('../pages/ResumeAnalysisFlow'));
 const ResumeGeneration = lazyWithRetry(() => import('../pages/ResumeGeneration'));
 const ForgotPassword = lazy(() => import('../pages/Auth/ForgotPassword'));
+const OrgSetupPage = lazyWithRetry(() => import('../pages/Org/Setup'));
+const OrgDashboardPage = lazyWithRetry(() => import('../pages/Org/Dashboard'));
+const OrgTeacherDetailPage = lazyWithRetry(() => import('../pages/Org/TeacherDetail'));
+const OrgClassDetailPage = lazyWithRetry(() => import('../pages/Org/ClassDetail'));
+const OrgStudentDetailPage = lazyWithRetry(() => import('../pages/Org/StudentDetail'));
+const TeacherOnboardingPage = lazyWithRetry(() => import('../pages/Teacher/Onboarding'));
+const TeacherClassesPage = lazyWithRetry(() => import('../pages/Teacher/Classes'));
+const TeacherClassDetailPage = lazyWithRetry(() => import('../pages/Teacher/ClassDetail'));
+const TeacherStudentDetailPage = lazyWithRetry(() => import('../pages/Teacher/StudentDetail'));
+const StudentMyClassesPage = lazyWithRetry(() => import('../pages/Student/MyClasses'));
 
 const routeConfig = [
   {
@@ -168,6 +178,66 @@ const routeConfig = [
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [{ index: true, element: <ResumeGeneration /> }],
+  },
+  {
+    path: ROUTES.ORG_DASHBOARD,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <OrgDashboardPage /> }],
+  },
+  {
+    path: ROUTES.ORG_TEACHER_DETAIL,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <OrgTeacherDetailPage /> }],
+  },
+  {
+    path: ROUTES.ORG_CLASS_DETAIL,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <OrgClassDetailPage /> }],
+  },
+  {
+    path: ROUTES.ORG_STUDENT_DETAIL,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <OrgStudentDetailPage /> }],
+  },
+  {
+    path: ROUTES.ORG_SETUP,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <OrgSetupPage /> }],
+  },
+  {
+    path: ROUTES.TEACHER_ONBOARDING,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <TeacherOnboardingPage /> }],
+  },
+  {
+    path: ROUTES.TEACHER_CLASSES,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <TeacherClassesPage /> }],
+  },
+  {
+    path: ROUTES.TEACHER_CLASS_DETAIL,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <TeacherClassDetailPage /> }],
+  },
+  {
+    path: ROUTES.TEACHER_STUDENT_DETAIL,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <TeacherStudentDetailPage /> }],
+  },
+  {
+    path: ROUTES.STUDENT_MY_CLASSES,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <StudentMyClassesPage /> }],
   },
   {
     path: ROUTES.NOT_FOUND,
