@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import logoImg from '../../assets/logo.png';
+import BrandLogo from '../../components/shared/BrandLogo';
 import { ROUTES } from '../../constants/routerConstants';
 
 type AuthShellProps = {
@@ -15,7 +15,7 @@ export default function AuthShell({ children, wide }: AuthShellProps) {
     <div className="auth-page">
       <div className={`auth-card auth-card--elevated${wide ? ' auth-card--wide' : ''}`}>
         <Link to={ROUTES.HOME} className="auth-logo-link" aria-label="Interviewsta home">
-          <img src={logoImg} alt="" className="auth-logo" />
+          <BrandLogo alt="" className="auth-logo" />
         </Link>
         {children}
       </div>

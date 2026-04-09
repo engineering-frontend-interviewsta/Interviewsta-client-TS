@@ -42,7 +42,10 @@
   height: 1.5rem;
   margin: 0 auto 1rem;
   display: block;
-  border-color: #6366f1;
+}
+
+.interview-interface__vad-spinner.interview-interface__join-spinner {
+  border-color: var(--color-primary);
   border-top-color: transparent;
 }
 
@@ -62,7 +65,7 @@
 
 .interview-interface__join-sub--warn {
   margin-top: 0.75rem;
-  color: #b45309;
+  color: var(--color-warning-text);
 }
 
 .interview-interface__join-continue {
@@ -71,14 +74,14 @@
   font-size: var(--text-sm);
   font-weight: 500;
   color: #fff;
-  background: #4f46e5;
+  background: var(--color-primary);
   border: none;
   border-radius: var(--radius-lg);
   cursor: pointer;
 }
 
 .interview-interface__join-continue:hover {
-  background: #4338ca;
+  background: var(--color-primary-hover);
 }
 
 .interview-interface__error-banner {
@@ -86,9 +89,9 @@
   margin-bottom: 0.75rem;
   padding: 0.5rem 0.75rem;
   font-size: var(--text-sm);
-  color: #991b1b;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  color: var(--color-error-text);
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
   border-radius: var(--radius-lg);
 }
 
@@ -249,11 +252,11 @@
 .interview-interface__waveform--glee .interview-interface__waveform-bar {
   background: linear-gradient(
     180deg,
-    #c4b5fd 0%,
-    #8b5cf6 45%,
-    #6d28d9 100%
+    color-mix(in srgb, var(--color-primary) 45%, var(--color-surface)) 0%,
+    var(--color-primary-muted) 45%,
+    var(--color-primary) 100%
   );
-  box-shadow: 0 0 12px color-mix(in srgb, #8b5cf6 40%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-primary-muted) 40%, transparent);
 }
 
 .interview-interface__waveform-inner {
@@ -273,17 +276,21 @@
   border-radius: 9999px;
   background: linear-gradient(
     180deg,
-    #a5b4fc 0%,
-    #6366f1 45%,
-    #4f46e5 100%
+    color-mix(in srgb, var(--color-primary) 35%, var(--color-surface)) 0%,
+    var(--color-primary-muted) 45%,
+    var(--color-primary-hover) 100%
   );
-  box-shadow: 0 0 10px color-mix(in srgb, #6366f1 35%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-primary-muted) 35%, transparent);
   transform-origin: bottom center;
   transition: opacity 0.2s ease;
 }
 
 .interview-interface__waveform--inactive .interview-interface__waveform-bar {
-  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
+  background: linear-gradient(
+    180deg,
+    var(--color-border) 0%,
+    var(--color-text-subtle) 100%
+  );
   box-shadow: none;
 }
 
@@ -298,7 +305,7 @@
 }
 
 .interview-interface__vad-status--loading {
-  color: #b45309;
+  color: var(--color-warning-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -312,17 +319,17 @@
 
 .interview-interface__vad-status--your-turn {
   font-weight: 500;
-  color: #059669;
+  color: var(--color-success-text);
 }
 
 .interview-interface__vad-status--processing {
   font-weight: 500;
-  color: #4f46e5;
+  color: var(--color-primary);
 }
 
 .interview-interface__vad-status--transcribing {
   font-weight: 500;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
@@ -334,7 +341,7 @@
   display: inline-block;
   width: 0.75rem;
   height: 0.75rem;
-  border: 2px solid #d97706;
+  border: 2px solid var(--color-warning-accent);
   border-top-color: transparent;
   border-radius: 9999px;
   animation: interview-interface-spin 0.7s linear infinite;
@@ -424,10 +431,10 @@
   margin-bottom: 0.75rem;
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-lg);
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
   font-size: var(--text-xs);
-  color: #b45309;
+  color: var(--color-warning-text);
 }
 
 .interview-interface__info {
@@ -585,7 +592,7 @@
   width: 0.375rem;
   height: 0.375rem;
   border-radius: 9999px;
-  background: #dc2626;
+  background: var(--color-error-text);
 }
 
 .interview-header__live-label {
@@ -644,9 +651,9 @@
 }
 
 .interview-header__dev-toggle--on {
-  color: #166534;
-  background: #dcfce7;
-  border-color: #86efac;
+  color: var(--color-success-text);
+  background: var(--color-success-bg);
+  border-color: var(--color-success-border);
 }
 
 .interview-header__icon-btn {
@@ -678,8 +685,8 @@
   font-size: var(--text-sm);
   font-weight: 600;
   font-family: var(--font-sans);
-  color: #ffffff;
-  background: #dc2626;
+  color: #fff;
+  background: var(--color-danger);
   border: none;
   border-radius: var(--radius-lg);
   cursor: pointer;
@@ -688,7 +695,7 @@
 }
 
 .interview-header__end-btn:hover:not(:disabled) {
-  background: #b91c1c;
+  background: var(--color-danger-hover);
 }
 
 .interview-header__end-btn:disabled {

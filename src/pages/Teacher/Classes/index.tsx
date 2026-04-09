@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { getTeacherClasses } from '../../../services/teacherService';
 import { ROUTES } from '../../../constants/routerConstants';
 import type { ClassItem } from '../../../types/student';
 import LoadingFallback from '../../../components/shared/LoadingFallback';
+import AppStickyBackBar from '../../../components/shared/AppStickyBackBar';
 import './TeacherClasses.css';
 
 export default function TeacherClasses() {
@@ -23,6 +23,7 @@ export default function TeacherClasses() {
   return (
     <div className="teacher-classes">
       <div className="teacher-classes__inner">
+        <AppStickyBackBar to={ROUTES.DASHBOARD}>Back to Dashboard</AppStickyBackBar>
         <h1 className="teacher-classes__title">My Classes</h1>
         <p className="teacher-classes__subtitle">Manage your classes and view students.</p>
         {error && <div className="teacher-classes__error" role="alert">{error}</div>}
@@ -38,9 +39,6 @@ export default function TeacherClasses() {
             ))}
           </ul>
         )}
-        <Link to={ROUTES.DASHBOARD} className="teacher-classes__back">
-          Back to Dashboard
-        </Link>
       </div>
     </div>
   );

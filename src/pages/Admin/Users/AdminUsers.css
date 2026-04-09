@@ -5,12 +5,12 @@
 .admin-users {
   min-height: 100vh;
   background: var(--color-surface-alt);
-  padding: 2rem 1.25rem 3rem;
+  padding: 0 1.25rem 3rem;
 }
 
 @media (min-width: 768px) {
   .admin-users {
-    padding: 2rem 1.5rem 3rem;
+    padding: 0 1.5rem 3rem;
   }
 }
 
@@ -364,20 +364,6 @@
 .admin-users__pagination-text {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-}
-
-.admin-users__back {
-  display: inline-block;
-  margin-top: 1.5rem;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-text-muted);
-  text-decoration: none;
-  transition: color var(--duration-fast) var(--ease-out);
-}
-
-.admin-users__back:hover {
-  color: var(--color-primary);
 }
 
 /* Badges (tier / role) */

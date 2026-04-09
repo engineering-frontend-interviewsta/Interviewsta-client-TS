@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Video, Search, ArrowLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Video, Search, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   startInterview,
@@ -22,6 +22,8 @@ import type { InterviewTest, ParentInterviewType } from '../../types/interviewTe
 import type { StartInterviewPayload } from '../../types/interview';
 import InterviewLoadingPopup from './components/InterviewLoadingPopup';
 import InterviewStartGateModal from './components/InterviewStartGateModal';
+import AppStickyBackBar from '../../components/shared/AppStickyBackBar';
+import { decodeInterviewAccessPayload } from '../../utils/decodeInterviewAccessJwt';
 import './VideoInterview.css';
 
 const START_POLL_MS = 1500;
@@ -173,7 +175,7 @@ export default function VideoInterview() {
         setStarting(false);
       };
 
-      const finishSuccess = (sessionIdForNav: string) => {
+      const finishSuccess = (sessionIdForNav: string, isFreeInterview: boolean) => {
         if (doneRef.current || myGen !== launchGenRef.current) return;
         doneRef.current = true;
         setStartProgress(100);
@@ -184,12 +186,14 @@ export default function VideoInterview() {
             interviewType,
             interviewTypeId: test.id,
             sessionLabel: (extraPayload.fun_title as string | undefined) ?? (extraPayload.topic_name as string | undefined),
+            isFreeInterview,
           },
         });
       };
 
       try {
         const accessToken = await getInterviewAccessToken(String(test.id));
+        const isFreeInterview = decodeInterviewAccessPayload(accessToken)?.isFreeInterview === true;
         setInterviewAccessToken(accessToken);
         setStarting(true);
         setStartProgress(0);
@@ -222,7 +226,7 @@ export default function VideoInterview() {
                   : Math.min(90, attempts * 15);
               setStartProgress(progress);
               if (statusResult.status === 'completed') {
-                finishSuccess(effectiveSessionId);
+                finishSuccess(effectiveSessionId, isFreeInterview);
                 return;
               }
               if (statusResult.status === 'failed') {
@@ -313,6 +317,7 @@ export default function VideoInterview() {
       )}
       <main className="video-interview" role="main" aria-label="Video Interview">
         <div className="video-interview__inner">
+          <AppStickyBackBar to={ROUTES.STUDENT_DASHBOARD} />
           <header className="video-interview__header">
             <div className="video-interview__title-row">
               <span className="video-interview__title-icon" aria-hidden>
@@ -367,7 +372,7 @@ export default function VideoInterview() {
           </div>
 
           {loading && tests.length === 0 ? (
-            <p className="text-gray-500 py-8">Loading interviews…</p>
+            <p className="text-gray-500 dark:text-gray-400 py-8">Loading interviews…</p>
           ) : filteredTests.length === 0 ? (
             <div className="video-interview__list">
               <div className="video-interview__empty">
@@ -426,16 +431,12 @@ export default function VideoInterview() {
                 </article>
               ))}
               <div ref={sentinelRef} className="h-4 flex items-center justify-center">
-                {loadingMore && <span className="text-sm text-gray-500">Loading more…</span>}
+                {loadingMore && (
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Loading more…</span>
+                )}
               </div>
             </div>
           )}
-          <div className="video-interview__back-wrap">
-            <Link to={ROUTES.STUDENT_DASHBOARD} className="video-interview__back">
-              <ArrowLeft aria-hidden />
-              Back to dashboard
-            </Link>
-          </div>
         </div>
       </main>
     </>

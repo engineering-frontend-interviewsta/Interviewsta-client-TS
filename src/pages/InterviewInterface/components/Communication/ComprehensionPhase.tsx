@@ -59,41 +59,41 @@ export default function ComprehensionPhase({
   };
 
   return (
-    <div className="rounded-xl border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 p-6 mb-4">
+    <div className="rounded-xl border-2 border-[var(--color-warning-border-strong)] bg-[var(--color-surface-alt)] p-6 mb-4">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full bg-[var(--color-warning-accent)] flex items-center justify-center">
           <FileText className="h-6 w-6 text-white" />
         </div>
         <div>
-          <h3 className="text-lg font-bold text-gray-900">Writing Comprehension</h3>
-          <p className="text-sm text-gray-600">Write 50-100 words on the given scenario</p>
+          <h3 className="text-lg font-bold text-[var(--color-text)]">Writing Comprehension</h3>
+          <p className="text-sm text-[var(--color-text-muted)]">Write 50-100 words on the given scenario</p>
         </div>
       </div>
       {question && (
-        <div className="bg-white rounded-lg p-6 mb-4 border-2 border-orange-300 shadow-sm">
+        <div className="bg-[var(--color-surface)] rounded-lg p-6 mb-4 border-2 border-[var(--color-warning-border-strong)] shadow-sm">
           <div className="flex items-center gap-2 mb-3">
-            <Edit3 className="h-5 w-5 text-orange-600" />
-            <h4 className="font-semibold text-gray-900">Scenario</h4>
+            <Edit3 className="h-5 w-5 text-[var(--color-warning-accent)]" />
+            <h4 className="font-semibold text-[var(--color-text)]">Scenario</h4>
           </div>
-          <p className="text-gray-800 leading-relaxed">{question}</p>
+          <p className="text-[var(--color-text)] leading-relaxed">{question}</p>
         </div>
       )}
-      <div className="bg-white rounded-lg p-4 border border-orange-200 mb-4">
+      <div className="bg-[var(--color-surface)] rounded-lg p-4 border border-[var(--color-warning-border)] mb-4">
         {instruction && (
-          <div className="mb-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
-            <p className="text-gray-700 font-medium text-sm">{instruction}</p>
+          <div className="mb-3 p-3 bg-[var(--color-warning-bg)] rounded-lg border border-[var(--color-warning-border)]">
+            <p className="text-[var(--color-text)] font-medium text-sm">{instruction}</p>
           </div>
         )}
-        <label className="block text-sm font-medium text-gray-700 mb-2">Your Response</label>
+        <label className="block text-sm font-medium text-[var(--color-text)] mb-2">Your Response</label>
         <textarea
           value={writtenText}
           onChange={(e) => setWrittenText(e.target.value)}
           placeholder="Write your response here (50-100 words)..."
-          className="w-full h-40 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 resize-none text-sm"
+          className="w-full h-40 p-3 border border-[var(--color-border-light)] rounded-lg focus:ring-2 focus:ring-[var(--color-warning-accent)] resize-none text-sm text-[var(--color-text)] bg-[var(--color-surface-alt)] placeholder:text-[var(--color-text-subtle)]"
           disabled={isSubmitting || isProcessing || !!feedback}
         />
         <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
-          <span className={`text-xs font-medium ${wordCount < 50 ? 'text-red-500' : wordCount > 100 ? 'text-orange-500' : 'text-green-600'}`}>
+          <span className={`text-xs font-medium ${wordCount < 50 ? 'text-[var(--color-error-text)]' : wordCount > 100 ? 'text-[var(--color-warning-text)]' : 'text-[var(--color-success-text)]'}`}>
             {wordCount} / 50-100 words
           </span>
           {!feedback && (
@@ -101,7 +101,7 @@ export default function ComprehensionPhase({
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting || isProcessing || wordCount < 50 || wordCount > 100}
-              className="flex items-center gap-2 px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium disabled:opacity-50 text-sm"
+              className="flex items-center gap-2 px-6 py-2 bg-[var(--color-warning-accent)] hover:opacity-90 text-white rounded-lg font-medium disabled:opacity-50 text-sm"
             >
               <Send className="h-4 w-4" />
               {isSubmitting || isProcessing ? 'Submitting...' : 'Submit Response'}
@@ -110,22 +110,22 @@ export default function ComprehensionPhase({
         </div>
         {(isSubmitting || isProcessing) && !feedback && (
           <div className="mt-4 flex items-center justify-center gap-2">
-            <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse" />
-            <span className="text-sm text-orange-600 font-medium">Analyzing your response...</span>
+            <div className="w-3 h-3 bg-[var(--color-warning-accent)] rounded-full animate-pulse" />
+            <span className="text-sm text-[var(--color-warning-text)] font-medium">Analyzing your response...</span>
           </div>
         )}
         {feedback && (
-          <div className="mt-4 bg-green-50 rounded-lg p-4 border-2 border-green-200">
+          <div className="mt-4 bg-[var(--color-success-bg)] rounded-lg p-4 border-2 border-[var(--color-success-border)]">
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <h5 className="font-semibold text-green-900">Feedback</h5>
+              <CheckCircle className="h-5 w-5 text-[var(--color-success-text)]" />
+              <h5 className="font-semibold text-[var(--color-success-text)]">Feedback</h5>
             </div>
-            <p className="text-gray-800 leading-relaxed mb-4 text-sm">{feedback}</p>
+            <p className="text-[var(--color-text)] leading-relaxed mb-4 text-sm">{feedback}</p>
             <button
               type="button"
               onClick={handleProceedToMCQ}
               disabled={isProceedingToMCQ}
-              className="w-full px-6 py-3 rounded-lg font-medium bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full px-6 py-3 rounded-lg font-medium bg-[var(--color-success-text)] hover:opacity-90 text-white disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isProceedingToMCQ ? (
                 <>

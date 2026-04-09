@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Menu, UserIcon, ChevronDown, LogOutIcon } from "lucide-react";
-import Logo from "../assets/logo.png";
 import { motion, AnimatePresence } from "framer-motion";
+import ThemeToggle from "../components/shared/ThemeToggle";
+import BrandLogo from "../components/shared/BrandLogo";
 
 const LandingHeader = () => {
   const [toggleMenu, setToggleMenu] = useState(false);
@@ -62,13 +63,14 @@ const LandingHeader = () => {
 
   return (
     <>
-      <header className="w-full bg-white shadow-lg border-b border-gray-100 sticky top-0 z-50">
+      <header className="w-full bg-[var(--color-surface)] shadow-lg border-b border-[var(--color-border-light)] sticky top-0 z-50">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
           <div className="flex items-center h-16 w-full max-w-none">
             <div className="flex items-center cursor-pointer" onClick={() => Navigate("/")}>
-              <img src={Logo} alt="Interviewsta.AI" className="h-10 w-auto" />
+              <BrandLogo alt="Interviewsta.AI" className="h-10 w-auto" />
             </div>
             <div className="ml-auto flex items-center gap-5">
+              <ThemeToggle />
               <nav className="hidden lg:flex items-center space-x-1">
                 {navItems.map((item) => (
                   <div
@@ -108,7 +110,7 @@ const LandingHeader = () => {
                 ))}
               </nav>
               <div className="hidden lg:flex items-center gap-3">
-                <Link to="/login" className="rounded-lg px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-50">
+                <Link to="/login" className="rounded-lg px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-950/40">
                   Log in
                 </Link>
                 <Link to="/signup" className="rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-800">

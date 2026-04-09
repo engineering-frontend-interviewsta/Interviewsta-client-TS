@@ -47,9 +47,28 @@ export interface ResumeSessionRaw {
   sessionId: string;
   resumeName: string;
   company: string;
+  role: string;
   foundKeywords: string[];
   notFoundKeywords: string[];
-  role: string;
+  top3Keywords: string[];
+  createdAt?: string | null;
+  // Full score breakdown
+  jobMatchScore: number;
+  formatAndStructure: number;
+  contentQuality: number;
+  lengthAndConciseness: number;
+  keywordsOptimization: number;
+  atsScore: number;
+  overallScore: number;
+  // Job alignment
+  requiredSkills: number;
+  preferredSkills: number;
+  experience: number;
+  education: number;
+  // Narrative
+  insights: string[];
+  candidateStrengths: string[];
+  candidatesAreasOfImprovements: string[];
 }
 
 /** Recent-resume-sessions API response */
@@ -139,6 +158,8 @@ export interface ResumeReport {
   company: string | undefined;
   keyStrengths: string[] | undefined;
   improvements: string[] | undefined;
+  /** Full analysis result — present when loaded from history, used to open the report view */
+  analysisResult?: import('../services/resumeService').ResumeAnalysisResult;
 }
 
 /** Combined recent activity item (generic) */

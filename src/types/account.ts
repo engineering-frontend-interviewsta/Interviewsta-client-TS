@@ -132,7 +132,9 @@ export interface TransactionItem {
   currency?: string;
 }
 
+/** Legacy billing shape; still returned by the API but interview length is gated by credits (not plan time limits). */
 export interface PlanStatus {
+  /** Legacy: was used for a client-side interview timer; no longer read by the app. */
   has_time_limit?: boolean;
   tier?: number;
 }

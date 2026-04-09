@@ -1,9 +1,8 @@
-import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { clearInterviewAccessToken } from '../../api/axiosInstance';
+import { clearInterviewAccessToken, getInterviewAccessToken } from '../../api/axiosInstance';
 import { useInterviewSession } from '../../hooks/useInterviewSession';
 import { useMediaDevices } from '../../hooks/useMediaDevices';
-import { usePlanStatus } from '../../hooks/usePlanStatus';
 import { useUtteranceHold } from '../../hooks/useUtteranceHold';
 import { getInterviewFeedbackStatus } from '../../services/interviewService';
 import { float32ToWavBlob } from '../../utils/blobToWav';
@@ -13,13 +12,17 @@ import CaseStudyPanel from './components/CaseStudyPanel';
 import { SpeakingPhase, ComprehensionPhase, MCQPhase, MCQResults } from './components/Communication';
 import InterviewHeader from './components/InterviewHeader';
 import EndInterviewModal from './components/EndInterviewModal';
+import FreeInterviewTimeLimitModal from './components/FreeInterviewTimeLimitModal';
 import TranscriptPanel from './components/TranscriptPanel';
 import MicWaveform from './components/MicWaveform';
 import { ROUTES } from '../../constants/routerConstants';
 import { USER_TRANSCRIPT_PENDING_LABEL } from '../../constants/interviewSessionUi';
+import { useAuth } from '../../context/AuthContext';
 import { useInterviewDevMode } from '../../context/InterviewDevModeContext';
-import { interviewDevToolsVisible } from '../../constants/interviewDevTools';
+import { interviewDevToolsAllowedForUser } from '../../constants/interviewDevTools';
 import { useInterviewAnalysis } from '../../experimental/hooks/useInterviewAnalysis';
+import { FREE_INTERVIEW_MAX_DURATION_SECONDS } from '../../constants/appConstants';
+import { decodeInterviewAccessPayload } from '../../utils/decodeInterviewAccessJwt';
 import './InterviewInterface.css';
 
 const FEEDBACK_POLL_INTERVAL_MS = 2000;
@@ -43,13 +46,25 @@ export default function InterviewInterface() {
     sessionId?: string;
     interviewType?: string;
     interviewTypeId?: string;
+    isFreeInterview?: boolean;
   } | null;
   const sessionId = state?.sessionId;
   const interviewType = state?.interviewType ?? 'Technical';
   const interviewTypeId = state?.interviewTypeId;
 
+  const isFreeInterviewSession = useMemo(() => {
+    if (state?.isFreeInterview === true) return true;
+    if (state?.isFreeInterview === false) return false;
+    const t = getInterviewAccessToken();
+    if (!t) return false;
+    return decodeInterviewAccessPayload(t)?.isFreeInterview === true;
+  }, [state?.isFreeInterview, sessionId]);
+
   const [showEndModal, setShowEndModal] = useState(false);
+  const { roles } = useAuth();
   const { devMode, toggleDevMode } = useInterviewDevMode();
+  const devToolsAllowed = interviewDevToolsAllowedForUser(roles);
+  const effectiveDevMode = devMode && devToolsAllowed;
   const [devModeDraft, setDevModeDraft] = useState('');
 
   useEffect(() => { 
@@ -68,9 +83,13 @@ export default function InterviewInterface() {
   const hasNavigatedToFeedbackRef = useRef(false);
   /** True when user clicked End and we're waiting for feedback task — don't navigate until poll completes */
   const waitingForFeedbackRef = useRef(false);
+  const redirectToAccountAfterSessionEndRef = useRef(false);
+  const interviewPausedByFreeLimitRef = useRef(false);
+  const freeInterviewLimitTriggeredRef = useRef(false);
 
   const onInterviewFeedbackReady = useCallback(() => {
     if (!sessionId) return;
+    if (redirectToAccountAfterSessionEndRef.current) return;
     setEndTaskId(null);
     setShowEndModal(false);
     waitingForFeedbackRef.current = false;
@@ -111,7 +130,7 @@ export default function InterviewInterface() {
     interviewType,
     interviewTestId: interviewTypeId,
     appendStreamUserTranscriptRef,
-    devMode,
+    devMode: effectiveDevMode,
     respondCodeRef,
     onFeedbackReady: onInterviewFeedbackReady,
   });
@@ -126,15 +145,12 @@ export default function InterviewInterface() {
   /** Ignore VAD submissions briefly after AI audio ends (avoids echo/noise firing submitAudio → false "processing"). */
   const postAiListenGateUntilRef = useRef(0);
   const prevIsPlayingAudioRef = useRef(false);
-  const limitWarnedRef = useRef(false);
-  const limitAutoEndRef = useRef(false);
   const [activeTab, setActiveTab] = useState<'conversation' | 'code' | 'notes'>('conversation');
   const [notes, setNotes] = useState('');
   const [caseStudyQuestion, setCaseStudyQuestion] = useState<string | null>(null);
-  const { planStatus } = usePlanStatus();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [showTimeWarning, setShowTimeWarning] = useState(false);
-  const [autoEnded, setAutoEnded] = useState(false);
+  const [interviewPausedByFreeLimit, setInterviewPausedByFreeLimit] = useState(false);
+  const [showFreeInterviewLimitModal, setShowFreeInterviewLimitModal] = useState(false);
 
   const isCodeInterview =
     interviewType === 'technical' ||
@@ -181,13 +197,14 @@ export default function InterviewInterface() {
   // Communication: send text or audio via existing submit methods
   const sendCommunicationResponse = useCallback(
     async (payload: { textResponse?: string; audioData?: string; sampleRate?: number }) => {
+      if (interviewPausedByFreeLimit) return;
       if (payload.textResponse != null) await submitText(payload.textResponse);
       if (payload.audioData != null) {
         const blob = await fetch(`data:audio/wav;base64,${payload.audioData}`).then((r) => r.blob());
         await submitAudio(blob);
       }
     },
-    [submitText, submitAudio]
+    [submitText, submitAudio, interviewPausedByFreeLimit]
   );
 
   // Derive communication phase for UI (don't override to Results if we're already there)
@@ -206,7 +223,8 @@ export default function InterviewInterface() {
     (communicationPhase === 'Speaking' || communicationPhase === 'Speaking_after') &&
     !!communicationData.speaking &&
     !communicationData.speakingFeedback;
-  allowVadSendRef.current = !isCommunicationSpeakingExercise && !devMode;
+  allowVadSendRef.current =
+    !isCommunicationSpeakingExercise && !effectiveDevMode && !interviewPausedByFreeLimit;
 
   useEffect(() => {
     if (prevIsPlayingAudioRef.current && !isPlayingAudio) {
@@ -238,6 +256,7 @@ export default function InterviewInterface() {
         allowVadSendRef: allowVadSendRef.current,
         postAiListenGateUntilRef: postAiListenGateUntilRef.current,
       });
+      if (interviewPausedByFreeLimitRef.current) return;
       if (!allowVadSendRef.current) return;
       if (Date.now() < postAiListenGateUntilRef.current) return;
       const blob = float32ToWavBlob(audio, 16000);
@@ -259,7 +278,7 @@ export default function InterviewInterface() {
     }
     if (vad.loading) return;
 
-    if (devMode) {
+    if (effectiveDevMode) {
       vad.pause();
       return;
     }
@@ -269,6 +288,7 @@ export default function InterviewInterface() {
       isPlayingAudio ||
       isSubmitting ||
       awaitingStreamAi ||
+      interviewPausedByFreeLimit ||
       (!gleeHasJoined && !isComplete)
     ) {
       vad.pause();
@@ -292,7 +312,7 @@ export default function InterviewInterface() {
     const t = window.setTimeout(startListening, gateWait);
     return () => clearTimeout(t);
   }, [
-    devMode,
+    effectiveDevMode,
     audioEnabled,
     isPlayingAudio,
     isSubmitting,
@@ -302,6 +322,7 @@ export default function InterviewInterface() {
     vad.loading,
     getStream,
     vad,
+    interviewPausedByFreeLimit,
   ]);
 
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
@@ -314,27 +335,28 @@ export default function InterviewInterface() {
 
   /** Block main interview until first SSE from Glee (or connection error). */
   const showGleeJoinOverlay =
-    Boolean(sessionId) && !isComplete && !gleeHasJoined && !error && !devMode;
+    Boolean(sessionId) && !isComplete && !gleeHasJoined && !error && !effectiveDevMode;
 
   // When it's clearly the user's turn: session active, mic on, VAD ready, AI not speaking, not submitting
   const isUserTurnToSpeak =
     !isComplete &&
+    !interviewPausedByFreeLimit &&
     !isSubmitting &&
     !awaitingStreamAi &&
     gleeHasJoined &&
     !isCommunicationSpeakingExercise &&
-    (devMode ? true : !vad.loading && audioEnabled && !isPlayingAudio);
+    (effectiveDevMode ? true : !vad.loading && audioEnabled && !isPlayingAudio);
 
   const utteranceHold = useUtteranceHold(vad.userSpeaking, 480);
   const displayUserSpeaking =
-    !devMode && utteranceHold && !isSubmitting && !isPlayingAudio;
+    !effectiveDevMode && utteranceHold && !isSubmitting && !isPlayingAudio;
 
 
   useEffect(() => {
     console.log('[VAD pause effect]', {
       isComplete,
       vadLoading: vad.loading,
-      devMode,
+      devMode: effectiveDevMode,
       audioEnabled,
       isPlayingAudio,
       isSubmitting,
@@ -342,7 +364,7 @@ export default function InterviewInterface() {
       gleeHasJoined,
       willPause: !audioEnabled || isPlayingAudio || isSubmitting || awaitingStreamAi || (!gleeHasJoined && !isComplete),
     });
-  }, [isComplete, vad.loading, devMode, audioEnabled, isPlayingAudio, isSubmitting, awaitingStreamAi, gleeHasJoined]);
+  }, [isComplete, vad.loading, effectiveDevMode, audioEnabled, isPlayingAudio, isSubmitting, awaitingStreamAi, gleeHasJoined]);
 
   useEffect(() => {
     console.log('[gleeHasJoined changed]', gleeHasJoined);
@@ -389,13 +411,14 @@ export default function InterviewInterface() {
   }, [sessionId, navigate]);
 
   useEffect(() => {
-    limitWarnedRef.current = false;
-    limitAutoEndRef.current = false;
-    setAutoEnded(false);
-    setShowTimeWarning(false);
+    freeInterviewLimitTriggeredRef.current = false;
+    interviewPausedByFreeLimitRef.current = false;
+    redirectToAccountAfterSessionEndRef.current = false;
+    setInterviewPausedByFreeLimit(false);
+    setShowFreeInterviewLimitModal(false);
   }, [sessionId]);
 
-  // Elapsed clock for all interviews; free-tier cap only when plan reports a time limit.
+  // Elapsed clock for header; first free interview only — hard cap at 15m (credits handle paid sessions).
   useEffect(() => {
     if (!sessionId || isComplete) return;
     const key = `interview_session_started_${sessionId}`;
@@ -410,25 +433,20 @@ export default function InterviewInterface() {
       const elapsed = Math.floor((Date.now() - t0) / 1000);
       setElapsedSeconds(elapsed);
 
-      if (planStatus?.has_time_limit) {
-        if (elapsed >= 300 && !limitWarnedRef.current) {
-          limitWarnedRef.current = true;
-          setShowTimeWarning(true);
-        }
-        if (elapsed >= 600 && !limitAutoEndRef.current) {
-          limitAutoEndRef.current = true;
-          setShowTimeWarning(false);
-          setAutoEnded(true);
-          sessionStorage.removeItem(key);
-          void endSession({ sessionFinished: true, interviewTestId: interviewTypeId });
-        }
+      if (!isFreeInterviewSession) return;
+
+      if (elapsed >= FREE_INTERVIEW_MAX_DURATION_SECONDS && !freeInterviewLimitTriggeredRef.current) {
+        freeInterviewLimitTriggeredRef.current = true;
+        interviewPausedByFreeLimitRef.current = true;
+        setInterviewPausedByFreeLimit(true);
+        setShowFreeInterviewLimitModal(true);
       }
     };
 
     tick();
     const id = window.setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [sessionId, isComplete, planStatus?.has_time_limit, endSession, interviewTypeId]);
+  }, [sessionId, isComplete, isFreeInterviewSession]);
 
   const exportTranscript = useCallback(() => {
     const lines = messages.map((m) =>
@@ -466,10 +484,48 @@ export default function InterviewInterface() {
     setIsEndingInterview(false);
   }, [endSession, interviewTypeId]);
 
+  const handleFreeInterviewEndToFeedback = useCallback(() => {
+    setShowFreeInterviewLimitModal(false);
+    setShowEndModal(true);
+    void handleEndConfirm();
+  }, [handleEndConfirm]);
+
+  const handleFreeInterviewBuyCredits = useCallback(async () => {
+    setShowFreeInterviewLimitModal(false);
+    interviewPausedByFreeLimitRef.current = false;
+    setInterviewPausedByFreeLimit(false);
+    redirectToAccountAfterSessionEndRef.current = true;
+    setIsEndingInterview(true);
+    try {
+      await endSession({ sessionFinished: true, interviewTestId: interviewTypeId });
+    } catch {
+      redirectToAccountAfterSessionEndRef.current = false;
+      setIsEndingInterview(false);
+      interviewPausedByFreeLimitRef.current = true;
+      setInterviewPausedByFreeLimit(true);
+      setShowFreeInterviewLimitModal(true);
+      return;
+    }
+    setIsEndingInterview(false);
+  }, [endSession, interviewTypeId]);
+
   // When session ends: if we're waiting for feedback (End button), poll effect will navigate; else navigate now
   useEffect(() => {
     if (!isComplete || !sessionId || hasNavigatedToFeedbackRef.current) return;
     if (waitingForFeedbackRef.current || endTaskId) return; // wait for feedback poll to finish
+    if (redirectToAccountAfterSessionEndRef.current) {
+      redirectToAccountAfterSessionEndRef.current = false;
+      hasNavigatedToFeedbackRef.current = true;
+      clearInterviewAccessToken();
+      navigate(ROUTES.ACCOUNT, {
+        replace: true,
+        state: {
+          accountTab: 'billing',
+          openBuyCredits: true,
+        },
+      });
+      return;
+    }
     hasNavigatedToFeedbackRef.current = true;
     navigate(ROUTES.FEEDBACK, {
       replace: true,
@@ -520,10 +576,10 @@ export default function InterviewInterface() {
     (e: FormEvent) => {
       e.preventDefault();
       const t = devModeDraft.trim();
-      if (!t || isSubmitting) return;
+      if (!t || isSubmitting || interviewPausedByFreeLimit) return;
       void submitText(t).then(() => setDevModeDraft(''));
     },
-    [devModeDraft, isSubmitting, submitText]
+    [devModeDraft, isSubmitting, submitText, interviewPausedByFreeLimit]
   );
 
   return (
@@ -534,8 +590,8 @@ export default function InterviewInterface() {
           onEndClick={handleEndClick}
           isEnding={isEndingInterview}
           isComplete={isComplete}
-          showDevModeControls={interviewDevToolsVisible}
-          devMode={devMode}
+          showDevModeControls={devToolsAllowed}
+          devMode={effectiveDevMode}
           onDevModeToggle={() => toggleDevMode()}
         />
       <EndInterviewModal
@@ -544,6 +600,12 @@ export default function InterviewInterface() {
         onConfirm={handleEndConfirm}
         isEnding={isEndingInterview}
         isPreparingFeedback={!!endTaskId}
+      />
+      <FreeInterviewTimeLimitModal
+        open={showFreeInterviewLimitModal}
+        onEndAndViewFeedback={handleFreeInterviewEndToFeedback}
+        onBuyCredits={handleFreeInterviewBuyCredits}
+        isEnding={isEndingInterview}
       />
       <div className="interview-interface__body-with-overlay">
         {showGleeJoinOverlay && (
@@ -593,10 +655,10 @@ export default function InterviewInterface() {
               <video ref={videoRef} autoPlay playsInline muted />
             </div>
             <MicWaveform
-              inactive={!audioEnabled || isComplete || devMode}
+              inactive={!audioEnabled || isComplete || effectiveDevMode}
               gleeSpeaking={isPlayingAudio}
             />
-            {!isComplete && devMode && !isCommunicationSpeakingExercise && (
+            {!isComplete && effectiveDevMode && !isCommunicationSpeakingExercise && (
               <div
                 className={`interview-interface__vad-status ${
                   isSubmitting && lastIsTranscribingPlaceholder
@@ -614,7 +676,7 @@ export default function InterviewInterface() {
               </div>
             )}
             {!isComplete &&
-              !devMode &&
+              !effectiveDevMode &&
               audioEnabled &&
               !isCommunicationSpeakingExercise &&
               (vad.loading ||
@@ -687,17 +749,6 @@ export default function InterviewInterface() {
               )}
             </div>
 
-            {showTimeWarning && !autoEnded && (
-              <div className="interview-interface__warning">
-                You are nearing the free session limit. This interview will end automatically at 10 minutes.
-              </div>
-            )}
-            {autoEnded && (
-              <div className="interview-interface__info">
-                Free session limit reached. You can review feedback from the dashboard or upgrade your plan in the Account page.
-              </div>
-            )}
-
           {activeTab === 'conversation' && !showCommunicationPhaseUI && (
             <>
               <div className="interview-interface__transcript-area">
@@ -713,27 +764,27 @@ export default function InterviewInterface() {
 
               {!isComplete && (
                 <p className="interview-interface__hint">
-                  {devMode
+                  {effectiveDevMode
                     ? 'Dev mode: replies are sent from the text box below. No microphone or AI voice — fastest for local testing.'
                     : audioEnabled
                       ? 'Mic stays on. Speak when you see “Your turn — speak now”; your response is sent automatically. Don’t speak while the interviewer is talking.'
                       : 'Turn mic on to speak.'}
                 </p>
               )}
-              {!isComplete && devMode && (
+              {!isComplete && effectiveDevMode && (
                 <form className="interview-interface__dev-mode-form" onSubmit={handleDevModeSend}>
                   <textarea
                     className="interview-interface__dev-mode-input"
                     value={devModeDraft}
                     onChange={(e) => setDevModeDraft(e.target.value)}
                     placeholder="Type your answer…"
-                    disabled={isSubmitting || awaitingStreamAi}
+                    disabled={isSubmitting || awaitingStreamAi || interviewPausedByFreeLimit}
                     aria-label="Your text reply"
                   />
                   <button
                     type="submit"
                     className="interview-interface__dev-mode-send"
-                    disabled={isSubmitting || awaitingStreamAi || !devModeDraft.trim()}
+                    disabled={isSubmitting || awaitingStreamAi || interviewPausedByFreeLimit || !devModeDraft.trim()}
                   >
                     Send
                   </button>
@@ -755,7 +806,7 @@ export default function InterviewInterface() {
                     onClearFeedback={() =>
                       updateCommunicationData((prev) => ({ ...prev, speakingFeedback: null }))
                     }
-                    devMode={devMode}
+                    devMode={effectiveDevMode}
                   />
                 )}
               {['Comprehension', 'Comprehension_before', 'Comprehension_after'].includes(
@@ -792,7 +843,10 @@ export default function InterviewInterface() {
               {communicationPhase === 'Results' && communicationData.mcqResults && (
                 <MCQResults
                   results={communicationData.mcqResults}
-                  onFinishInterview={() => endSession({ sessionFinished: true, interviewTestId: interviewTypeId })}
+                  onFinishInterview={() => {
+                    if (interviewPausedByFreeLimit) return;
+                    void endSession({ sessionFinished: true, interviewTestId: interviewTypeId });
+                  }}
                 />
               )}
             </div>

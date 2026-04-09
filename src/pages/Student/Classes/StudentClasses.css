@@ -5,7 +5,7 @@
 .student-classes {
   min-height: 100vh;
   background: var(--color-surface-alt);
-  padding: 2rem 1.25rem 3rem;
+  padding: 0 1.25rem 3rem;
 }
 
 @media (min-width: 768px) {
@@ -131,22 +131,4 @@
 .student-classes__card-name {
   font-weight: 500;
   color: var(--color-text);
-}
-
-.student-classes__back {
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-primary);
-  text-decoration: none;
-  transition: color var(--duration-fast) var(--ease-out);
-}
-
-.student-classes__back:hover {
-  color: var(--color-primary-hover);
-}
-
-.student-classes__back:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
 }

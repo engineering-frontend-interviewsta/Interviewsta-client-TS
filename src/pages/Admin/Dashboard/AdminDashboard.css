@@ -5,12 +5,12 @@
 .admin-dashboard {
   min-height: 100vh;
   background: var(--color-surface-alt);
-  padding: 2rem 1.25rem 3rem;
+  padding: 0 1.25rem 3rem;
 }
 
 @media (min-width: 768px) {
   .admin-dashboard {
-    padding: 2rem 1.5rem 3rem;
+    padding: 0 1.5rem 3rem;
   }
 }
 
@@ -349,20 +349,6 @@
 
 .admin-dashboard__performer-score--low {
   color: #dc2626;
-}
-
-.admin-dashboard__back {
-  display: inline-block;
-  margin-top: 2rem;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-text-muted);
-  text-decoration: none;
-  transition: color var(--duration-fast) var(--ease-out);
-}
-
-.admin-dashboard__back:hover {
-  color: var(--color-primary);
 }
 
 .admin-dashboard__loading {

@@ -108,7 +108,7 @@ export interface UseInterviewSessionParams {
   onFeedbackReady?: () => void;
 }
 
-export type EndSessionOpts = { sessionFinished?: boolean; interviewTestId?: number };
+export type EndSessionOpts = { sessionFinished?: boolean; interviewTestId?: string | number };
 
 export interface UseInterviewSessionResult {
   aiMessage: string;

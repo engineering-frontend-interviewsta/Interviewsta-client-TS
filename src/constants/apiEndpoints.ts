@@ -31,8 +31,11 @@ export const INTERVIEW_ENDPOINTS = {
   FEEDBACK_STATUS: (taskId: string) => `/interview/feedback-status/${taskId}`,
 } as const;
 
-/** Other Django endpoints (extend as you migrate) */
+/** Resume analysis (NestJS) */
 export const RESUME_ENDPOINTS = {
+  ANALYZE: 'resume/analyze',
+  /** GET saved report by persisted analysis id (UUID) */
+  REPORT: (analysisId: string) => `resume/reports/${analysisId}`,
   GET_ANALYSIS: 'get-resume-analysis/',
 } as const;
 
@@ -132,12 +135,9 @@ export const CLASS_ENDPOINTS = {
   ANNOUNCEMENTS_CREATE: 'announcements/',
 } as const;
 
-/** Resume (Django) */
+/** Resume (legacy Django — kept for history pages only) */
 export const RESUME_APP_ENDPOINTS = {
-  UPLOAD_ANALYSIS: 'get-resume-analysis/',
   UPLOAD_FILES: 'upload-files/',
-  GET_RESUME_HR: 'get-resume-hr/',
-  GET_RESUME_TECHNICAL: 'get-resume-technical/',
 } as const;
 
 /** Admin – interview test thumbnails */
