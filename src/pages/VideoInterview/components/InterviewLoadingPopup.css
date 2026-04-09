@@ -1,20 +1,13 @@
 /* ==========================================================================
    Interview Loading Popup – overlay, card, progress, stage states
-   Theme vars; purple for active, success green for completed; light entrance.
+   Uses global theme tokens (light / dark).
    ========================================================================== */
-
-/* Success state (completed stages) – keep green for clarity */
-.interview-loading-popup {
-  --color-success: #059669;
-  --color-success-light: #d1fae5;
-  --color-success-border: #a7f3d0;
-}
 
 .interview-loading-popup {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: #ffffff;
+  background: var(--color-surface-alt);
   overflow-y: auto;
   animation: fade-in var(--duration-normal) var(--ease-out) forwards;
 }
@@ -38,10 +31,10 @@
   width: 100%;
   max-width: 32rem;
   padding: 3rem;
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: var(--radius-2xl);
   border: 1px solid var(--color-border-light);
-  box-shadow: none;
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   animation: slide-up var(--duration-slow) var(--ease-out) backwards;
   animation-delay: 50ms;
@@ -78,7 +71,7 @@
   width: 5rem;
   height: 5rem;
   margin-bottom: 1rem;
-  background: #ffffff;
+  background: var(--color-primary-light);
   border: 1px solid var(--color-border-light);
   border-radius: 50%;
   box-shadow: none;
@@ -87,7 +80,7 @@
 .interview-loading-popup__icon-wrap svg {
   width: 2.5rem;
   height: 2.5rem;
-  color: white;
+  color: var(--color-primary);
 }
 
 .interview-loading-popup__title {
@@ -112,18 +105,18 @@
   padding: 1rem 1.25rem;
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-border-light);
-  background: #ffffff;
+  background: var(--color-surface-alt);
   transition: background-color var(--duration-normal) var(--ease-out),
     border-color var(--duration-normal) var(--ease-out);
 }
 
 .interview-loading-popup__stage--current {
-  background: #f3f4f6;
+  background: var(--color-primary-light);
   border-color: var(--color-border);
 }
 
 .interview-loading-popup__stage--completed {
-  background: var(--color-success-light);
+  background: var(--color-success-bg);
   border-color: var(--color-success-border);
 }
 
@@ -144,11 +137,11 @@
 }
 
 .interview-loading-popup__stage--current .interview-loading-popup__stage-icon svg {
-  color: var(--color-text, #0f172a);
+  color: var(--color-primary);
 }
 
 .interview-loading-popup__stage--completed .interview-loading-popup__stage-icon svg {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .interview-loading-popup__stage-icon--spin svg {
@@ -188,7 +181,11 @@
 
 .interview-loading-popup__progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #0f172a 0%, #6b7280 100%);
+  background: linear-gradient(
+    90deg,
+    var(--color-primary) 0%,
+    var(--color-primary-muted) 100%
+  );
   border-radius: 9999px;
   transition: width var(--duration-normal) var(--ease-out);
 }

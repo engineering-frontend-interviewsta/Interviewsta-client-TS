@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { User, Zap, CreditCard, Settings, Terminal, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getBillingAccount, getFeedbackAccess } from '../../services/accountService';
@@ -27,7 +28,14 @@ const TABS: TabDef[] = [
   { id: 'developer', label: 'Developer',       icon: Terminal, devOnly: true },
 ];
 
+type AccountNavigateState = {
+  accountTab?: TabId;
+  openBuyCredits?: boolean;
+  openUpgrade?: boolean;
+};
+
 export default function Account() {
+  const location = useLocation();
   const { user, roles } = useAuth();
   const [account, setAccount] = useState<LatestSubscriptionResult | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('account');
@@ -62,6 +70,16 @@ export default function Account() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const st = location.state as AccountNavigateState | null;
+    if (!st) return;
+    if (st.accountTab === 'account' || st.accountTab === 'usage' || st.accountTab === 'billing' || st.accountTab === 'settings' || st.accountTab === 'developer') {
+      setActiveTab(st.accountTab);
+    }
+    if (st.openBuyCredits) setShowBuyModal(true);
+    if (st.openUpgrade) setShowUpgradeModal(true);
+  }, [location.state]);
 
   const displayName = useMemo(() => {
     if (!account?.user) return user?.displayName ?? user?.email ?? 'User';

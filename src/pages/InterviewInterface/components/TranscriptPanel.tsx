@@ -70,23 +70,23 @@ export default function TranscriptPanel({
 
   return (
     <div
-      className={`flex flex-col min-h-0 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden ${className}`}
+      className={`flex flex-col min-h-0 rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] shadow-sm overflow-hidden ${className}`}
     >
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain p-4 space-y-4 bg-gradient-to-b from-white to-slate-50/30">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain p-4 space-y-4 bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-surface-alt)]">
         {messages.length === 0 && !fallbackMessage && (
           <motion.div
-            className="flex flex-col items-center justify-center h-full min-h-[180px] text-center text-slate-500"
+            className="flex flex-col items-center justify-center h-full min-h-[180px] text-center text-[var(--color-text-muted)]"
             initial={reduceMotion ? false : { opacity: 0, y: 8 }}
             animate={reduceMotion ? false : { opacity: 1, y: 0 }}
             transition={{ duration: reduceMotion ? 0 : 0.35, ease: EASE_SMOOTH }}
           >
-            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
-              <User className="h-6 w-6 text-slate-400" />
+            <div className="w-12 h-12 rounded-xl bg-[var(--color-primary-light)] flex items-center justify-center mb-3">
+              <User className="h-6 w-6 text-[var(--color-primary-muted)]" />
             </div>
-            <p className="text-sm font-medium text-slate-600">
+            <p className="text-sm font-medium text-[var(--color-text)]">
               Conversation will appear here
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">
               {status === 'connecting' ? 'Connecting…' : 'Speak when it is your turn'}
             </p>
           </motion.div>
@@ -101,7 +101,7 @@ export default function TranscriptPanel({
             transition={msgTransition}
           >
             <motion.div
-              className="w-9 h-9 rounded-lg bg-slate-700 flex items-center justify-center shrink-0"
+              className="w-9 h-9 rounded-lg bg-[var(--color-text-subtle)] flex items-center justify-center shrink-0"
               initial={reduceMotion ? false : { scale: 0.85, opacity: 0 }}
               animate={reduceMotion ? false : { scale: 1, opacity: 1 }}
               transition={{ ...msgTransition, delay: reduceMotion ? 0 : 0.02 }}
@@ -109,7 +109,7 @@ export default function TranscriptPanel({
               <Bot className="h-4 w-4 text-white" />
             </motion.div>
             <motion.div
-              className="flex-1 min-w-0 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-800 whitespace-pre-wrap shadow-sm"
+              className="flex-1 min-w-0 rounded-lg bg-[var(--color-surface-alt)] px-3 py-2 text-sm text-[var(--color-text)] whitespace-pre-wrap shadow-sm border border-[var(--color-border-light)]"
               {...bubbleInner}
             >
               {fallbackMessage}
@@ -128,7 +128,7 @@ export default function TranscriptPanel({
           >
             <motion.div
               className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                msg.type === 'user' ? 'bg-blue-600' : 'bg-slate-700'
+                msg.type === 'user' ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-text-subtle)]'
               }`}
               initial={reduceMotion ? false : { scale: 0.8, opacity: 0 }}
               animate={reduceMotion ? false : { scale: 1, opacity: 1 }}
@@ -142,10 +142,12 @@ export default function TranscriptPanel({
             </motion.div>
             <motion.div
               className={`flex-1 min-w-0 max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap shadow-sm ${
-                msg.type === 'user' ? 'bg-blue-50 text-slate-800' : 'bg-slate-100 text-slate-800'
+                msg.type === 'user'
+                  ? 'bg-[var(--color-primary-light)] text-[var(--color-text)] border border-[var(--color-primary-muted)]/25'
+                  : 'bg-[var(--color-surface-alt)] text-[var(--color-text)] border border-[var(--color-border-light)]'
               } ${
                 msg.type === 'user' && msg.content === USER_TRANSCRIPT_PENDING_LABEL
-                  ? 'italic text-slate-500'
+                  ? 'italic text-[var(--color-text-muted)]'
                   : ''
               }`}
               {...bubbleInner}
@@ -163,7 +165,7 @@ export default function TranscriptPanel({
           >
             <div className="flex items-start gap-3 max-w-[85%] flex-row-reverse">
               <motion.div
-                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-blue-600"
+                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[var(--color-primary)]"
                 initial={reduceMotion ? false : { scale: 0.85 }}
                 animate={reduceMotion ? false : { scale: 1 }}
                 transition={
@@ -174,17 +176,17 @@ export default function TranscriptPanel({
               >
                 <User className="h-4 w-4 text-white" />
               </motion.div>
-              <div className="rounded-xl px-4 py-3 bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm border border-blue-500/30">
+              <div className="rounded-xl px-4 py-3 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-hover)] text-white shadow-sm border border-[color-mix(in_srgb,var(--color-primary)_55%,transparent)]">
                 <div className="flex items-center gap-3">
                   <div className="relative flex items-center justify-center">
-                    <span className="absolute w-3 h-3 rounded-full bg-blue-200 animate-ping opacity-75" />
+                    <span className="absolute w-3 h-3 rounded-full bg-white/40 animate-ping opacity-75" />
                     <span className="relative w-2.5 h-2.5 rounded-full bg-white" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold">
                       {userSpeaking ? 'You\'re speaking…' : 'Your turn to speak'}
                     </span>
-                    <span className="text-xs text-blue-100">
+                    <span className="text-xs text-white/85">
                       {userSpeaking
                         ? 'Your response will be sent when you finish.'
                         : 'Answer in your own words when you see your turn.'}

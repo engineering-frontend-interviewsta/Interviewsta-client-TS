@@ -1,5 +1,6 @@
 import { nestClient } from '../api/axiosInstance';
 import { DASHBOARD_ENDPOINTS } from '../constants/apiEndpoints';
+import { buildAnalysisResultFromSession } from './resumeService';
 import type {
   LatestStatsResponse,
   PerformanceResponse,
@@ -26,9 +27,11 @@ export async function getLatestStats(): Promise<LatestStatsResponse> {
   return res.data;
 }
 
-/** Fetch recent-resume-sessions */
-export async function getResumeSessions(): Promise<RecentResumeSessionsResponse> {
-  const res = await nestClient.get<RecentResumeSessionsResponse>(DASHBOARD_ENDPOINTS.RESUME_SESSIONS);
+/** Fetch recent-resume-sessions (`n` = max rows, default 5; use a higher value on history page). */
+export async function getResumeSessions(n = 5): Promise<RecentResumeSessionsResponse> {
+  const res = await nestClient.get<RecentResumeSessionsResponse>(DASHBOARD_ENDPOINTS.RESUME_SESSIONS, {
+    params: { n },
+  });
   return res.data;
 }
 
@@ -124,16 +127,42 @@ export function mapVideoReport(
 
 /** Map resume session (recent-resume-sessions) to UI ResumeReport */
 export function mapResumeReport(item: ResumeSessionRaw): ResumeReport {
+  const date = item.createdAt
+    ? new Date(item.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })
+    : '';
+  const analysisResult = buildAnalysisResultFromSession({
+    sessionId: item.sessionId,
+    overallScore: item.overallScore,
+    jobMatchScore: item.jobMatchScore,
+    formatAndStructure: item.formatAndStructure,
+    contentQuality: item.contentQuality,
+    lengthAndConciseness: item.lengthAndConciseness,
+    keywordsOptimization: item.keywordsOptimization,
+    atsScore: item.atsScore,
+    company: item.company || undefined,
+    role: item.role || undefined,
+    foundKeywords: item.foundKeywords ?? [],
+    notFoundKeywords: item.notFoundKeywords ?? [],
+    top3Keywords: item.top3Keywords ?? [],
+    requiredSkills: item.requiredSkills ?? 0,
+    preferredSkills: item.preferredSkills ?? 0,
+    experience: item.experience ?? 0,
+    education: item.education ?? 0,
+    insights: item.insights ?? [],
+    candidateStrengths: item.candidateStrengths ?? [],
+    candidatesAreasOfImprovements: item.candidatesAreasOfImprovements ?? [],
+  });
   return {
     id: item.id,
     fileName: item.resumeName ?? 'Resume',
-    date: '', // API doesn't provide date; could use sessionId or leave empty
+    date,
     overallScore: item.score,
-    jobMatchScore: undefined,
+    jobMatchScore: item.jobMatchScore || undefined,
     targetRole: item.role || undefined,
     company: item.company || undefined,
     keyStrengths: item.foundKeywords?.length ? item.foundKeywords : undefined,
     improvements: item.notFoundKeywords?.length ? item.notFoundKeywords : undefined,
+    analysisResult,
   };
 }
 

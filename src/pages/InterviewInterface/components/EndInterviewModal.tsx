@@ -25,24 +25,24 @@ export default function EndInterviewModal({
   if (isPreparingFeedback) {
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-[var(--color-overlay-scrim)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="end-interview-title"
         onClick={handleBackdrop}
       >
         <div
-          className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 text-center"
+          className="rounded-2xl shadow-xl max-w-md w-full p-6 text-center bg-[var(--color-surface)] border border-[var(--color-border-light)]"
           onClick={(e) => e.stopPropagation()}
         >
-          <h2 id="end-interview-title" className="text-lg font-semibold text-slate-900 mb-2">
+          <h2 id="end-interview-title" className="text-lg font-semibold text-[var(--color-text)] mb-2">
             Preparing your feedback
           </h2>
-          <p className="text-slate-600 text-sm mb-4">
+          <p className="text-[var(--color-text-muted)] text-sm mb-4">
             You&apos;ll be redirected to the feedback page shortly.
           </p>
           <div className="flex justify-center">
-            <span className="inline-block w-8 h-8 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+            <span className="inline-block w-8 h-8 border-2 border-[var(--color-border)] border-t-[var(--color-primary)] rounded-full animate-spin" />
           </div>
         </div>
       </div>
@@ -51,20 +51,20 @@ export default function EndInterviewModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-[var(--color-overlay-scrim)]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="end-interview-title"
       onClick={handleBackdrop}
     >
       <div
-        className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
+        className="rounded-2xl shadow-xl max-w-md w-full p-6 bg-[var(--color-surface)] border border-[var(--color-border-light)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="end-interview-title" className="text-lg font-semibold text-slate-900 mb-2">
+        <h2 id="end-interview-title" className="text-lg font-semibold text-[var(--color-text)] mb-2">
           End this interview?
         </h2>
-        <p className="text-slate-600 text-sm mb-6">
+        <p className="text-[var(--color-text-muted)] text-sm mb-6">
           Your session will end and your progress will be saved. You&apos;ll go to the feedback page. This
           cannot be undone.
         </p>
@@ -73,7 +73,7 @@ export default function EndInterviewModal({
             type="button"
             onClick={onClose}
             disabled={isEnding}
-            className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium disabled:opacity-50"
+            className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-alt)] font-medium disabled:opacity-50"
           >
             Cancel
           </button>

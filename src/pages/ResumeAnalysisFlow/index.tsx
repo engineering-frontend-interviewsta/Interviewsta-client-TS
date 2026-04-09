@@ -1,117 +1,186 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { submitResumeForAnalysis } from '../../services/resumeService';
-import type { ResumeAnalysisResult } from '../../services/resumeService';
-import { ROUTES } from '../../constants/routerConstants';
+import { useState, useId, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Upload } from 'lucide-react';
+import { submitResumeForAnalysis, getResumeAnalysisErrorMessage } from '../../services/resumeService';
+import { ROUTES } from '../../constants/routerConstants';
+import AppStickyBackBar from '../../components/shared/AppStickyBackBar';
 import './ResumeAnalysisFlow.css';
 
+/** Stages shown while Nest → FastAPI/Celery runs (no granular server events; time-based UX). */
+const ANALYSIS_STAGES = [
+  { label: 'Uploading resume and job description…', progress: 12 },
+  { label: 'Extracting text from your resume…', progress: 24 },
+  { label: 'Analyzing sections and formatting…', progress: 38 },
+  { label: 'Comparing skills to the job description…', progress: 52 },
+  { label: 'Scoring keywords and job alignment…', progress: 66 },
+  { label: 'Generating strengths and improvements…', progress: 80 },
+  { label: 'Saving your analysis report…', progress: 92 },
+] as const;
+
+const STAGE_ADVANCE_MS = 14_000;
+
 export default function ResumeAnalysisFlow() {
-  const [file, setFile] = useState<File | null>(null);
+  const resumeInputId = useId();
+  const jdInputId = useId();
+  const navigate = useNavigate();
+
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [jobDescription, setJobDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<ResumeAnalysisResult | null>(null);
+  const stageIndexRef = useRef(0);
+
+  /** Advance progress label + bar through pipeline stages while the request is in flight. */
+  useEffect(() => {
+    if (!loading) {
+      stageIndexRef.current = 0;
+      return;
+    }
+
+    const stages = ANALYSIS_STAGES;
+    stageIndexRef.current = 0;
+    setProgress(stages[0].progress);
+    setProgressLabel(stages[0].label);
+
+    const id = window.setInterval(() => {
+      stageIndexRef.current += 1;
+      const i = stageIndexRef.current;
+      if (i < stages.length) {
+        setProgress(stages[i].progress);
+        setProgressLabel(stages[i].label);
+      }
+    }, STAGE_ADVANCE_MS);
+
+    return () => window.clearInterval(id);
+  }, [loading]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    setFile(f ?? null);
+    setResumeFile(e.target.files?.[0] ?? null);
     setError(null);
-    setResult(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) {
-      setError('Please select a resume file.');
-      return;
-    }
+    if (!resumeFile) { setError('Please select a resume file.'); return; }
+    if (!jobDescription.trim()) { setError('Please paste the job description.'); return; }
+
     setError(null);
     setLoading(true);
-    setResult(null);
+
     try {
-      const data = await submitResumeForAnalysis(file);
-      setResult(data);
-    } catch {
-      setError('Analysis failed. Please try again.');
+      const sessionId = crypto.randomUUID();
+      const data = await submitResumeForAnalysis({
+        resumeFile,
+        jobDescription: jobDescription.trim(),
+        sessionId,
+        resumeName: resumeFile.name,
+      });
+
+      setProgress(100);
+      setProgressLabel('Analysis complete');
+
+      const back = ROUTES.RESUME_ANALYSIS;
+      if (data.analysisId) {
+        const path = ROUTES.RESUME_FEEDBACK_HISTORY.replace(':analysisId', data.analysisId);
+        navigate(path, {
+          state: {
+            type: 'resume-analysis',
+            fileName: resumeFile.name,
+            date: new Date().toISOString(),
+            analysisResult: data,
+            back,
+          },
+        });
+      } else {
+        navigate(ROUTES.FEEDBACK, {
+          state: {
+            type: 'resume-analysis',
+            fileName: resumeFile.name,
+            date: new Date().toISOString(),
+            analysisResult: data,
+            back,
+          },
+        });
+      }
+    } catch (err) {
+      setError(getResumeAnalysisErrorMessage(err));
     } finally {
       setLoading(false);
+      setProgress(0);
     }
   };
 
   return (
     <div className="resume-flow">
       <div className="resume-flow__inner">
+        <AppStickyBackBar to={ROUTES.DASHBOARD}>Back to Dashboard</AppStickyBackBar>
         <h1 className="resume-flow__title">Resume Analysis</h1>
         <p className="resume-flow__subtitle">
-          Upload your resume to get AI-powered feedback and job-fit insights.
+          Upload your resume and paste the job description to get AI-powered feedback and job-fit insights.
         </p>
-        {!result ? (
-          <>
-            <form onSubmit={handleSubmit}>
-              <div className="resume-flow__dropzone">
-                <div className="resume-flow__dropzone-icon">
-                  <Upload aria-hidden />
-                </div>
-                <label className="resume-flow__dropzone-label">
-                  Choose file
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    className="resume-flow__file-input"
-                    onChange={handleFileChange}
-                  />
-                </label>
-                {file && <p className="resume-flow__dropzone-file">{file.name}</p>}
-              </div>
-              {error && <p className="resume-flow__error" role="alert">{error}</p>}
-              <button type="submit" disabled={loading || !file} className="resume-flow__btn-primary">
-                {loading ? 'Analyzing…' : 'Analyze resume'}
-              </button>
-            </form>
-          </>
-        ) : (
-          <div>
-            <div className="resume-flow__results">
-              <h2 className="resume-flow__results-title">Results</h2>
-              {result.overall_score != null && (
-                <p className="resume-flow__results-score">{result.overall_score}% overall</p>
-              )}
-              {result.job_match_score != null && (
-                <p className="resume-flow__results-meta">Job match: {result.job_match_score}%</p>
-              )}
-              {result.strengths && result.strengths.length > 0 && (
-                <div className="resume-flow__results-section">
-                  <h3 className="resume-flow__results-section-title">Strengths</h3>
-                  <ul className="resume-flow__results-list">
-                    {result.strengths.map((s, i) => (
-                      <li key={i}>{s}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {result.weaknesses && result.weaknesses.length > 0 && (
-                <div className="resume-flow__results-section">
-                  <h3 className="resume-flow__results-section-title">Areas to improve</h3>
-                  <ul className="resume-flow__results-list">
-                    {result.weaknesses.map((s, i) => (
-                      <li key={i}>{s}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+
+        {loading && (
+          <div className="resume-flow__progress" aria-busy="true" aria-live="polite">
+            <p className="resume-flow__progress-label">{progressLabel}</p>
+            <div className="resume-flow__progress-bar-track">
+              <div className="resume-flow__progress-bar-fill" style={{ width: `${progress}%` }} />
             </div>
-            <button
-              type="button"
-              onClick={() => { setResult(null); setFile(null); }}
-              className="resume-flow__btn-secondary"
-            >
-              Analyze another
-            </button>
           </div>
         )}
-        <Link to={ROUTES.DASHBOARD} className="resume-flow__back">
-          Back to Dashboard
-        </Link>
+
+        <form onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor={resumeInputId} className="resume-flow__field-label">
+              Resume (PDF)
+            </label>
+            <div className="resume-flow__dropzone">
+              <div className="resume-flow__dropzone-icon">
+                <Upload aria-hidden />
+              </div>
+              <label htmlFor={resumeInputId} className="resume-flow__dropzone-label">
+                Choose file
+                <input
+                  id={resumeInputId}
+                  type="file"
+                  accept=".pdf"
+                  className="resume-flow__file-input"
+                  onChange={handleFileChange}
+                />
+              </label>
+              {resumeFile && (
+                <p className="resume-flow__dropzone-file">{resumeFile.name}</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor={jdInputId} className="resume-flow__field-label">
+              Job Description
+            </label>
+            <textarea
+              id={jdInputId}
+              className="resume-flow__textarea"
+              placeholder="Paste the full job description here…"
+              value={jobDescription}
+              onChange={(e) => setJobDescription(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          {error && (
+            <p className="resume-flow__error" role="alert">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || !resumeFile || !jobDescription.trim()}
+            className="resume-flow__btn-primary"
+          >
+            {loading ? 'Analyzing…' : 'Analyze resume'}
+          </button>
+        </form>
       </div>
     </div>
   );

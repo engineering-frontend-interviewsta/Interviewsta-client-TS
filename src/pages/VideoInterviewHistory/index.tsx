@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PlayCircle, ArrowLeft } from 'lucide-react';
+import { PlayCircle } from 'lucide-react';
 import { getInterviewSessions, mapVideoReport } from '../../services/dashboardService';
 import type { VideoInterviewReport } from '../../types/dashboard';
 import { ROUTES } from '../../constants/routerConstants';
+import AppStickyBackBar from '../../components/shared/AppStickyBackBar';
 import VideoReportScoreChips from '../../components/shared/VideoReportScoreChips';
 import { ALL_INTERVIEW_OPTIONS } from '../../data/interviewTypesData';
 import './VideoInterviewHistory.css';
@@ -76,10 +77,7 @@ export default function VideoInterviewHistory() {
   return (
     <div className="video-history">
       <div className="video-history__inner">
-        <button type="button" onClick={handleBack} className="video-history__back">
-          <ArrowLeft aria-hidden />
-          <span>Back to dashboard</span>
-        </button>
+        <AppStickyBackBar onClick={handleBack} />
         <header className="video-history__header">
           <div>
             <h1 className="video-history__title">Video interview history</h1>

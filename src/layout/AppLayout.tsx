@@ -3,10 +3,11 @@ import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, Settings, LogOut, ChevronDown, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useInterviewDevMode } from '../context/InterviewDevModeContext';
-import { interviewDevToolsVisible } from '../constants/interviewDevTools';
+import { interviewDevToolsAllowedForUser } from '../constants/interviewDevTools';
 import { ROUTES } from '../constants/routerConstants';
 import LoadingFallback from '../components/shared/LoadingFallback';
-import logoImg from '../assets/logo.png';
+import ThemeToggle from '../components/shared/ThemeToggle';
+import BrandLogo from '../components/shared/BrandLogo';
 import './AppLayout.css';
 
 const HIDE_HEADER_PATHS: string[] = [
@@ -32,6 +33,7 @@ export default function AppLayout() {
   const hideHeader = HIDE_HEADER_PATHS.includes(location.pathname);
   const isAdmin = roles?.includes('admin');
   const isTeacher = roles?.includes('teacher');
+  const showInterviewDevToggle = interviewDevToolsAllowedForUser(roles);
   const primaryRole = roles?.[0] ?? null;
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -62,18 +64,20 @@ export default function AppLayout() {
       {!hideHeader && (
         <header className="app-layout__header">
           <div className="app-layout__header-inner">
-            <Link
-              to={
-                isAdmin
-                  ? ROUTES.ADMIN_DASHBOARD
-                  : isTeacher
-                    ? ROUTES.TEACHER_DASHBOARD
-                    : ROUTES.STUDENT_DASHBOARD
-              }
-              className="app-layout__brand"
-            >
-              <img src={logoImg} alt="Interviewsta" className="app-layout__brand-logo" />
-            </Link>
+            <div className="app-layout__header-left">
+              <Link
+                to={
+                  isAdmin
+                    ? ROUTES.ADMIN_DASHBOARD
+                    : isTeacher
+                      ? ROUTES.TEACHER_DASHBOARD
+                      : ROUTES.STUDENT_DASHBOARD
+                }
+                className="app-layout__brand"
+              >
+                <BrandLogo alt="Interviewsta" className="app-layout__brand-logo" />
+              </Link>
+            </div>
             <nav className="app-layout__nav">
               <Link
                 to={headerDashboardPath}
@@ -149,19 +153,22 @@ export default function AppLayout() {
               )}
             </nav>
 
-            {interviewDevToolsVisible && (
-              <button
-                type="button"
-                className={`app-layout__dev-toggle${devMode ? ' app-layout__dev-toggle--on' : ''}`}
-                onClick={() => toggleDevMode()}
-                aria-pressed={devMode}
-                title="Dev mode: type replies instead of speaking; AI replies without voice. For local testing only."
-              >
-                Dev mode
-              </button>
-            )}
+            <div className="app-layout__header-right">
+              {showInterviewDevToggle && (
+                <button
+                  type="button"
+                  className={`app-layout__dev-toggle${devMode ? ' app-layout__dev-toggle--on' : ''}`}
+                  onClick={() => toggleDevMode()}
+                  aria-pressed={devMode}
+                  title="Dev mode: type replies instead of speaking; AI replies without voice. For local testing only."
+                >
+                  Dev mode
+                </button>
+              )}
 
-            <div className="app-layout__user" ref={userMenuRef}>
+              <ThemeToggle />
+
+              <div className="app-layout__user" ref={userMenuRef}>
               <button
                 type="button"
                 className="app-layout__user-trigger"
@@ -244,6 +251,7 @@ export default function AppLayout() {
                   </button>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </header>

@@ -13,7 +13,7 @@ import { createOrder, verifyPayment, getPaymentPlans } from '../../../services/p
 import { useRazorpay } from '../../../hooks/useRazorpay';
 import { CREDITS_PER_DOLLAR, USD_TO_INR } from '../../../constants/appConstants';
 
-const DEV_COUPON_CODE = 'dev1';
+const DEV_COUPON_CODE = '';
 
 interface Props {
   account: LatestSubscriptionResult;

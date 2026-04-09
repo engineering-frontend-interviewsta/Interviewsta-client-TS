@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { ROUTES } from '../../constants/routerConstants';
+import AppStickyBackBar from '../../components/shared/AppStickyBackBar';
 import './Learning.css';
 
 const TOPICS = [
@@ -11,6 +12,7 @@ export default function Learning() {
   return (
     <div className="learning">
       <div className="learning__inner">
+        <AppStickyBackBar to={ROUTES.STUDENT_DASHBOARD} />
         <header className="learning__header">
           <h1 className="learning__title">Learning</h1>
           <p className="learning__subtitle">
@@ -30,10 +32,6 @@ export default function Learning() {
             </Link>
           ))}
         </div>
-        <Link to={ROUTES.STUDENT_DASHBOARD} className="learning__back">
-          <ArrowLeft aria-hidden />
-          Back to Dashboard
-        </Link>
       </div>
     </div>
   );

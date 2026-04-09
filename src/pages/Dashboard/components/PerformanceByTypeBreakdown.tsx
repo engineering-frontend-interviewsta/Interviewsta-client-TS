@@ -1,5 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { PerformanceResponse } from '../../../types/dashboard';
+import { useTheme } from '../../../context/ThemeContext';
+import { getDashboardChartPalette } from '../chartTheme';
 
 const TYPE_LABELS: Record<string, string> = {
   technical: 'Technical',
@@ -11,15 +13,24 @@ const TYPE_LABELS: Record<string, string> = {
   miscellaneous: 'Miscellaneous',
 };
 
-const CHART_PRIMARY = '#6d28d9';
-const CHART_GRID = '#f3f0f7';
-
 interface Props {
   /** Data from the performance endpoint (average score per interview type) */
   performance: PerformanceResponse | null;
 }
 
 export default function PerformanceByTypeBreakdown({ performance }: Props) {
+  const { resolvedTheme } = useTheme();
+  const chart = getDashboardChartPalette(resolvedTheme);
+
+  const tooltipSurface = {
+    backgroundColor: 'var(--color-surface)',
+    color: 'var(--color-text)',
+    borderRadius: 'var(--radius-lg)',
+    border: '1px solid var(--color-border-light)',
+    boxShadow: 'var(--shadow-md)',
+    fontFamily: 'var(--font-sans)',
+  } as const;
+
   const data =
     performance != null
       ? Object.entries(performance).map(([key, val]) => ({
@@ -52,22 +63,25 @@ export default function PerformanceByTypeBreakdown({ performance }: Props) {
         <h3 className="perf-chart__title">Average score by type</h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-          <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
-          <YAxis type="category" dataKey="name" width={75} tick={{ fontSize: 12, fontWeight: 600 }} />
+          <CartesianGrid strokeDasharray="3 3" stroke={chart.barGrid} />
+          <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: chart.barAxis }} />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={75}
+            tick={{ fontSize: 12, fontWeight: 600, fill: chart.barAxis }}
+          />
           <Tooltip
-            contentStyle={{
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--color-border-light)',
-              fontFamily: 'var(--font-sans)',
-            }}
+            contentStyle={tooltipSurface}
+            labelStyle={{ color: 'var(--color-text-muted)' }}
+            itemStyle={{ color: 'var(--color-text)' }}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: any, _name, props: any) => {
               const count = props?.payload?.count ?? 0;
               return [`${value}% avg · ${count} sessions`, 'Score'];
             }}
           />
-          <Bar dataKey="avg" fill={CHART_PRIMARY} radius={[0, 6, 6, 0]} name="Average" />
+          <Bar dataKey="avg" fill={chart.barFill} radius={[0, 6, 6, 0]} name="Average" />
         </BarChart>
       </ResponsiveContainer>
       </div>

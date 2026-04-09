@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, ArrowLeft } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { getResumeSessions, mapResumeReport } from '../../services/dashboardService';
 import type { ResumeReport } from '../../types/dashboard';
 import { ROUTES } from '../../constants/routerConstants';
+import AppStickyBackBar from '../../components/shared/AppStickyBackBar';
 import './ResumeAnalysisHistory.css';
 
 export default function ResumeAnalysisHistory() {
@@ -17,7 +18,7 @@ export default function ResumeAnalysisHistory() {
     const load = async () => {
       try {
         setLoading(true);
-        const raw = await getResumeSessions();
+        const raw = await getResumeSessions(50);
         setReports(raw.sessions.map(mapResumeReport));
       } catch {
         setError('Failed to load resume analysis history.');
@@ -39,7 +40,8 @@ export default function ResumeAnalysisHistory() {
   const pagedReports = sortedReports.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const handleRowClick = (report: ResumeReport) => {
-    navigate(ROUTES.FEEDBACK, {
+    const path = ROUTES.RESUME_FEEDBACK_HISTORY.replace(':analysisId', String(report.id));
+    navigate(path, {
       state: {
         type: 'resume-analysis',
         resume_id: report.id,
@@ -68,10 +70,7 @@ export default function ResumeAnalysisHistory() {
   return (
     <div className="resume-history">
       <div className="resume-history__inner">
-        <button type="button" onClick={handleBack} className="resume-history__back">
-          <ArrowLeft aria-hidden />
-          <span>Back to dashboard</span>
-        </button>
+        <AppStickyBackBar onClick={handleBack} />
         <header className="resume-history__header">
           <div>
             <h1 className="resume-history__title">Resume analysis history</h1>

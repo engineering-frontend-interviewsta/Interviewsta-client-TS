@@ -96,20 +96,20 @@ export default function SpeakingPhase({
   };
 
   return (
-    <div className="rounded-xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-6 mb-4">
-      <div className="bg-white rounded-lg p-6 border-2 border-green-300 shadow-sm mb-4">
+    <div className="rounded-xl border-2 border-[var(--color-success-border)] bg-[var(--color-surface-alt)] p-6 mb-4">
+      <div className="bg-[var(--color-surface)] rounded-lg p-6 border-2 border-[var(--color-success-border)] shadow-sm mb-4">
         <div className="flex items-center gap-2 mb-4">
-          <Volume2 className="h-5 w-5 text-green-600" />
-          <h4 className="font-semibold text-gray-900">Paragraph to Speak</h4>
+          <Volume2 className="h-5 w-5 text-[var(--color-success-text)]" />
+          <h4 className="font-semibold text-[var(--color-text)]">Paragraph to Speak</h4>
         </div>
         {paragraph ? (
-          <p className="text-gray-800 leading-relaxed text-lg">{paragraph}</p>
+          <p className="text-[var(--color-text)] leading-relaxed text-lg">{paragraph}</p>
         ) : (
-          <p className="text-gray-500 italic">Waiting for paragraph...</p>
+          <p className="text-[var(--color-text-muted)] italic">Waiting for paragraph...</p>
         )}
       </div>
-      <div className="bg-white rounded-lg p-4 border border-green-200 mb-4">
-        <p className="text-sm text-gray-600 mb-4">
+      <div className="bg-[var(--color-surface)] rounded-lg p-4 border border-[var(--color-success-border)] mb-4">
+        <p className="text-sm text-[var(--color-text-muted)] mb-4">
           {devMode
             ? 'Dev mode: type the paragraph (or your best attempt) below and send — no microphone.'
             : instruction ??
@@ -123,13 +123,13 @@ export default function SpeakingPhase({
               disabled={isSubmitting || isProcessing}
               placeholder="Type your reading here…"
               rows={5}
-              className="w-full rounded-lg border border-green-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+              className="w-full rounded-lg border border-[var(--color-success-border)] px-3 py-2 text-sm text-[var(--color-text)] bg-[var(--color-surface-alt)] focus:outline-none focus:ring-2 focus:ring-[var(--color-success-text)] disabled:opacity-50"
             />
             <button
               type="button"
               onClick={() => void handleSubmitTyped()}
               disabled={isSubmitting || isProcessing || !typedReading.trim()}
-              className="self-end flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50"
+              className="self-end flex items-center gap-2 px-6 py-3 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-lg font-medium disabled:opacity-50"
             >
               <Send className="h-5 w-5" />
               {isSubmitting || isProcessing ? 'Submitting...' : 'Send text'}
@@ -141,7 +141,7 @@ export default function SpeakingPhase({
               <button
                 type="button"
                 onClick={startRecording}
-                className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium"
+                className="flex items-center gap-2 px-6 py-3 bg-[var(--color-success-text)] hover:opacity-90 text-white rounded-lg font-medium"
               >
                 <Mic className="h-5 w-5" />
                 Start Recording
@@ -150,7 +150,7 @@ export default function SpeakingPhase({
               <button
                 type="button"
                 onClick={stopRecording}
-                className="flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium"
+                className="flex items-center gap-2 px-6 py-3 bg-[var(--color-error-text)] hover:opacity-90 text-white rounded-lg font-medium"
               >
                 <Square className="h-5 w-5" />
                 Stop Recording
@@ -161,7 +161,7 @@ export default function SpeakingPhase({
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting || isProcessing}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-3 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-lg font-medium disabled:opacity-50"
               >
                 <Send className="h-5 w-5" />
                 {isSubmitting || isProcessing ? 'Submitting...' : 'Submit Speaking'}
@@ -171,14 +171,14 @@ export default function SpeakingPhase({
         )}
         {(isSubmitting || isProcessing) && !feedback && (
           <div className="mt-4 flex items-center justify-center gap-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
-            <span className="text-sm text-blue-600 font-medium">Analyzing your speaking...</span>
+            <div className="w-3 h-3 bg-[var(--color-primary)] rounded-full animate-pulse" />
+            <span className="text-sm text-[var(--color-primary)] font-medium">Analyzing your speaking...</span>
           </div>
         )}
         {feedback && !feedback.includes('Please read the following paragraph') && !(paragraph && feedback.includes(paragraph)) && (
-          <div className="mt-4 bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
-            <h5 className="font-semibold text-blue-900 mb-2">Feedback</h5>
-            <p className="text-gray-800 leading-relaxed text-sm">{feedback}</p>
+          <div className="mt-4 bg-[var(--color-primary-light)] rounded-lg p-4 border-2 border-[var(--color-primary-muted)]/40">
+            <h5 className="font-semibold text-[var(--color-primary-dark)] mb-2">Feedback</h5>
+            <p className="text-[var(--color-text)] leading-relaxed text-sm">{feedback}</p>
           </div>
         )}
       </div>

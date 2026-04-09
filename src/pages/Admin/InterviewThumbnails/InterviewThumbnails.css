@@ -1,6 +1,6 @@
 .admin-interview-thumbnails {
   min-height: 100vh;
-  padding: 2rem 1.25rem;
+  padding: 0 1.25rem 2rem;
 }
 
 .admin-interview-thumbnails__inner {
@@ -173,12 +173,3 @@
   opacity: 0;
   cursor: pointer;
 }
-
-.admin-interview-thumbnails__back {
-  display: inline-block;
-  margin-top: 1.25rem;
-  text-decoration: none;
-  color: var(--color-text, #0f172a);
-  font-weight: 700;
-}
-

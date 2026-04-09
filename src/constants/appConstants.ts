@@ -10,6 +10,8 @@ export const RETRY = {
 
 export const TIMEOUTS = {
   API_REQUEST: 30000,
+  /** Resume: Nest holds one SSE to FastAPI (~125s max); client must wait longer than default 30s. */
+  RESUME_ANALYSIS_MS: 180000,
   TOAST_DURATION: 3000,
   ERROR_RELOAD_DELAY: 2000,
   CHUNK_ERROR_RELOAD: 1500,
@@ -50,3 +52,6 @@ export const USD_TO_INR = 83;
 
 /** 2 credits per $1 spent (on-demand purchases) */
 export const CREDITS_PER_DOLLAR = 2;
+
+/** First free interview (0 credits): hard cap on interview length before upgrade prompt */
+export const FREE_INTERVIEW_MAX_DURATION_SECONDS = 15 * 60;

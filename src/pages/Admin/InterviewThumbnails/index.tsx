@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { RefreshCw, Upload } from 'lucide-react';
 import { getInterviewParentTypes, getInterviewTests, getInterviewTestsByParentType } from '../../../services/interviewService';
 import { uploadInterviewThumbnail } from '../../../services/adminService';
 import { ROUTES } from '../../../constants/routerConstants';
+import AppStickyBackBar from '../../../components/shared/AppStickyBackBar';
 import type { InterviewTest, ParentInterviewType } from '../../../types/interviewTest';
 import './InterviewThumbnails.css';
 
@@ -91,6 +91,7 @@ export default function AdminInterviewThumbnails() {
   return (
     <div className="admin-interview-thumbnails">
       <div className="admin-interview-thumbnails__inner">
+        <AppStickyBackBar to={ROUTES.ADMIN_DASHBOARD}>← Back to admin dashboard</AppStickyBackBar>
         <header className="admin-interview-thumbnails__header">
           <div>
             <h1 className="admin-interview-thumbnails__title">Interview thumbnails</h1>
@@ -182,10 +183,6 @@ export default function AdminInterviewThumbnails() {
             </table>
           </div>
         )}
-
-        <Link to={ROUTES.ADMIN_DASHBOARD} className="admin-interview-thumbnails__back">
-          ← Back to admin dashboard
-        </Link>
       </div>
     </div>
   );

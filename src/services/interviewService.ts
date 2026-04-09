@@ -256,7 +256,7 @@ export async function submitVideoQuality(
 export async function endInterview(params: {
   sessionId: string;
   interviewType: string;
-  interviewTestId?: number;
+  interviewTestId?: string | number;
   duration: number;
   sessionFinished?: boolean;
 }): Promise<unknown> {

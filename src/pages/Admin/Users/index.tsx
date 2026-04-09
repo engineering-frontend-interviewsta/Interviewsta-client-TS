@@ -17,6 +17,7 @@ import {
   deleteNestUser,
 } from '../../../services/adminService';
 import { ROUTES } from '../../../constants/routerConstants';
+import AppStickyBackBar from '../../../components/shared/AppStickyBackBar';
 import type { AdminUserView } from '../../../types/account';
 import './AdminUsers.css';
 
@@ -164,6 +165,7 @@ export default function AdminUsers() {
   return (
     <div className="admin-users">
       <div className="admin-users__inner">
+        <AppStickyBackBar to={ROUTES.ADMIN_DASHBOARD}>← Dashboard</AppStickyBackBar>
         <header className="admin-users__header">
           <div>
             <h1 className="admin-users__title">User management</h1>
@@ -323,10 +325,6 @@ export default function AdminUsers() {
             </div>
           )}
         </div>
-
-        <Link to={ROUTES.ADMIN_DASHBOARD} className="admin-users__back">
-          ← Dashboard
-        </Link>
       </div>
 
       <DeleteModal

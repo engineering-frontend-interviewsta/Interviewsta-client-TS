@@ -9,7 +9,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--color-overlay-scrim);
   backdrop-filter: blur(2px);
   padding: 0;
   animation: interview-start-gate-fade-in 150ms var(--ease-out) both;
@@ -34,17 +34,20 @@
 .interview-start-gate__panel {
   width: 100%;
   max-width: 26rem;
-  background: #ffffff;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-bottom: none;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   animation: interview-start-gate-slide-up 200ms var(--ease-out) both;
-  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+  box-shadow: var(--shadow-lg);
 }
 
 @media (min-width: 640px) {
   .interview-start-gate__panel {
+    border: 1px solid var(--color-border-light);
     border-radius: var(--radius-xl);
   }
 }
@@ -115,7 +118,7 @@
 }
 
 .interview-start-gate__close:hover:not(:disabled) {
-  background: var(--color-surface);
+  background: var(--color-surface-alt);
   color: var(--color-text);
 }
 
@@ -172,7 +175,7 @@
   height: auto;
   aspect-ratio: 16 / 10;
   border-radius: var(--radius-lg);
-  background: #0f172a;
+  background: var(--color-video-preview-bg);
   object-fit: cover;
 }
 
@@ -182,11 +185,11 @@
   gap: 0.5rem;
   padding: 0.625rem 0.75rem;
   border-radius: var(--radius-lg);
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
   font-size: var(--text-sm);
   font-weight: 500;
-  color: #047857;
+  color: var(--color-success-text);
 }
 
 .interview-start-gate__ok-icon {
@@ -202,10 +205,10 @@
   margin-top: 1rem;
   padding: 0.75rem;
   border-radius: var(--radius-lg);
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
   font-size: var(--text-sm);
-  color: #b91c1c;
+  color: var(--color-error-text);
   line-height: var(--leading-snug);
 }
 
@@ -248,17 +251,17 @@
 
 .interview-start-gate__btn--secondary {
   border: 1px solid var(--color-border);
-  background: #ffffff;
+  background: var(--color-surface-alt);
   color: var(--color-text);
 }
 
 .interview-start-gate__btn--secondary:hover:not(:disabled) {
-  background: var(--color-surface);
+  background: var(--color-border-light);
 }
 
 .interview-start-gate__btn--primary {
   border: none;
-  background: var(--color-primary, #4f46e5);
+  background: var(--color-primary);
   color: #ffffff;
 }
 

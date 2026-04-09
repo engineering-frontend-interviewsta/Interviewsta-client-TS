@@ -5,7 +5,7 @@
 .learning {
   min-height: 100vh;
   background: var(--color-surface-alt);
-  padding: 2rem 1.25rem 3rem;
+  padding: 0 1.25rem 3rem;
 }
 
 @media (min-width: 768px) {
@@ -109,33 +109,6 @@
   color: var(--color-text-muted);
   margin: 0;
   line-height: var(--leading-snug);
-}
-
-.learning__back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-primary);
-  text-decoration: none;
-  transition: color var(--duration-fast) var(--ease-out);
-}
-
-.learning__back svg {
-  width: 1rem;
-  height: 1rem;
-  flex-shrink: 0;
-}
-
-.learning__back:hover {
-  color: var(--color-primary-hover);
-}
-
-.learning__back:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
 }
 
 @media (prefers-reduced-motion: reduce) {

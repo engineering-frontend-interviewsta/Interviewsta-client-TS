@@ -31,6 +31,7 @@ import {
 } from 'recharts';
 import { getAdminDashboard, getNestAdminStats } from '../../../services/adminService';
 import { ROUTES } from '../../../constants/routerConstants';
+import AppStickyBackBar from '../../../components/shared/AppStickyBackBar';
 import type { AdminDashboardData } from '../../../types/admin';
 import type { AdminPlatformStats } from '../../../types/account';
 import './AdminDashboard.css';
@@ -137,6 +138,7 @@ export default function AdminDashboard() {
   return (
     <div className="admin-dashboard">
       <div className="admin-dashboard__inner">
+        <AppStickyBackBar to={ROUTES.DASHBOARD}>← Back to main dashboard</AppStickyBackBar>
         <header className="admin-dashboard__header">
           <div>
             <h1 className="admin-dashboard__title">Dashboard</h1>
@@ -358,10 +360,6 @@ export default function AdminDashboard() {
             </div>
           </div>
         </section>
-
-        <Link to={ROUTES.DASHBOARD} className="admin-dashboard__back">
-          ← Back to main dashboard
-        </Link>
       </div>
     </div>
   );

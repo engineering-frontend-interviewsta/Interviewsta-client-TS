@@ -23,6 +23,8 @@ export const ROUTES = {
   ACCOUNT: '/account',
   FEEDBACK: '/feedback',
   FEEDBACK_HISTORY: '/feedback-history/:interviewId',
+  /** Saved resume analysis report (same UI as /feedback, URL-addressable like feedback-history) */
+  RESUME_FEEDBACK_HISTORY: '/resume-feedback/:analysisId',
   ABOUT: '/about',
   CONTACT: '/contact',
   PRIVACY_POLICY: '/privacy-policy',

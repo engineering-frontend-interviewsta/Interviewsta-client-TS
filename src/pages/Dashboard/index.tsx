@@ -43,7 +43,7 @@ export default function Dashboard() {
     try {
       const [latestRes, resumeRes, interviewRes, performanceRes] = await Promise.all([
         getLatestStats().catch(() => null),
-        getResumeSessions(),
+        getResumeSessions(5).catch(() => null),
         getInterviewSessions(),
         getPerformance(),
       ]);
@@ -87,7 +87,8 @@ export default function Dashboard() {
   };
 
   const handleResumeReportClick = (report: ResumeReport) => {
-    navigate(ROUTES.FEEDBACK, {
+    const path = ROUTES.RESUME_FEEDBACK_HISTORY.replace(':analysisId', String(report.id));
+    navigate(path, {
       state: {
         type: 'resume-analysis',
         fileName: report.fileName,

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { getStudentClasses, joinClass } from '../../../services/studentService';
 import { ROUTES } from '../../../constants/routerConstants';
 import type { ClassItem } from '../../../types/student';
 import LoadingFallback from '../../../components/shared/LoadingFallback';
+import AppStickyBackBar from '../../../components/shared/AppStickyBackBar';
 import './StudentClasses.css';
 
 export default function StudentClasses() {
@@ -45,6 +45,7 @@ export default function StudentClasses() {
   return (
     <div className="student-classes">
       <div className="student-classes__inner">
+        <AppStickyBackBar to={ROUTES.DASHBOARD}>Back to Dashboard</AppStickyBackBar>
         <h1 className="student-classes__title">My Classes</h1>
         <p className="student-classes__subtitle">Enrolled classes. Join with a code from your teacher.</p>
         <form onSubmit={handleJoin} className="student-classes__join-form">
@@ -72,9 +73,6 @@ export default function StudentClasses() {
             ))}
           </ul>
         )}
-        <Link to={ROUTES.DASHBOARD} className="student-classes__back">
-          Back to Dashboard
-        </Link>
       </div>
     </div>
   );
