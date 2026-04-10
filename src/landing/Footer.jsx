@@ -1,16 +1,25 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Twitter, Linkedin, Github, Instagram, Mail } from 'lucide-react';
+import { Twitter, Linkedin, Youtube, Mail } from 'lucide-react';
 import logoDark from '../assets/logoDark.png';
 
 const MotionLink = motion(Link);
 
 const socialLinks = [
   { icon: Twitter, href: '#', label: 'Twitter' },
-  { icon: Linkedin, href: '#', label: 'LinkedIn' },
-  { icon: Github, href: '#', label: 'GitHub' },
-  { icon: Instagram, href: '#', label: 'Instagram' },
+  {
+    icon: Linkedin,
+    href: 'https://www.linkedin.com/company/interviewsta/',
+    label: 'LinkedIn',
+    external: true,
+  },
+  {
+    icon: Youtube,
+    href: 'https://www.youtube.com/@interviewsta?si=4wIXEuwb8xCtJlPy',
+    label: 'YouTube',
+    external: true,
+  },
 ];
 
 const productLinks = [
@@ -49,11 +58,14 @@ const Footer = () => {
               AI-powered interview preparation that helps you land the job you deserve.
             </p>
             <div className="flex items-center gap-3">
-              {socialLinks.map(({ icon: Icon, href, label }) => (
+              {socialLinks.map(({ icon: Icon, href, label, external }) => (
                 <a
                   key={label}
                   href={href}
                   aria-label={label}
+                  {...(external
+                    ? { target: '_blank', rel: 'noopener noreferrer' }
+                    : {})}
                   className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white/60
                              hover:bg-[var(--color-primary)] hover:text-white transition-all duration-200"
                 >

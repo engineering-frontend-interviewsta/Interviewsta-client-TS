@@ -1,10 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Target, Users, Zap, Award, Heart, Globe, TrendingUp } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Brain, Target, Users, Zap, Heart, Globe } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const AboutUs = () => {
-  const navigate = useNavigate();
   const values = [
     {
       icon: Target,
@@ -64,7 +63,7 @@ const AboutUs = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50">
+    <div className="min-h-screen bg-[var(--color-surface-alt)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -72,15 +71,15 @@ const AboutUs = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <div className="inline-flex items-center space-x-2 bg-blue-100 rounded-full px-6 py-2 mb-6">
-            <Brain className="h-5 w-5 text-blue-600" />
-            <span className="text-blue-600 font-medium">About Interviewsta.AI</span>
+          <div className="inline-flex items-center space-x-2 bg-[var(--color-primary-light)] rounded-full px-6 py-2 mb-6">
+            <Brain className="h-5 w-5 text-[var(--color-primary)]" />
+            <span className="text-[var(--color-primary)] font-medium">About Interviewsta.AI</span>
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+          <h1 className="text-5xl md:text-6xl font-bold text-[var(--color-text)] mb-6">
             Empowering Careers Through
-            <span className="block text-blue-600">AI-Powered Preparation</span>
+            <span className="block text-[var(--color-primary)]">AI-Powered Preparation</span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-[var(--color-text-muted)] max-w-3xl mx-auto leading-relaxed">
             We're on a mission to help every professional ace their interviews and land their dream jobs
             through cutting-edge AI technology and personalized coaching.
           </p>
@@ -93,9 +92,9 @@ const AboutUs = () => {
           viewport={{ once: true }}
           className="mb-20"
         >
-          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Story</h2>
-            <div className="space-y-4 text-gray-700 leading-relaxed">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded-[var(--radius-2xl)] shadow-md p-8 md:p-12">
+            <h2 className="text-3xl font-bold text-[var(--color-text)] mb-6">Our Story</h2>
+            <div className="space-y-4 text-[var(--color-text-muted)] leading-relaxed">
               <p>
                 Interviewsta.AI was born from a simple observation: interview preparation is broken.
                 Traditional methods are expensive, time-consuming, and often don't provide the realistic
@@ -121,7 +120,7 @@ const AboutUs = () => {
           viewport={{ once: true }}
           className="mb-20"
         >
-          <h2 className="text-4xl font-bold text-gray-900 text-center mb-12">Our Values</h2>
+          <h2 className="text-4xl font-bold text-[var(--color-text)] text-center mb-12">Our Values</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {values.map((value, index) => (
               <motion.div
@@ -131,13 +130,13 @@ const AboutUs = () => {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
                 whileHover={{ y: -5 }}
-                className="bg-white rounded-xl p-6 shadow-lg border border-gray-100"
+                className="bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded-[var(--radius-xl)] p-6 shadow-md"
               >
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-muted)] rounded-xl flex items-center justify-center mb-4">
                   <value.icon className="h-7 w-7 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{value.title}</h3>
-                <p className="text-gray-600 leading-relaxed">{value.description}</p>
+                <h3 className="text-xl font-semibold text-[var(--color-text)] mb-2">{value.title}</h3>
+                <p className="text-[var(--color-text-muted)] leading-relaxed">{value.description}</p>
               </motion.div>
             ))}
           </div>
@@ -188,9 +187,9 @@ const AboutUs = () => {
           viewport={{ once: true }}
           className="mb-20"
         >
-          <h2 className="text-4xl font-bold text-gray-900 text-center mb-12">Our Journey</h2>
+          <h2 className="text-4xl font-bold text-[var(--color-text)] text-center mb-12">Our Journey</h2>
           <div className="relative">
-            <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-gradient-to-b from-blue-500 to-purple-600"></div>
+            <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-gradient-to-b from-[var(--color-primary)] to-[var(--color-primary-muted)]" />
             <div className="space-y-12">
               {milestones.map((milestone, index) => (
                 <motion.div
@@ -202,13 +201,13 @@ const AboutUs = () => {
                   className={`flex items-center ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}
                 >
                   <div className={`w-1/2 ${index % 2 === 0 ? 'pr-12 text-right' : 'pl-12'}`}>
-                    <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-                      <div className="text-3xl font-bold text-blue-600 mb-2">{milestone.year}</div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">{milestone.title}</h3>
-                      <p className="text-gray-600">{milestone.description}</p>
+                    <div className="bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded-[var(--radius-xl)] p-6 shadow-md">
+                      <div className="text-3xl font-bold text-[var(--color-primary)] mb-2">{milestone.year}</div>
+                      <h3 className="text-xl font-semibold text-[var(--color-text)] mb-2">{milestone.title}</h3>
+                      <p className="text-[var(--color-text-muted)]">{milestone.description}</p>
                     </div>
                   </div>
-                  <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full border-4 border-white shadow-lg z-10"></div>
+                  <div className="w-6 h-6 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-muted)] rounded-full border-4 border-[var(--color-surface)] shadow-lg z-10" />
                   <div className="w-1/2"></div>
                 </motion.div>
               ))}
@@ -221,7 +220,7 @@ const AboutUs = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-12 text-center text-white"
+          className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-muted)] rounded-2xl p-12 text-center text-white"
         >
           <Globe className="h-16 w-16 mx-auto mb-6 opacity-90" />
           <h2 className="text-4xl font-bold mb-4">Join Our Mission</h2>
@@ -230,25 +229,23 @@ const AboutUs = () => {
             we'd love to hear from you.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <a href="/login">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/video-interview')}
-              className="bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
-            >
-              Start Practicing
-            </motion.button>
-            </a>
+            <Link to="/login">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-white text-[var(--color-primary)] px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
+              >
+                Start Practicing
+              </motion.button>
+            </Link>
             <Link to="/contact">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/contact')}
-              className="bg-transparent text-white px-8 py-4 rounded-xl font-semibold border-2 border-white hover:bg-white hover:text-blue-600 transition-all"
-            >
-              Contact Us
-            </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-transparent text-white px-8 py-4 rounded-xl font-semibold border-2 border-white hover:bg-white hover:text-[var(--color-primary)] transition-all"
+              >
+                Contact Us
+              </motion.button>
             </Link>
           </div>
         </motion.div>

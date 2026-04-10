@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React from "react";
 import {
   Play,
   Target,
@@ -17,6 +17,7 @@ import {
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
+import resumeAnalysisReport from "../assets/resume_analysis_report.png";
 import HeroSection from "./home/HeroSection";
 import SocialProofStrip from "./home/SocialProofStrip";
 import InterviewCategoriesSection from "./home/InterviewCategoriesSection";
@@ -36,7 +37,8 @@ const services = [
       "Performance analytics",
       "Industry-specific scenarios",
     ],
-    video: import.meta.env.VITE_VIDEO_SRC2,
+    /** https://youtu.be/kLey_Jqeuxc */
+    youtubeId: "kLey_Jqeuxc",
     link: "/video-interviews",
   },
   {
@@ -50,22 +52,15 @@ const services = [
       "Format suggestions",
       "Industry alignment",
     ],
-    video: import.meta.env.VITE_VIDEO_SRC3,
+    image: resumeAnalysisReport,
     link: "/resume-analysis",
   },
 ];
 
+/** Meet Glee hero clip — https://www.youtube.com/watch?v=oXDGfUoxb-c */
+const GLEE_YOUTUBE_EMBED_ID = "oXDGfUoxb-c";
+
 const Home = () => {
-  const videoRef = useRef(null);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch((error) => {
-        console.warn("Autoplay was blocked:", error);
-      });
-    }
-  }, []);
-
   return (
     <div className="bg-[var(--color-surface-alt)]">
       {/* Hero */}
@@ -144,23 +139,18 @@ const Home = () => {
               viewport={{ once: true }}
               className="relative"
             >
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 shadow-sm">
-                {import.meta.env.VITE_VIDEO_SRC1 ? (
-                  <video
-                    ref={videoRef}
-                    src={import.meta.env.VITE_VIDEO_SRC1}
-                    className="rounded-2xl w-full"
-                    muted
-                    autoPlay
-                    loop
-                    playsInline
-                    onError={(e) => (e.currentTarget.style.display = "none")}
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 shadow-sm overflow-hidden">
+                <div className="aspect-video w-full">
+                  <iframe
+                    className="h-full w-full rounded-2xl"
+                    src={`https://www.youtube.com/embed/${GLEE_YOUTUBE_EMBED_ID}?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1&loop=1&playlist=${GLEE_YOUTUBE_EMBED_ID}`}
+                    title="Meet Glee — AI interview coach"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="strict-origin-when-cross-origin"
                   />
-                ) : (
-                  <div className="rounded-2xl w-full aspect-video bg-white/10 flex items-center justify-center">
-                    <Bot className="h-24 w-24 text-white/30" />
-                  </div>
-                )}
+                </div>
               </div>
             </motion.div>
           </div>
@@ -493,7 +483,26 @@ const Home = () => {
                         animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
                         transition={{ duration: 4, repeat: Infinity }}
                       />
-                      {service.video ? (
+                      {service.youtubeId ? (
+                        <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
+                          <iframe
+                            className="absolute inset-0 h-full w-full"
+                            src={`https://www.youtube.com/embed/${service.youtubeId}?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1&loop=1&playlist=${service.youtubeId}`}
+                            title={`${service.title} demo`}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            loading="lazy"
+                            referrerPolicy="strict-origin-when-cross-origin"
+                          />
+                        </div>
+                      ) : service.image ? (
+                        <img
+                          src={service.image}
+                          alt="Resume analysis report preview"
+                          className="relative w-full h-auto rounded-3xl border border-white/10 shadow-2xl object-contain bg-white/5"
+                          loading="lazy"
+                        />
+                      ) : service.video ? (
                         <video
                           src={service.video}
                           className="relative rounded-3xl border border-white/10 shadow-2xl w-full"
