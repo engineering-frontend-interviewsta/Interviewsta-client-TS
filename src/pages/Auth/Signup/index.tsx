@@ -146,9 +146,9 @@ export default function Signup() {
             className="auth-select"
           >
             <option value="user">User</option>
-            <option value="student">Student</option>
+            {/* <option value="student">Student</option>
             <option value="teacher">Teacher</option>
-            <option value="admin">Admin</option>
+            <option value="admin">Admin</option> */}
           </select>
         </div>
         <div className="auth-field">
