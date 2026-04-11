@@ -14,8 +14,10 @@ export default function Signup() {
 
   useEffect(() => {
     if (!isLoading && user && roles) {
-      if (roles.includes('teacher')) navigate(ROUTES.TEACHER_DASHBOARD, { replace: true });
-      else if (roles.includes('admin')) navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+      if (roles.includes('admin')) navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+      else if (roles.includes('org_admin')) navigate(ROUTES.ORG_SETUP, { replace: true });
+      else if (roles.includes('teacher')) navigate(ROUTES.TEACHER_ONBOARDING, { replace: true });
+      else if (roles.includes('student')) navigate(ROUTES.STUDENT_MY_CLASSES, { replace: true });
       else navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
     }
   }, [isLoading, user, roles, navigate]);
@@ -78,7 +80,12 @@ export default function Signup() {
         setError(result.error ?? 'Registration failed.');
         return;
       }
-      navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
+      const primaryRole = result.roles?.[0] ?? result.role;
+      if (primaryRole === 'admin') navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+      else if (primaryRole === 'org_admin') navigate(ROUTES.ORG_SETUP, { replace: true });
+      else if (primaryRole === 'teacher') navigate(ROUTES.TEACHER_ONBOARDING, { replace: true });
+      else if (primaryRole === 'student') navigate(ROUTES.STUDENT_MY_CLASSES, { replace: true });
+      else navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
     } catch {
       setError('Registration failed. Please try again.');
     } finally {
@@ -148,6 +155,7 @@ export default function Signup() {
             <option value="user">User</option>
             {/* <option value="student">Student</option>
             <option value="teacher">Teacher</option>
+            <option value="org_admin">Organization admin</option>
             <option value="admin">Admin</option> */}
           </select>
         </div>
