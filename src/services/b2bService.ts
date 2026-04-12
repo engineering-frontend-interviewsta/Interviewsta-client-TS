@@ -170,6 +170,16 @@ export async function getStudentClasses() {
   return nestClient.get<TeacherClass[]>(B2B_ENDPOINTS.STUDENT_CLASSES);
 }
 
+export type StudentClassDetailResponse = {
+  class: { classId: string; name: string; code: string; description: string };
+  announcements: Array<{ id: string; title: string; body: string; isPinned: boolean; createdAt: string }>;
+  assignments: Array<{ id: string; title: string; description: string; dueAt: string | null; createdAt: string }>;
+};
+
+export async function getStudentClassDetail(classId: string) {
+  return nestClient.get<StudentClassDetailResponse>(`/b2b/student/classes/${classId}`);
+}
+
 export async function getOrgDashboard() {
   return nestClient.get<OrgDashboardResponse>(B2B_ENDPOINTS.ORG_DASHBOARD);
 }

@@ -51,6 +51,7 @@ const TeacherClassesPage = lazyWithRetry(() => import('../pages/Teacher/Classes'
 const TeacherClassDetailPage = lazyWithRetry(() => import('../pages/Teacher/ClassDetail'));
 const TeacherStudentDetailPage = lazyWithRetry(() => import('../pages/Teacher/StudentDetail'));
 const StudentMyClassesPage = lazyWithRetry(() => import('../pages/Student/MyClasses'));
+const StudentClassDetailPage = lazyWithRetry(() => import('../pages/Student/ClassDetail'));
 
 const routeConfig = [
   {
@@ -263,6 +264,12 @@ const routeConfig = [
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [{ index: true, element: <StudentMyClassesPage /> }],
+  },
+  {
+    path: ROUTES.STUDENT_CLASS_DETAIL,
+    element: <AppLayout />,
+    errorElement: <RouteError />,
+    children: [{ index: true, element: <StudentClassDetailPage /> }],
   },
   {
     path: ROUTES.NOT_FOUND,
