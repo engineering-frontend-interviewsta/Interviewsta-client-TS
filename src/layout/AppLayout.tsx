@@ -111,7 +111,7 @@ export default function AppLayout() {
       : primaryRole === 'teacher'
       ? ROUTES.TEACHER_CLASSES
       : primaryRole === 'student'
-      ? ROUTES.STUDENT_MY_CLASSES
+      ? ROUTES.STUDENT_DASHBOARD
       : ROUTES.STUDENT_DASHBOARD;
   const canUseOrgAdminMainNav = !isOrgAdmin || orgSetupDone;
 
