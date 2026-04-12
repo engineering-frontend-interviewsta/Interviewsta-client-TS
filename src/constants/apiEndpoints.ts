@@ -107,34 +107,6 @@ export const USER_ADMIN_ENDPOINTS = {
   STATS: '/user/admin/stats',
 } as const;
 
-/** Teacher (Django) */
-export const TEACHER_ENDPOINTS = {
-  DASHBOARD_STATS: 'teacher/dashboard-stats/',
-  CLASS_PERFORMANCE: (classId: string) => `teacher/class/${classId}/performance/`,
-  STUDENTS_BATCH: 'teacher/students-batch/',
-} as const;
-
-/** Student (Django) */
-export const STUDENT_ENDPOINTS = {
-  CLASSES: 'classes/student/',
-  JOIN_CLASS: 'student-classes/join/',
-  PERFORMANCE_ANALYSIS: 'student/performance-analysis/',
-} as const;
-
-/** Classes, assignments, time-slots (Django) */
-export const CLASS_ENDPOINTS = {
-  LIST: 'classes/',
-  DETAIL: (id: string) => `classes/${id}/`,
-  ASSIGNMENTS_BY_CLASS: (classId: string) => `assignments/?class_assigned=${classId}`,
-  ASSIGNMENT_DETAIL: (id: string) => `assignments/${id}/`,
-  SUBMISSIONS: 'assignment-submissions/',
-  SUBMISSIONS_BY_ASSIGNMENT: (assignmentId: string) => `assignment-submissions/?assignment=${assignmentId}`,
-  TIME_SLOTS: (classId: string) => `time-slots/?class_obj=${classId}`,
-  TIME_SLOTS_CREATE: 'time-slots/',
-  ANNOUNCEMENTS: (classId: string) => `announcements/?class_obj=${classId}`,
-  ANNOUNCEMENTS_CREATE: 'announcements/',
-} as const;
-
 /** Resume (legacy Django — kept for history pages only) */
 export const RESUME_APP_ENDPOINTS = {
   UPLOAD_FILES: 'upload-files/',
@@ -144,4 +116,28 @@ export const RESUME_APP_ENDPOINTS = {
 export const ADMIN_INTERVIEW_THUMBNAILS_ENDPOINTS = {
   UPLOAD_THUMBNAIL: (interviewTestId: string) =>
     `/admin/interview-thumbnails/${interviewTestId}/thumbnail`,
+} as const;
+
+export const B2B_ENDPOINTS = {
+  CREATE_ORG: '/b2b/org/create',
+  ORG_SETUP_STATUS: '/b2b/org/setup-status',
+  ORG_DASHBOARD: '/b2b/org/dashboard',
+  ORG_TEACHER_DETAIL: (teacherUserId: string) => `/b2b/org/teachers/${teacherUserId}`,
+  ORG_CLASS_DETAIL: (classId: string) => `/b2b/org/classes/${classId}`,
+  ORG_STUDENT_DETAIL: (studentUserId: string) => `/b2b/org/students/${studentUserId}`,
+  TEACHER_JOIN_ORG: '/b2b/teacher/join-org',
+  TEACHER_ORG: '/b2b/teacher/org',
+  TEACHER_CLASSES: '/b2b/teacher/classes',
+  TEACHER_CLASS_DETAIL: (classId: string) => `/b2b/teacher/classes/${classId}`,
+  TEACHER_CLASS_ANALYTICS: (classId: string) => `/b2b/teacher/classes/${classId}/analytics`,
+  TEACHER_CLASS_ANNOUNCEMENTS: (classId: string) => `/b2b/teacher/classes/${classId}/announcements`,
+  TEACHER_CLASS_ANNOUNCEMENT_DELETE: (classId: string, announcementId: string) =>
+    `/b2b/teacher/classes/${classId}/announcements/${announcementId}/delete`,
+  TEACHER_CLASS_ASSIGNMENTS: (classId: string) => `/b2b/teacher/classes/${classId}/assignments`,
+  TEACHER_CLASS_ASSIGNMENT_DELETE: (classId: string, assignmentId: string) =>
+    `/b2b/teacher/classes/${classId}/assignments/${assignmentId}/delete`,
+  TEACHER_STUDENT_DETAIL: (studentUserId: string) => `/b2b/teacher/students/${studentUserId}`,
+  TEACHER_STUDENT_ANALYTICS: (studentUserId: string) => `/b2b/teacher/students/${studentUserId}/analytics`,
+  STUDENT_JOIN_CLASS: '/b2b/student/join-class',
+  STUDENT_CLASSES: '/b2b/student/classes',
 } as const;
