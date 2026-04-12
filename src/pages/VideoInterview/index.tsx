@@ -78,6 +78,9 @@ export default function VideoInterview() {
     try {
       const list = await getInterviewParentTypes();
       setParentTypes(list);
+      // Default to "Technical Subjects" category
+      const technical = list.find((p) => p.title.toLowerCase().includes('technical subject'));
+      if (technical) setSelectedParentId(technical.id);
     } catch {
       setParentTypes([]);
     }
@@ -337,15 +340,6 @@ export default function VideoInterview() {
 
           <div className="video-interview__toolbar">
             <div className="video-interview__filters">
-              <button
-                type="button"
-                onClick={() => setSelectedParentId(null)}
-                className={`video-interview__pill ${
-                  selectedParentId === null ? 'video-interview__pill--active' : ''
-                }`}
-              >
-                All
-              </button>
               {parentTypes.map((p) => (
                 <button
                   key={p.id}
