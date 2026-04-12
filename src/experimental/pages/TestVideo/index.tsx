@@ -88,6 +88,11 @@ export default function TestVideo() {
   const [isEndingInterview, setIsEndingInterview] = useState(false);
   const [endTaskId, setEndTaskId] = useState<string | null>(null);
   const appendStreamUserTranscriptRef = useRef(true);
+  const respondCodeRef = useRef('');
+  const [codeEditorValue, setCodeEditorValue] = useState('');
+  useEffect(() => {
+    respondCodeRef.current = codeEditorValue;
+  }, [codeEditorValue]);
   const hasNavigatedToFeedbackRef = useRef(false);
   /** True when user clicked End and we're waiting for feedback task — don't navigate until poll completes */
   const waitingForFeedbackRef = useRef(false);
@@ -124,13 +129,13 @@ export default function TestVideo() {
     awaitingStreamAi,
     submitText,
     submitAudio,
-    submitCode,
     endSession,
     updateCommunicationData,
   } = useInterviewSession({
     sessionId: sessionId ?? '',
     interviewType,
     appendStreamUserTranscriptRef,
+    respondCodeRef,
     onFeedbackReady: onInterviewFeedbackReady,
   });
   const { videoRef, audioEnabled, getStream, streamReady } = useMediaDevices();
@@ -732,10 +737,7 @@ export default function TestVideo() {
 
               {activeTab === 'code' && isCodeInterview && (
                 <div className="mb-4 flex-1">
-                  <CodeEditorPanel
-                    onSend={submitCode}
-                    disabled={!sessionId || isSubmitting || awaitingStreamAi}
-                  />
+                  <CodeEditorPanel value={codeEditorValue} onChange={setCodeEditorValue} />
                 </div>
               )}
             </div>
