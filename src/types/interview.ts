@@ -18,6 +18,8 @@ export interface StartInterviewPayload {
   Tags?: string[];
   company?: string;
   QuestionResearch?: string;
+  /** Dev-only: use Sarvam STT/TTS for the session (server strips for non-dev JWTs). */
+  use_sarvam_audio?: boolean;
 }
 
 /** Params for starting an interview session */

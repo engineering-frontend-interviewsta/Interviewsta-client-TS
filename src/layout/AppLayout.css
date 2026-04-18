@@ -14,7 +14,8 @@
 .app-layout__header {
   position: sticky;
   top: 0;
-  z-index: 100;
+  /* Above in-page chart/tooltip layers (e.g. Recharts) so header controls stay usable */
+  z-index: 2500;
   background: var(--color-header-surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -255,7 +256,8 @@
   box-shadow: var(--shadow-dropdown);
   border: 1px solid var(--color-border-light);
   animation: app-layout-dropdown-in var(--duration-fast) var(--ease-out) forwards;
-  z-index: 200;
+  /* Above theme menu (120) inside the same header stacking context */
+  z-index: 300;
 }
 
 @keyframes app-layout-dropdown-in {

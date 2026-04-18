@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Bell, Lock, Monitor, Smartphone, Globe, Trash2, User, LogOut } from 'lucide-react';
+import { Bell, Lock, Monitor, Smartphone, Globe, Trash2, User, LogOut, AudioLines } from 'lucide-react';
 import { listSessions, revokeSession, revokeOtherSessions } from '../../../services/sessionService';
 import type { UserSession } from '../../../types/account';
+import { useAuth } from '../../../context/AuthContext';
+import { getUseSarvamAudio, setUseSarvamAudio } from '../../../utils/sarvamAudioPreference';
 
 function getDeviceIcon(deviceInfo?: string) {
   const d = (deviceInfo ?? '').toLowerCase();
@@ -27,9 +29,14 @@ function formatRelativeTime(dateStr: string): string {
 }
 
 export default function SettingsTab() {
+  const { roles } = useAuth();
+  const canUseSarvamDevToggle =
+    (roles?.includes('developer') ?? false) || (roles?.includes('admin') ?? false);
+
   const [emailNotifs, setEmailNotifs] = useState(true);
   const [sessionReminders, setSessionReminders] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [useSarvamAudio, setUseSarvamAudioState] = useState(() => getUseSarvamAudio());
 
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
@@ -143,6 +150,36 @@ export default function SettingsTab() {
           <p className="account-tab__settings-desc">Name changes are managed via your auth provider.</p>
         </div>
       </div>
+
+      {canUseSarvamDevToggle && (
+        <div className="account-tab__settings-section">
+          <div className="account-tab__settings-section-header">
+            <AudioLines size={16} aria-hidden />
+            <span>Developer</span>
+          </div>
+          <div className="account-tab__settings-row">
+            <div>
+              <p className="account-tab__settings-label">Sarvam AI (STT / TTS)</p>
+              <p className="account-tab__settings-desc">
+                Use Sarvam for speech in new interview sessions. Applies after you start a new interview.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={useSarvamAudio}
+              className={`account-tab__toggle ${useSarvamAudio ? 'account-tab__toggle--on' : ''}`}
+              onClick={() => {
+                const next = !useSarvamAudio;
+                setUseSarvamAudio(next);
+                setUseSarvamAudioState(next);
+              }}
+            >
+              <span className="account-tab__toggle-thumb" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Security */}
       <div className="account-tab__settings-section">

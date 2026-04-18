@@ -173,7 +173,8 @@
   border-radius: var(--radius-md);
   padding: 0.6rem 0.75rem;
   font-size: var(--text-sm);
-  background: #fff;
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 .b2b-input:focus,
@@ -192,8 +193,8 @@
   width: fit-content;
   border: 0;
   border-radius: var(--radius-md);
-  background: #0f0f13;
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-surface);
   padding: 0.55rem 1rem;
   font-size: var(--text-sm);
   font-weight: 600;
@@ -208,11 +209,11 @@
 .b2b-modal {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 2600;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(11, 14, 24, 0.42);
+  background: var(--color-overlay-scrim);
   padding: 1rem;
 }
 

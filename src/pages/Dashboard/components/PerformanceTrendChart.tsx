@@ -1,7 +1,12 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { PerformanceTrendPoint } from '../../../types/dashboard';
 import { useTheme } from '../../../context/ThemeContext';
-import { getDashboardChartPalette } from '../chartTheme';
+import {
+  chartTooltipContentStyle,
+  chartTooltipItemStyle,
+  chartTooltipLabelStyle,
+  getDashboardChartPalette,
+} from '../chartTheme';
 import './PerformanceCharts.css';
 
 interface Props {
@@ -15,14 +20,6 @@ export default function PerformanceTrendChart({ trend, title = 'Overall performa
   const chart = getDashboardChartPalette(resolvedTheme);
   const gradientId = `trendGradient-${resolvedTheme}`;
 
-  const tooltipSurface = {
-    backgroundColor: 'var(--color-surface)',
-    color: 'var(--color-text)',
-    borderRadius: 'var(--radius-lg)',
-    border: '1px solid var(--color-border-light)',
-    boxShadow: 'var(--shadow-md)',
-    fontFamily: 'var(--font-sans)',
-  } as const;
   if (!trend || trend.length === 0) {
     return (
       <div className="perf-chart" style={{ minHeight: height + 60 }}>
@@ -80,9 +77,9 @@ export default function PerformanceTrendChart({ trend, title = 'Overall performa
           />
           <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: chart.trendAxis }} />
           <Tooltip
-            contentStyle={tooltipSurface}
-            labelStyle={{ color: 'var(--color-text-muted)' }}
-            itemStyle={{ color: 'var(--color-text)' }}
+            contentStyle={chartTooltipContentStyle}
+            labelStyle={chartTooltipLabelStyle}
+            itemStyle={chartTooltipItemStyle}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: any) => [`${value}%`, 'Score']}
             labelFormatter={(_, payload) => {
