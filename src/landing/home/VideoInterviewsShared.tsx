@@ -3,7 +3,6 @@
  * InterviewCategoriesSection (home) and VideoInterviewsPage.
  */
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Play } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
