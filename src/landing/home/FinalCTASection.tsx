@@ -28,7 +28,7 @@ const FinalCTASection: React.FC = () => {
             Ready to Ace Your Next Interview?
           </h2>
           <p className="text-white/80 text-lg mb-10">
-            Join 10,000+ candidates already preparing with Interviewsta.AI
+            Join 5,000+ candidates already preparing with Interviewsta.AI
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

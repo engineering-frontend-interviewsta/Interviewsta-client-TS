@@ -317,7 +317,7 @@ const InterviewCategoriesSection: React.FC = () => {
             Everything You Need to Prepare
           </h2>
           <p className="text-[var(--color-text-muted)] text-lg max-w-2xl mx-auto">
-            9 interview types, 20+ company tracks, and hundreds of DSA topics — all in one place.
+            9 interview types, 100+ interviews, and hundreds of DSA topics — all in one place.
           </p>
         </motion.div>
 

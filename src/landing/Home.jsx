@@ -205,7 +205,7 @@ const Home = () => {
           {/* Interactive Timeline */}
           <div className="relative">
             {/* Central Line */}
-            <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-[var(--color-primary)] to-[var(--color-primary-muted)] transform -translate-x-1/2" />
+            <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[var(--color-primary)] to-[var(--color-primary-muted)] transform -translate-x-1/2" />
 
             <div className="space-y-16">
               {[
@@ -252,41 +252,75 @@ const Home = () => {
                   whileInView={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.2 }}
                   viewport={{ once: true }}
-                  className="relative lg:grid lg:grid-cols-2 lg:gap-16 items-center"
+                  className="relative grid grid-cols-1 lg:grid-cols-2 lg:gap-16 items-center"
                 >
-                  <div className={`${item.side === "left" ? "lg:text-right" : "lg:order-2"}`}>
-                    <motion.div
-                      whileHover={{ scale: 1.02, y: -5 }}
-                      className="bg-[var(--color-surface)] rounded-3xl p-8 shadow-[var(--shadow-lg)] border border-[var(--color-border-light)] relative overflow-hidden group cursor-pointer"
-                    >
+                  {/* Left column */}
+                  <div className="flex justify-end">
+                    {item.side === "left" ? (
                       <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-muted)] opacity-0 group-hover:opacity-10 transition-opacity duration-500"
-                      />
-                      <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-4">
-                          <span className="text-6xl font-black bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-muted)] bg-clip-text text-transparent opacity-20">
-                            {item.step}
-                          </span>
-                          <motion.div
-                            whileHover={{ rotate: 360, scale: 1.2 }}
-                            transition={{ duration: 0.6 }}
-                            className="w-16 h-16 bg-[var(--color-primary)] rounded-2xl flex items-center justify-center shadow-lg"
-                          >
-                            <item.icon className="h-8 w-8 text-white" />
-                          </motion.div>
+                        whileHover={{ scale: 1.02, y: -5 }}
+                        className="w-full bg-[var(--color-surface)] rounded-3xl p-8 shadow-[var(--shadow-lg)] border border-[var(--color-border-light)] relative overflow-hidden group cursor-pointer"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-muted)] opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+                        <div className="relative z-10">
+                          <div className="flex items-center justify-between mb-4">
+                            <span className="text-6xl font-black bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-muted)] bg-clip-text text-transparent opacity-20">
+                              {item.step}
+                            </span>
+                            <motion.div
+                              whileHover={{ rotate: 360, scale: 1.2 }}
+                              transition={{ duration: 0.6 }}
+                              className="w-16 h-16 bg-[var(--color-primary)] rounded-2xl flex items-center justify-center shadow-lg"
+                            >
+                              <item.icon className="h-8 w-8 text-white" />
+                            </motion.div>
+                          </div>
+                          <h3 className="text-2xl font-bold text-[var(--color-text)] mb-3">{item.title}</h3>
+                          <p className="text-[var(--color-text-muted)] leading-relaxed mb-4">{item.description}</p>
+                          <div className="inline-flex items-center space-x-2 bg-[var(--color-primary)] text-white px-4 py-2 rounded-full text-sm font-semibold">
+                            <AlertCircle className="h-4 w-4" />
+                            <span>{item.stat}</span>
+                          </div>
                         </div>
-                        <h3 className="text-2xl font-bold text-[var(--color-text)] mb-3">
-                          {item.title}
-                        </h3>
-                        <p className="text-[var(--color-text-muted)] leading-relaxed mb-4">
-                          {item.description}
-                        </p>
-                        <div className="inline-flex items-center space-x-2 bg-[var(--color-primary)] text-white px-4 py-2 rounded-full text-sm font-semibold">
-                          <AlertCircle className="h-4 w-4" />
-                          <span>{item.stat}</span>
+                      </motion.div>
+                    ) : (
+                      /* Empty spacer for right-side items */
+                      <div className="hidden lg:block" />
+                    )}
+                  </div>
+
+                  {/* Right column */}
+                  <div className="flex justify-start">
+                    {item.side === "right" ? (
+                      <motion.div
+                        whileHover={{ scale: 1.02, y: -5 }}
+                        className="w-full bg-[var(--color-surface)] rounded-3xl p-8 shadow-[var(--shadow-lg)] border border-[var(--color-border-light)] relative overflow-hidden group cursor-pointer"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-muted)] opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+                        <div className="relative z-10">
+                          <div className="flex items-center justify-between mb-4">
+                            <span className="text-6xl font-black bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-muted)] bg-clip-text text-transparent opacity-20">
+                              {item.step}
+                            </span>
+                            <motion.div
+                              whileHover={{ rotate: 360, scale: 1.2 }}
+                              transition={{ duration: 0.6 }}
+                              className="w-16 h-16 bg-[var(--color-primary)] rounded-2xl flex items-center justify-center shadow-lg"
+                            >
+                              <item.icon className="h-8 w-8 text-white" />
+                            </motion.div>
+                          </div>
+                          <h3 className="text-2xl font-bold text-[var(--color-text)] mb-3">{item.title}</h3>
+                          <p className="text-[var(--color-text-muted)] leading-relaxed mb-4">{item.description}</p>
+                          <div className="inline-flex items-center space-x-2 bg-[var(--color-primary)] text-white px-4 py-2 rounded-full text-sm font-semibold">
+                            <AlertCircle className="h-4 w-4" />
+                            <span>{item.stat}</span>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
+                      </motion.div>
+                    ) : (
+                      <div className="hidden lg:block" />
+                    )}
                   </div>
 
                   {/* Center Node */}
@@ -306,33 +340,7 @@ const Home = () => {
             </div>
           </div>
 
-          {/* CTA Banner */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mt-20"
-          >
-            <div className="inline-block bg-[var(--color-primary)] rounded-3xl p-10 shadow-2xl">
-              <h3 className="text-3xl font-bold text-white mb-4">
-                We Help You Break Through
-              </h3>
-              <p className="text-white/80 text-lg mb-6 max-w-2xl">
-                Don't let these challenges hold you back. Our AI-powered platform gives you the
-                practice, feedback, and confidence you need to succeed.
-              </p>
-              <a href="/signup">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-white text-[var(--color-primary)] px-8 py-4 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl transition-all"
-                >
-                  Start Preparing Today
-                </motion.button>
-              </a>
-            </div>
-          </motion.div>
+
         </div>
       </div>
 

@@ -21,9 +21,9 @@ const itemVariants = {
 };
 
 const stats = [
-  { number: '10,000+', label: 'Interview Questions' },
+  { number: '5,000+', label: 'Interview Questions' },
   { number: '9+', label: 'Interview Categories' },
-  { number: '20+', label: 'Company Tracks' },
+  { number: '100+', label: 'Interviews' },
   { number: '24/7', label: 'AI Availability' },
 ];
 
