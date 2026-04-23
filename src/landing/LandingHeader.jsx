@@ -21,7 +21,6 @@ const LandingHeader = () => {
   }, []);
 
   const productSubItems = [
-    { id: "video-interviews", label: "Video Interviews", link: "/video-interviews" },
     { id: "resume-analysis", label: "Resume Analysis", link: "/resume" },
     { id: "dashboard", label: "Dashboard", link: "/dashboard" },
   ];

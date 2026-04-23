@@ -1,30 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' as const },
-  },
-};
+import InterviewMockup from './InterviewMockup';
 
 const stats = [
   { number: '5,000+', label: 'Interview Questions' },
-  { number: '9+', label: 'Interview Categories' },
-  { number: '100+', label: 'Interviews' },
-  { number: '24/7', label: 'AI Availability' },
+  { number: '9+',     label: 'Interview Categories' },
+  { number: '100+',   label: 'Interviews' },
+  { number: '24/7',   label: 'AI Availability' },
 ];
 
 const HeroSection: React.FC = () => {
@@ -32,117 +16,114 @@ const HeroSection: React.FC = () => {
 
   return (
     <div className="relative overflow-hidden bg-[var(--color-surface-alt)]">
-      {/* Decorative orb */}
-      <div
-        aria-hidden="true"
-        className="absolute top-0 right-0 w-96 h-96 rounded-full bg-[var(--color-primary-light)] blur-3xl opacity-40 pointer-events-none"
-      />
+      {/* Ambient orbs */}
+      <div aria-hidden className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-[var(--color-primary-light)] blur-3xl opacity-40 pointer-events-none" />
+      <div aria-hidden className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-[var(--color-primary-light)] blur-3xl opacity-20 pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 relative z-10">
-        <div className="text-center space-y-8">
-          {/* Animated badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center space-x-2 bg-[var(--color-primary-light)] text-[var(--color-primary)] rounded-full px-6 py-3"
-          >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-            >
-              <Sparkles className="h-5 w-5" />
-            </motion.div>
-            <motion.span
-              initial={{ width: 0 }}
-              animate={{ width: 'auto' }}
-              transition={{ delay: 0.5, duration: 0.5, ease: 'easeOut' }}
-              className="text-sm font-medium overflow-hidden whitespace-nowrap"
-            >
-              Powered by Empathetic AI
-            </motion.span>
-          </motion.div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-0 relative z-10">
+        <div className="flex flex-col lg:flex-row gap-10 items-center">
 
-          {/* Headline */}
-          <div className="space-y-4">
+          {/* ── Left 40%: text + CTAs + stats ── */}
+          <div className="w-full lg:w-[40%] space-y-7 pb-16 flex-shrink-0">
+            {/* Badge */}
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, ease: 'easeOut' }}
-              className="text-5xl md:text-7xl font-bold"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center space-x-2 bg-[var(--color-primary-light)] text-[var(--color-primary)] rounded-full px-5 py-2.5"
             >
-              <span className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-muted)] bg-clip-text text-transparent">
-                Master Your
-              </span>
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}>
+                <Sparkles className="h-4 w-4" />
+              </motion.div>
+              <span className="text-sm font-medium">Powered by Empathetic AI</span>
             </motion.div>
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.1, ease: 'easeOut' }}
-              className="text-5xl md:text-7xl font-bold text-[var(--color-text)]"
-            >
-              Interview Skills
-            </motion.div>
+
+            {/* Headline */}
+            <div className="space-y-1">
+              <motion.div
+                initial={{ opacity: 0, x: -40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7, ease: 'easeOut' }}
+                className="text-5xl md:text-6xl font-bold leading-tight"
+              >
+                <span className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-muted)] bg-clip-text text-transparent">
+                  Master Your
+                </span>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7, delay: 0.1, ease: 'easeOut' }}
+                className="text-5xl md:text-6xl font-bold text-[var(--color-text)] leading-tight"
+              >
+                Interview Skills
+              </motion.div>
+            </div>
+
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="text-xl md:text-2xl text-[var(--color-text-muted)] max-w-3xl mx-auto leading-relaxed"
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="text-base md:text-lg text-[var(--color-text-muted)] leading-relaxed"
             >
-              Prepare for your dream job with AI-powered interview practice,
-              personalized coaching, and comprehensive skill assessments.
+              Practice with Glee, your AI interviewer. Get real feedback, build confidence, and land your dream job.
             </motion.p>
+
+            {/* CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.45 }}
+              className="flex flex-wrap gap-3"
+            >
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/login')}
+                className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white px-6 py-3 rounded-[var(--radius-xl)] font-semibold text-sm shadow-[var(--shadow-lg)] transition-colors duration-200 inline-flex items-center gap-2"
+              >
+                Start Interview Practice <ArrowRight className="h-4 w-4" />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/dashboard')}
+                className="border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-primary-light)] px-6 py-3 rounded-[var(--radius-xl)] font-semibold text-sm transition-colors duration-200"
+              >
+                View Dashboard
+              </motion.button>
+            </motion.div>
+
+            {/* Stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+              className="grid grid-cols-2 gap-5 pt-2"
+            >
+              {stats.map((stat, i) => (
+                <div key={i}>
+                  <div className="text-2xl font-bold text-[var(--color-text)]">{stat.number}</div>
+                  <div className="text-[var(--color-text-muted)] text-xs mt-0.5">{stat.label}</div>
+                </div>
+              ))}
+            </motion.div>
           </div>
 
-          {/* CTA Buttons */}
+          {/* ── Right 60%: live interview mockup ── */}
           <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full lg:w-[60%] relative hidden lg:block"
           >
-            <motion.button
-              variants={itemVariants}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/login')}
-              className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white px-8 py-4 rounded-[var(--radius-xl)] font-semibold text-lg shadow-[var(--shadow-lg)] transition-colors duration-200"
-            >
-              Start Interview Practice →
-            </motion.button>
-            <motion.button
-              variants={itemVariants}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/dashboard')}
-              className="border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-primary-light)] px-8 py-4 rounded-[var(--radius-xl)] font-semibold text-lg transition-colors duration-200"
-            >
-              View Dashboard
-            </motion.button>
+            <div className="absolute -inset-4 bg-[var(--color-primary-light)] rounded-3xl blur-2xl opacity-50 pointer-events-none" />
+            <div className="relative">
+              <InterviewMockup />
+              <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[var(--color-surface-alt)] to-transparent pointer-events-none rounded-b-2xl" />
+            </div>
           </motion.div>
 
-          {/* Stats row */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-16"
-          >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                whileHover={{ scale: 1.05 }}
-                viewport={{ once: true }}
-                className="text-center cursor-pointer"
-              >
-                <div className="text-3xl md:text-4xl font-bold text-[var(--color-text)]">
-                  {stat.number}
-                </div>
-                <div className="text-[var(--color-text-muted)] text-sm mt-1">{stat.label}</div>
-              </motion.div>
-            ))}
-          </motion.div>
         </div>
       </div>
     </div>
