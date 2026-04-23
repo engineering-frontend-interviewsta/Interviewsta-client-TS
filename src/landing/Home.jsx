@@ -19,10 +19,8 @@ import { Link } from "react-router-dom";
 
 import resumeAnalysisReport from "../assets/resume_analysis_report.png";
 import HeroSection from "./home/HeroSection";
-import SocialProofStrip from "./home/SocialProofStrip";
 import InterviewCategoriesSection from "./home/InterviewCategoriesSection";
-import StatsSection from "./home/StatsSection";
-import TestimonialsSection from "./home/TestimonialsSection";
+import VideoTestimonialsSection from "./home/VideoTestimonialsSection";
 import FinalCTASection from "./home/FinalCTASection";
 
 const services = [
@@ -66,14 +64,8 @@ const Home = () => {
       {/* Hero */}
       <HeroSection />
 
-      {/* Social Proof Strip */}
-      <SocialProofStrip />
-
       {/* Interview Categories */}
       <InterviewCategoriesSection />
-
-      {/* Stats */}
-      <StatsSection />
 
       {/* Meet Glee Section */}
       <div className="bg-gradient-to-br from-[#4c1d95] to-[#3b0764] py-20">
@@ -526,8 +518,8 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Testimonials */}
-      <TestimonialsSection />
+      {/* Video Testimonials */}
+      <VideoTestimonialsSection />
 
       {/* Final CTA */}
       <FinalCTASection />
