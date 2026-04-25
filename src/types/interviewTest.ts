@@ -10,15 +10,32 @@ export interface ParentInterviewType {
 /** Nested parent in an interview test */
 export interface InterviewTestParent {
   id: string;
+  code?: string;
   title: string;
   description: string;
   type: string;
   tags: string[];
 }
 
+export interface InterviewEligibilityCriterion {
+  requiredInterviewCode: string;
+  requiredInterviewTitle: string;
+  minScore: number;
+  minCompletions: number;
+  completedCount: number;
+  isMet: boolean;
+}
+
+export interface InterviewEligibility {
+  isEligible: boolean;
+  locked: boolean;
+  criteria: InterviewEligibilityCriterion[];
+}
+
 /** Single interview test from INTERVIEW_TESTS or BY_PARENT_TYPE */
 export interface InterviewTest {
   id: string;
+  code?: string;
   title: string;
   description: string;
   topics: string[];
@@ -32,6 +49,7 @@ export interface InterviewTest {
   isActive: boolean;
   parent: InterviewTestParent;
   thumbnailUrl?: string | null;
+  eligibility?: InterviewEligibility | null;
 }
 
 /** Paginated response for interview tests */
