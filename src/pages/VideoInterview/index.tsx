@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Video, Search, ChevronRight } from 'lucide-react';
+import { Video, Search, ChevronRight, Lock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   startInterview,
@@ -35,6 +35,18 @@ function getDifficultyClass(difficulty: string): 'easy' | 'medium' | 'hard' {
   if (d === 'easy') return 'easy';
   if (d === 'hard') return 'hard';
   return 'medium';
+}
+
+function isInterviewLocked(test: InterviewTest): boolean {
+  const e = test.eligibility;
+  if (!e) return false;
+  return e.locked || e.isEligible === false;
+}
+
+function eligibilityBlockedReason(test: InterviewTest): string {
+  const criteria = test.eligibility?.criteria ?? [];
+  if (criteria.length === 0) return 'Complete prerequisite interviews to unlock this interview.';
+  return 'Complete the prerequisites below to unlock this interview.';
 }
 
 const CONSULTING_SLUGS = new Set(CONSULTING_TOPICS_LIST.map((t) => t.slug));
@@ -278,6 +290,10 @@ export default function VideoInterview() {
 
   const handleStart = useCallback(
     async (test: InterviewTest) => {
+      if (isInterviewLocked(test)) {
+        setStartError(eligibilityBlockedReason(test));
+        return;
+      }
       if (!user?.email) {
         setStartError('Please sign in to start an interview.');
         return;
@@ -387,6 +403,36 @@ export default function VideoInterview() {
                     </div>
                   ) : null}
                   <div className="video-interview__card-body">
+                    {isInterviewLocked(test) && (
+                      <div className="video-interview__lock-wrap">
+                        <div
+                          className="video-interview__lock-banner"
+                          role="button"
+                          tabIndex={0}
+                          aria-label="Locked interview. Hover or focus to see unlock requirements."
+                          aria-haspopup="dialog"
+                        >
+                          <Lock size={14} aria-hidden />
+                          <span>Locked</span>
+                        </div>
+                        <div className="video-interview__lock-popover" role="dialog" aria-label="Unlock requirements">
+                          <p className="video-interview__lock-criteria-title">Unlock requirements</p>
+                          <ul className="video-interview__lock-criteria-list">
+                            {(test.eligibility?.criteria ?? []).map((c) => (
+                              <li key={`${test.id}-${c.requiredInterviewCode}`}>
+                                <span className={c.isMet ? 'video-interview__criteria-met' : undefined}>
+                                  {c.requiredInterviewTitle}
+                                </span>
+                                <span>
+                                  {' '}
+                                  — {c.completedCount}/{c.minCompletions} sessions with at least {c.minScore}% overall
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
                     <div className="video-interview__card-tags">
                       {test.parent?.title && (
                         <span className="video-interview__card-tag video-interview__card-tag--category">
@@ -413,11 +459,11 @@ export default function VideoInterview() {
                     <div className="video-interview__card-footer">
                       <button
                         type="button"
-                        disabled={starting || mediaGateOpen}
+                        disabled={starting || mediaGateOpen || isInterviewLocked(test)}
                         onClick={() => handleStart(test)}
                         className="video-interview__btn-start"
                       >
-                        {starting ? 'Starting…' : 'Start interview'}
+                        {isInterviewLocked(test) ? 'Locked' : starting ? 'Starting…' : 'Start interview'}
                         <ChevronRight aria-hidden />
                       </button>
                     </div>
