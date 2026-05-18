@@ -35,15 +35,17 @@ export const TOKEN = {
 } as const;
 
 export const PLAN_TIERS = {
-  FREE:     { tier: 0, slug: 'free',         name: 'Free',         credits: 4,   priceInr: 0,    priceDisplay: 'Free'    },
-  PRO:      { tier: 1, slug: 'pro',          name: 'Pro',          credits: 40,  priceInr: 1660, priceDisplay: '₹1660/mo' },
-  PRO_PLUS: { tier: 2, slug: 'pro-plus',     name: 'Pro+',         credits: 100, priceInr: 2499, priceDisplay: '₹2499/mo'},
-  ORG:      { tier: 3, slug: 'organisation', name: 'Organization', credits: -1,  priceInr: -1,   priceDisplay: 'Custom'  },
-  DEV:      { tier: 4, slug: 'developer',    name: 'Developer',    credits: -1,  priceInr: 0,    priceDisplay: 'Internal'},
+  FREE:     { tier: 0, slug: 'free',         name: 'Free',         credits: 4,    priceInr: 0,   priceDisplay: 'Free'    },
+  PRO:      { tier: 1, slug: 'pro',          name: 'Pro',          credits: 500,  priceInr: 499, priceDisplay: '₹499/mo' },
+  PRO_PLUS: { tier: 2, slug: 'pro-plus',     name: 'Pro+',         credits: 1000, priceInr: 999, priceDisplay: '₹999/mo' },
+  ORG:      { tier: 3, slug: 'organisation', name: 'Organization', credits: -1,   priceInr: -1,  priceDisplay: 'Custom'  },
+  DEV:      { tier: 4, slug: 'developer',    name: 'Developer',    credits: -1,   priceInr: 0,   priceDisplay: 'Internal'},
 } as const;
 
 export const CREDIT_COSTS = {
-  INTERVIEW: 2,
+  /** Per-interview credit cost varies by type (70–100). This is the minimum for UI references. */
+  INTERVIEW_MIN: 70,
+  INTERVIEW_MAX: 100,
   RESUME: 1,
 } as const;
 

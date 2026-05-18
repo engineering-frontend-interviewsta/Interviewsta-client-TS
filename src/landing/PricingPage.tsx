@@ -201,7 +201,7 @@ export default function PricingPage() {
               const isPopular = index === 0 || plan.slug.toLowerCase() === 'pro';
               const monthlyCredits = plan.credits;
               const interviewSessions =
-                monthlyCredits === -1 ? -1 : Math.floor(monthlyCredits / CREDIT_COSTS.INTERVIEW);
+                monthlyCredits === -1 ? -1 : Math.floor(monthlyCredits / CREDIT_COSTS.INTERVIEW_MIN);
               const resumeAnalyses =
                 monthlyCredits === -1 ? -1 : Math.floor(monthlyCredits / CREDIT_COSTS.RESUME);
 
