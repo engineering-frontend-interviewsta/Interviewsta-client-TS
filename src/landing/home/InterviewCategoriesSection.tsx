@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Code2,
-  Users,
-  Terminal,
-  Briefcase,
-  MessageSquare,
-  Mic,
-  Target,
-  Building2,
-  BookOpen,
+  Code2, Users, Terminal, Briefcase, MessageSquare,
+  Mic, Target, Building2, BookOpen,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { ALL_INTERVIEW_OPTIONS } from '../../data/interviewTypesData';
 import type { LucideIcon } from 'lucide-react';
+import {
+  COMPANY_THUMBS, DSA_THUMBS, CASE_STUDY_THUMBS,
+  ThumbCard, MarqueeRow,
+} from './VideoInterviewsShared';
+
+// ─── Category cards data ──────────────────────────────────────────────────────
 
 interface CategoryCard {
   icon: LucideIcon;
@@ -89,20 +86,8 @@ const INTERVIEW_CATEGORIES: CategoryCard[] = [
   },
 ];
 
-const DSA_CHIPS = [
-  'Arrays', 'Strings', 'Graphs', 'Trees', 'Linked Lists',
-  'Stacks & Queues', 'Heaps', 'Dynamic Programming',
-];
 
-const ROLE_CHIPS = [
-  'Frontend Development', 'Backend Development', 'UI/UX Design', 'AI/ML', 'Data Science',
-];
-
-const difficultyColors: Record<string, string> = {
-  Easy: 'bg-green-100 text-green-700',
-  Medium: 'bg-amber-100 text-amber-700',
-  Hard: 'bg-red-100 text-red-700',
-};
+// ─── Main section ─────────────────────────────────────────────────────────────
 
 interface CategoryCardItemProps {
   card: CategoryCard;
@@ -111,21 +96,21 @@ interface CategoryCardItemProps {
 
 const CategoryCardItem: React.FC<CategoryCardItemProps> = ({ card, index }) => {
   const [hovered, setHovered] = useState(false);
-
   return (
     <motion.div
       data-testid="category-card"
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.06 }}
       viewport={{ once: true }}
-      whileHover={{ y: -6 }}
+      whileHover={{ y: -4 }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      className="bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded-[var(--radius-xl)] p-6 cursor-pointer overflow-hidden"
-      style={{ boxShadow: hovered ? 'var(--shadow-lg)' : 'var(--shadow-sm)' }}
+      className="relative bg-[var(--color-surface)] border border-[var(--color-border-light)] hover:border-[var(--color-primary)] rounded-[var(--radius-xl)] p-6 cursor-pointer overflow-hidden transition-colors duration-200"
+      style={{ boxShadow: 'var(--shadow-sm)' }}
     >
-      <div className="flex items-start gap-4 mb-3">
+      {/* Base content — always visible */}
+      <div className="flex items-start gap-4">
         <div className="w-12 h-12 bg-[var(--color-primary-light)] text-[var(--color-primary)] rounded-[var(--radius-lg)] flex items-center justify-center flex-shrink-0">
           <card.icon className="h-6 w-6" />
         </div>
@@ -137,30 +122,24 @@ const CategoryCardItem: React.FC<CategoryCardItemProps> = ({ card, index }) => {
         </div>
       </div>
 
+      {/* Hover overlay — blurred backdrop, topics + duration */}
       <AnimatePresence>
         {hovered && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden"
+            className="absolute inset-0 rounded-[var(--radius-xl)] backdrop-blur-sm bg-[var(--color-surface)]/80 flex flex-col justify-center px-6 gap-4"
           >
-            <div className="pt-3 border-t border-[var(--color-border-light)]">
-              <div className="flex flex-wrap gap-2 mb-2">
-                {card.topics.map((topic) => (
-                  <span
-                    key={topic}
-                    className="bg-[var(--color-primary-light)] text-[var(--color-primary)] px-2 py-0.5 rounded text-xs font-medium"
-                  >
-                    {topic}
-                  </span>
-                ))}
-              </div>
-              <span className="text-[var(--color-text-subtle)] text-xs">
-                ~{card.duration} min
-              </span>
+            <div className="flex flex-wrap gap-2">
+              {card.topics.map((topic) => (
+                <span key={topic} className="bg-[var(--color-primary-light)] text-[var(--color-primary)] px-2.5 py-1 rounded-lg text-xs font-semibold">
+                  {topic}
+                </span>
+              ))}
             </div>
+            <span className="text-[var(--color-text-subtle)] text-xs">~{card.duration} min</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -168,133 +147,107 @@ const CategoryCardItem: React.FC<CategoryCardItemProps> = ({ card, index }) => {
   );
 };
 
+// ─── Main section ─────────────────────────────────────────────────────────────
+
 const InterviewCategoriesSection: React.FC = () => {
-  const navigate = useNavigate();
-  const companies = ALL_INTERVIEW_OPTIONS.filter((e) => e.category === 'company-wise');
-
   return (
-    <section className="bg-[var(--color-surface-alt)] py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <span className="inline-block bg-[var(--color-primary-light)] text-[var(--color-primary)] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
-            Interview Library
-          </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-[var(--color-text)] mb-4">
-            Everything You Need to Prepare
-          </h2>
-          <p className="text-[var(--color-text-muted)] text-lg max-w-2xl mx-auto">
-            9 interview types, 20+ company tracks, and hundreds of DSA topics — all in one place.
-          </p>
-        </motion.div>
+    <section className="overflow-hidden">
 
-        {/* 9 Category Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-          {INTERVIEW_CATEGORIES.map((card, index) => (
-            <CategoryCardItem key={card.title} card={card} index={index} />
-          ))}
-        </div>
-
-        {/* Company Library */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="mb-12"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <h3 className="text-xl font-bold text-[var(--color-text)]">Company Library</h3>
-            <span className="bg-[var(--color-primary-light)] text-[var(--color-primary)] text-xs font-semibold px-2.5 py-1 rounded-full">
-              {companies.length}
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {companies.map((company) => (
-              <div
-                key={company.id}
-                data-testid="company-badge"
-                className="flex items-center gap-2 bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded-[var(--radius-lg)] px-3 py-2"
-              >
-                <span className="text-[var(--color-text)] text-sm font-medium">
-                  {company.company ?? company.title}
-                </span>
-                <span
-                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    difficultyColors[company.difficulty] ?? 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  {company.difficulty}
-                </span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* DSA Subjects */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="mb-10"
-        >
-          <h3 className="text-xl font-bold text-[var(--color-text)] mb-4">DSA Subjects</h3>
-          <div className="flex flex-wrap gap-3">
-            {DSA_CHIPS.map((chip) => (
-              <span
-                key={chip}
-                className="bg-[var(--color-primary-light)] text-[var(--color-primary)] px-3 py-1.5 rounded-lg text-sm font-medium"
-              >
-                {chip}
-              </span>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Role-Based Tracks */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="mb-10"
-        >
-          <h3 className="text-xl font-bold text-[var(--color-text)] mb-4">Role-Based Tracks</h3>
-          <div className="flex flex-wrap gap-3">
-            {ROLE_CHIPS.map((chip) => (
-              <span
-                key={chip}
-                className="bg-[var(--color-primary-light)] text-[var(--color-primary)] px-3 py-1.5 rounded-lg text-sm font-medium"
-              >
-                {chip}
-              </span>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center"
-        >
-          <button
-            onClick={() => navigate('/video-interviews')}
-            className="bg-[var(--color-primary)] text-white px-8 py-4 rounded-[var(--radius-xl)] font-semibold text-lg hover:bg-[var(--color-primary-hover)] transition-colors duration-200 shadow-[var(--shadow-md)]"
+      {/* ── Header + Category Cards — full-width surface band ── */}
+      <div className="bg-[var(--color-surface)] py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
           >
-            Browse All Interview Types →
-          </button>
+            <span className="inline-block bg-[var(--color-primary-light)] text-[var(--color-primary)] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
+              Interview Library
+            </span>
+            <h2 className="text-4xl md:text-5xl font-bold text-[var(--color-text)] mb-4">
+              Everything You Need to Prepare
+            </h2>
+            <p className="text-[var(--color-text-muted)] text-lg max-w-2xl mx-auto">
+              9 interview types, 100+ interviews, and hundreds of DSA topics — all in one place.
+            </p>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {INTERVIEW_CATEGORIES.map((card, index) => (
+              <CategoryCardItem key={card.title} card={card} index={index} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Company Library — full-width surface-alt band ── */}
+      <div className="bg-[var(--color-surface-alt)] py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+            <span className="inline-block bg-[var(--color-primary-light)] text-[var(--color-primary)] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">Company Library</span>
+            <h3 className="text-3xl font-bold text-[var(--color-text)] mb-2">Practice for Top Companies</h3>
+            <p className="text-[var(--color-text-muted)] text-base">Company-specific interview tracks with real-world questions</p>
+          </div>
+          <MarqueeRow
+            duration={109}
+            items={COMPANY_THUMBS.map((item) => (
+              <ThumbCard key={item.id} item={item} subLabel="Company Interview" />
+            ))}
+          />
         </motion.div>
       </div>
+
+      {/* ── DSA Subjects — full-width surface band ── */}
+      <div className="bg-[var(--color-surface)] py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+            <span className="inline-block bg-[var(--color-primary-light)] text-[var(--color-primary)] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">DSA</span>
+            <h3 className="text-3xl font-bold text-[var(--color-text)] mb-2">Data Structures & Algorithms</h3>
+            <p className="text-[var(--color-text-muted)] text-base">Deep-dive sessions on every core DSA topic</p>
+          </div>
+          <MarqueeRow
+            duration={80}
+            reverse
+            items={DSA_THUMBS.map((item) => (
+              <ThumbCard key={item.id} item={item} subLabel="DSA Interview" />
+            ))}
+          />
+        </motion.div>
+      </div>
+
+      {/* ── Case Studies — full-width surface-alt band ── */}
+      <div className="bg-[var(--color-surface-alt)] py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+            <span className="inline-block bg-orange-100 text-orange-600 text-sm font-semibold px-4 py-1.5 rounded-full mb-4">Case Studies</span>
+            <h3 className="text-3xl font-bold text-[var(--color-text)] mb-2">Indian Startup Case Studies</h3>
+            <p className="text-[var(--color-text-muted)] text-base">Real business scenarios from India's most iconic startups</p>
+          </div>
+          <MarqueeRow
+            duration={34}
+            items={CASE_STUDY_THUMBS.map((item) => (
+              <ThumbCard key={item.id} item={item} subLabel="Case Study Interview" />
+            ))}
+          />
+        </motion.div>
+      </div>
+
     </section>
   );
 };

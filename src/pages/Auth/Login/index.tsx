@@ -11,7 +11,7 @@ function redirectByRole(navigate: (path: string, opts?: { replace: boolean }) =>
   if (role === 'admin') navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
   else if (role === 'org_admin') navigate(ROUTES.ORG_SETUP, { replace: true });
   else if (role === 'teacher') navigate(ROUTES.TEACHER_ONBOARDING, { replace: true });
-  else if (role === 'student') navigate(ROUTES.STUDENT_MY_CLASSES, { replace: true });
+  else if (role === 'student') navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
   else {
     navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
   }

@@ -47,5 +47,6 @@ export const ROUTES = {
   TEACHER_CLASS_DETAIL: '/teacher/classes/:classId',
   TEACHER_STUDENT_DETAIL: '/teacher/students/:studentUserId',
   STUDENT_MY_CLASSES: '/student/my-classes',
+  STUDENT_CLASS_DETAIL: '/student/classes/:classId',
   NOT_FOUND: '*',
 } as const;

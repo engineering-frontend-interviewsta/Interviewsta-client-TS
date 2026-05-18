@@ -17,7 +17,7 @@ export default function Signup() {
       if (roles.includes('admin')) navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
       else if (roles.includes('org_admin')) navigate(ROUTES.ORG_SETUP, { replace: true });
       else if (roles.includes('teacher')) navigate(ROUTES.TEACHER_ONBOARDING, { replace: true });
-      else if (roles.includes('student')) navigate(ROUTES.STUDENT_MY_CLASSES, { replace: true });
+      else if (roles.includes('student')) navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
       else navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
     }
   }, [isLoading, user, roles, navigate]);
@@ -84,7 +84,7 @@ export default function Signup() {
       if (primaryRole === 'admin') navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
       else if (primaryRole === 'org_admin') navigate(ROUTES.ORG_SETUP, { replace: true });
       else if (primaryRole === 'teacher') navigate(ROUTES.TEACHER_ONBOARDING, { replace: true });
-      else if (primaryRole === 'student') navigate(ROUTES.STUDENT_MY_CLASSES, { replace: true });
+      else if (primaryRole === 'student') navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
       else navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
     } catch {
       setError('Registration failed. Please try again.');

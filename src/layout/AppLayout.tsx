@@ -11,7 +11,11 @@ import BrandLogo from '../components/shared/BrandLogo';
 import { getOrgSetupStatus } from '../services/b2bService';
 import './AppLayout.css';
 
-const HIDE_HEADER_PATHS: string[] = [ROUTES.INTERVIEW_INTERFACE];
+const HIDE_HEADER_PATHS: string[] = [
+  ROUTES.INTERVIEW_INTERFACE,
+  ROUTES.TEST_VIDEO,
+  ROUTES.EXPERIMENTAL_TEST_VIDEO,
+];
 const ORG_ADMIN_BLOCKED_PREFIXES: string[] = [
   ROUTES.VIDEO_INTERVIEW,
   ROUTES.LEARNING,
@@ -39,6 +43,7 @@ export default function AppLayout() {
   const isOrgAdmin = roles?.includes('org_admin');
   const isTeacher = roles?.includes('teacher');
   const isStudent = roles?.includes('student');
+  const showInterviewDevToggle = interviewDevToolsAllowedForUser(roles);
   const primaryRole = roles?.[0] ?? null;
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -106,7 +111,7 @@ export default function AppLayout() {
       : primaryRole === 'teacher'
       ? ROUTES.TEACHER_CLASSES
       : primaryRole === 'student'
-      ? ROUTES.STUDENT_MY_CLASSES
+      ? ROUTES.STUDENT_DASHBOARD
       : ROUTES.STUDENT_DASHBOARD;
   const canUseOrgAdminMainNav = !isOrgAdmin || orgSetupDone;
 
@@ -125,7 +130,7 @@ export default function AppLayout() {
               to={isAdmin ? ROUTES.ADMIN_DASHBOARD : dashboardPath}
               className="app-layout__brand"
             >
-              <img src={logoImg} alt="Interviewsta" className="app-layout__brand-logo" />
+              <BrandLogo alt="Interviewsta" className="app-layout__brand-logo" />
             </Link>
             <nav className="app-layout__nav">
               {isTeacher ? (
