@@ -201,7 +201,7 @@ export default function PricingPage() {
               const isPopular = index === 0 || plan.slug.toLowerCase() === 'pro';
               const monthlyCredits = plan.credits;
               const interviewSessions =
-                monthlyCredits === -1 ? -1 : Math.floor(monthlyCredits / CREDIT_COSTS.INTERVIEW);
+                monthlyCredits === -1 ? -1 : Math.floor(monthlyCredits / CREDIT_COSTS.INTERVIEW_MIN);
               const resumeAnalyses =
                 monthlyCredits === -1 ? -1 : Math.floor(monthlyCredits / CREDIT_COSTS.RESUME);
 
@@ -241,19 +241,15 @@ export default function PricingPage() {
                   <ul className={`mb-8 space-y-3 ${isPopular ? 'text-white/90' : 'text-[var(--color-text-muted)]'}`}>
                     <li className="flex items-center gap-2 text-sm">
                       <CheckCircle className={`h-4 w-4 flex-shrink-0 ${isPopular ? 'text-white' : 'text-[var(--color-primary)]'}`} />
-                      {plan.credits === -1 ? 'Unlimited credits' : `${plan.credits} credits`}
+                      {`${plan.credits} credits/month`}
                     </li>
                     <li className="flex items-center gap-2 text-sm">
                       <CheckCircle className={`h-4 w-4 flex-shrink-0 ${isPopular ? 'text-white' : 'text-[var(--color-primary)]'}`} />
-                      {interviewSessions === -1
-                        ? 'Unlimited interview sessions'
-                        : `${interviewSessions} interview sessions/month`}
+                      {`Up to ${interviewSessions} interview sessions/month`}
                     </li>
                     <li className="flex items-center gap-2 text-sm">
                       <CheckCircle className={`h-4 w-4 flex-shrink-0 ${isPopular ? 'text-white' : 'text-[var(--color-primary)]'}`} />
-                      {resumeAnalyses === -1
-                        ? 'Unlimited resume analyses'
-                        : `${resumeAnalyses} resume analyses/month`}
+                      {`${resumeAnalyses} resume analyses/month`}
                     </li>
                     <li className="flex items-center gap-2 text-sm">
                       <CheckCircle className={`h-4 w-4 flex-shrink-0 ${isPopular ? 'text-white' : 'text-[var(--color-primary)]'}`} />

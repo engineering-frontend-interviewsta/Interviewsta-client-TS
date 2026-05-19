@@ -23,7 +23,6 @@ export default function UsageCreditsTab({ account, onUpgrade, onBuyCredits, isWh
   const usedTotal = usedInterview + usedResume;
   const pct = total > 0 ? Math.min(100, Math.round((usedTotal / total) * 100)) : 0;
 
-  const interviewSessions = Math.floor(usedInterview / CREDIT_COSTS.INTERVIEW);
   const resumeSessions = Math.floor(usedResume / CREDIT_COSTS.RESUME);
 
   const radialData = [
@@ -116,7 +115,7 @@ export default function UsageCreditsTab({ account, onUpgrade, onBuyCredits, isWh
           <div className="account-tab__usage-item-header">
             <Video size={16} aria-hidden />
             <span>Interview sessions</span>
-            <span className="account-tab__usage-count">{interviewSessions} sessions</span>
+            <span className="account-tab__usage-count">{usedInterview} credits used</span>
           </div>
           <div className="account-tab__progress-track">
             <div
@@ -124,7 +123,7 @@ export default function UsageCreditsTab({ account, onUpgrade, onBuyCredits, isWh
               style={{ width: total > 0 ? `${Math.min(100, (usedInterview / total) * 100)}%` : '0%' }}
             />
           </div>
-          <p className="account-tab__usage-meta">{usedInterview} credits ({CREDIT_COSTS.INTERVIEW} credits/session)</p>
+          <p className="account-tab__usage-meta">{usedInterview} credits (70–100 credits/session depending on type)</p>
         </div>
 
         <div className="account-tab__usage-item">
