@@ -11,7 +11,6 @@ interface VideoTestimonial {
 
 const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
   { id: 'vt-1', name: 'Anish Ranjan Senapati', college: 'IIT Gandhinagar',      videoUrl: 'https://pub-c5b19f324eec4efc958351cfdbfd6ed3.r2.dev/testimonials/feedback1.mp4' },
-  { id: 'vt-2', name: 'Priyanshu Panigrahi',   college: 'ITER, SOA University', videoUrl: 'https://pub-c5b19f324eec4efc958351cfdbfd6ed3.r2.dev/testimonials/feedback2.mp4' },
   { id: 'vt-3', name: 'Debi Prasad Sahoo',     college: 'NIT Rourkela',         videoUrl: 'https://pub-c5b19f324eec4efc958351cfdbfd6ed3.r2.dev/testimonials/feedback3.mp4' },
   { id: 'vt-4', name: 'Sahil Saharan',         college: 'IIT Roorkee',          videoUrl: 'https://pub-c5b19f324eec4efc958351cfdbfd6ed3.r2.dev/testimonials/feedback4.mp4' },
   { id: 'vt-5', name: 'Kalyani Nema',          college: 'IIT Roorkee',          videoUrl: 'https://pub-c5b19f324eec4efc958351cfdbfd6ed3.r2.dev/testimonials/feedback5.mp4' },
