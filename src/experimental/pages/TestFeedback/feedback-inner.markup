@@ -1,0 +1,677 @@
+<div class="report-hero">
+  <div class="report-hero__inner">
+    <div class="report-hero__meta">
+      Aryan Sharma
+      <span class="report-hero__meta-dot"></span>
+      Mock Interview #7
+      <span class="report-hero__meta-dot"></span>
+      42 min 18 sec
+    </div>
+    <h1 class="report-hero__title">Your FAANG<br/><em>Interview Report</em></h1>
+    <p class="report-hero__sub">Complete analysis across technical performance, communication, physical presence, and environment quality.</p>
+
+    <div class="hero-scores">
+      <div class="hire-ring-wrap">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="64" fill="none" stroke="#e5e2dc" stroke-width="10"/>
+          <circle cx="80" cy="80" r="64" fill="none" stroke="#b45309" stroke-width="10"
+            stroke-dasharray="402" stroke-dashoffset="161"
+            stroke-linecap="round" transform="rotate(-90 80 80)"/>
+          <text x="80" y="72" text-anchor="middle" font-family="'Instrument Serif',serif" font-size="34" fill="#1a1916">60%</text>
+          <text x="80" y="92" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#9c9a94" letter-spacing="2">OVERALL</text>
+        </svg>
+        <span class="hire-ring-label">Composite Score</span>
+        <span class="hire-ring-sublabel">Technical + Presence + Environment</span>
+      </div>
+
+      <div class="score-pills">
+        <div class="score-pill fade-up">
+          <span class="score-pill__label">Technical</span>
+          <span class="score-pill__val val-amber">58%</span>
+          <span class="score-pill__sub">Below FAANG bar</span>
+        </div>
+        <div class="score-pill fade-up">
+          <span class="score-pill__label">Presence</span>
+          <span class="score-pill__val val-amber">64%</span>
+          <span class="score-pill__sub">Moderate confidence</span>
+        </div>
+        <div class="score-pill fade-up">
+          <span class="score-pill__label">Speech</span>
+          <span class="score-pill__val val-green">71%</span>
+          <span class="score-pill__sub">Clear delivery</span>
+        </div>
+        <div class="score-pill fade-up">
+          <span class="score-pill__label">Environment</span>
+          <span class="score-pill__val val-red">44%</span>
+          <span class="score-pill__sub">Needs attention</span>
+        </div>
+        <div class="score-pill fade-up">
+          <span class="score-pill__label">Hire Probability</span>
+          <span class="score-pill__val val-amber">38%</span>
+          <span class="score-pill__sub">At current level</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="body">
+
+  <!-- ═══ SECTION 1: TECHNICAL ═══ -->
+  <div class="section-header">
+    <div class="section-header__eyebrow">01 — Technical Performance</div>
+    <div class="section-header__title">How your code & reasoning held up</div>
+    <div class="section-header__body">
+      This is the rubric your interviewer would explicitly use to evaluate you. Every metric here maps directly to what FAANG engineers look for in a coding loop. A score below 6/10 on any category is typically a soft signal to reject — don't just chase the average.
+    </div>
+  </div>
+
+  <div class="card">
+    <!-- Algorithmic Problem Solving -->
+    <div class="tech-category">
+      <div class="tech-cat-header">
+        <div class="tech-cat-title">Algorithmic Problem Solving</div>
+        <span class="score-badge badge-amber">Avg 5.6 / 10</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Problem Decomposition</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-60" style="width:70%"></div></div></div>
+        <span class="metric-score score-60">7</span>
+        <span class="metric-note">Good — structured your approach clearly</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Algorithm Selection</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-60" style="width:60%"></div></div></div>
+        <span class="metric-score score-60">6</span>
+        <span class="metric-note">Chose BFS but missed DP opportunity</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Time Complexity Reasoning</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-40" style="width:50%"></div></div></div>
+        <span class="metric-score score-40">5</span>
+        <span class="metric-note">O(n²) analysis was off by a factor</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Space Complexity Reasoning</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-40" style="width:40%"></div></div></div>
+        <span class="metric-score score-40">4</span>
+        <span class="metric-note">Didn't account for recursion stack</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Edge Case Identification</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-40" style="width:50%"></div></div></div>
+        <span class="metric-score score-40">5</span>
+        <span class="metric-note">Missed null input and single-node tree</span>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border); margin: 16px 0;"></div>
+
+    <!-- Code Design -->
+    <div class="tech-category">
+      <div class="tech-cat-header">
+        <div class="tech-cat-title">Code Design & Implementation</div>
+        <span class="score-badge badge-amber">Avg 5.5 / 10</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Data Structure Choice</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-75" style="width:70%"></div></div></div>
+        <span class="metric-score score-75">7</span>
+        <span class="metric-note">HashMap usage was appropriate</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Modular Code Design</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-60" style="width:60%"></div></div></div>
+        <span class="metric-score score-60">6</span>
+        <span class="metric-note">Functions could be smaller and named better</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Correctness of Implementation</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-40" style="width:50%"></div></div></div>
+        <span class="metric-score score-40">5</span>
+        <span class="metric-note">Off-by-one error in loop boundary</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Code Optimization</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-40" style="width:40%"></div></div></div>
+        <span class="metric-score score-40">4</span>
+        <span class="metric-note">Redundant traversal not removed</span>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border); margin: 16px 0;"></div>
+
+    <!-- System Thinking -->
+    <div class="tech-category">
+      <div class="tech-cat-header">
+        <div class="tech-cat-title">System Thinking & Tradeoffs</div>
+        <span class="score-badge badge-red">Avg 4.5 / 10</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Scalability Awareness</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-40" style="width:50%"></div></div></div>
+        <span class="metric-score score-40">5</span>
+        <span class="metric-note">Mentioned scale but didn't quantify</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Tradeoff Discussion</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-25" style="width:40%"></div></div></div>
+        <span class="metric-score score-25">4</span>
+        <span class="metric-note">Only one tradeoff discussed</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Alternative Solutions</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-25" style="width:40%"></div></div></div>
+        <span class="metric-score score-25">4</span>
+        <span class="metric-note">No alternative offered unless prompted</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Constraint Awareness</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-40" style="width:50%"></div></div></div>
+        <span class="metric-score score-40">5</span>
+        <span class="metric-note">Asked about constraints — good habit</span>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border); margin: 16px 0;"></div>
+
+    <!-- Communication -->
+    <div class="tech-category">
+      <div class="tech-cat-header">
+        <div class="tech-cat-title">Communication & Collaboration</div>
+        <span class="score-badge badge-green">Avg 7.0 / 10</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Clarity of Thought</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-75" style="width:70%"></div></div></div>
+        <span class="metric-score score-75">7</span>
+        <span class="metric-note">Structured explanations throughout</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Think Aloud Process</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-75" style="width:70%"></div></div></div>
+        <span class="metric-score score-75">7</span>
+        <span class="metric-note">Good narration, two long silent gaps</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Responsiveness to Hints</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-60" style="width:60%"></div></div></div>
+        <span class="metric-score score-60">6</span>
+        <span class="metric-note">Took 2nd hint before pivoting</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Technical Vocabulary</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-track"><div class="metric-bar-fill score-90" style="width:80%"></div></div></div>
+        <span class="metric-score score-90">8</span>
+        <span class="metric-note">Strong — used precise terminology</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Radar -->
+  <div class="card" style="padding: 24px;">
+    <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:16px;">Category overview</div>
+    <div class="radar-wrap">
+      <svg width="320" height="280" viewBox="0 0 320 280">
+        <defs>
+          <polygon id="grid5" points="160,40 272,111 228,224 92,224 48,111" fill="none" stroke="#e5e2dc" stroke-width="1"/>
+        </defs>
+        <!-- Grid rings -->
+        <g opacity=".6">
+          <polygon points="160,112 218.4,150.6 196.8,201.6 123.2,201.6 101.6,150.6" fill="none" stroke="#e5e2dc" stroke-width="1"/>
+          <polygon points="160,84 235.2,138.7 206.4,211.5 113.6,211.5 84.8,138.7" fill="none" stroke="#e5e2dc" stroke-width="1"/>
+          <polygon points="160,56 252,126.8 216,221.4 104,221.4 68,126.8" fill="none" stroke="#e5e2dc" stroke-width="1"/>
+          <polygon points="160,28 268.8,115 225.6,231.3 94.4,231.3 51.2,115" fill="none" stroke="#e5e2dc" stroke-width="1"/>
+        </g>
+        <!-- Axes -->
+        <line x1="160" y1="140" x2="160" y2="28" stroke="#e5e2dc" stroke-width="1"/>
+        <line x1="160" y1="140" x2="268.8" y2="115" stroke="#e5e2dc" stroke-width="1"/>
+        <line x1="160" y1="140" x2="225.6" y2="231.3" stroke="#e5e2dc" stroke-width="1"/>
+        <line x1="160" y1="140" x2="94.4" y2="231.3" stroke="#e5e2dc" stroke-width="1"/>
+        <line x1="160" y1="140" x2="51.2" y2="115" stroke="#e5e2dc" stroke-width="1"/>
+        <!-- Data — 56%, 55%, 45%, 70%, 64% mapped to axes -->
+        <polygon points="160,68 243,124 216,213 107,213 77,124"
+          fill="rgba(180,83,9,0.12)" stroke="#b45309" stroke-width="2" stroke-linejoin="round"/>
+        <!-- Dots -->
+        <circle cx="160" cy="68" r="4" fill="#b45309"/>
+        <circle cx="243" cy="124" r="4" fill="#b45309"/>
+        <circle cx="216" cy="213" r="4" fill="#b45309"/>
+        <circle cx="107" cy="213" r="4" fill="#2d6a4f"/>
+        <circle cx="77" cy="124" r="4" fill="#b45309"/>
+        <!-- Labels -->
+        <text x="160" y="22" text-anchor="middle" font-family="Poppins,system-ui,sans-serif" font-size="11" fill="#6b6860">Algorithmic</text>
+        <text x="290" y="112" text-anchor="start" font-family="Poppins,system-ui,sans-serif" font-size="11" fill="#6b6860">Code</text>
+        <text x="232" y="248" text-anchor="middle" font-family="Poppins,system-ui,sans-serif" font-size="11" fill="#6b6860">Systems</text>
+        <text x="88" y="248" text-anchor="middle" font-family="Poppins,system-ui,sans-serif" font-size="11" fill="#2d6a4f">Comms</text>
+        <text x="16" y="112" text-anchor="start" font-family="Poppins,system-ui,sans-serif" font-size="11" fill="#6b6860">Presence</text>
+        <!-- Score labels on dots -->
+        <text x="160" y="62" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b45309">5.6</text>
+        <text x="252" y="121" text-anchor="start" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b45309">5.5</text>
+        <text x="218" y="230" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b45309">4.5</text>
+        <text x="98" y="230" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#2d6a4f">7.0</text>
+        <text x="38" y="121" text-anchor="start" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#b45309">6.4</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 2: PRESENCE ═══ -->
+  <div class="section-header">
+    <div class="section-header__eyebrow">02 — Physical Presence & Body Language</div>
+    <div class="section-header__title">What your body was saying</div>
+    <div class="section-header__body">
+      Measured via MediaPipe face mesh and pose detection. Your interviewer picks up on these signals in the first 60 seconds — often before you've said a word. Presence doesn't override technical skill, but it modulates how much benefit of the doubt you get when you're uncertain.
+    </div>
+  </div>
+
+  <div class="presence-grid">
+    <div class="presence-card">
+      <div class="presence-card__header">
+        <div>
+          <div class="presence-card__title">Eye Contact & Gaze</div>
+          <div class="presence-card__sub">Camera vs. screen vs. downward</div>
+        </div>
+        <span class="score-badge badge-amber">62%</span>
+      </div>
+      <div class="presence-stat-row"><span class="ps-key">Camera gaze</span><span class="ps-val warn">51% of session</span></div>
+      <div class="presence-stat-row"><span class="ps-key">Screen / notes</span><span class="ps-val">34%</span></div>
+      <div class="presence-stat-row"><span class="ps-key">Downward drift</span><span class="ps-val bad">15% — frequent</span></div>
+      <div class="presence-stat-row"><span class="ps-key">Longest drop</span><span class="ps-val bad">48 seconds (min 28)</span></div>
+      <div class="presence-narrative">You spent a significant amount of time looking at the code editor rather than the camera — this is natural but reads as low confidence to the interviewer. Your downward gaze spikes coincided with the two moments you were stuck.</div>
+    </div>
+
+    <div class="presence-card">
+      <div class="presence-card__header">
+        <div>
+          <div class="presence-card__title">Posture & Head Stability</div>
+          <div class="presence-card__sub">Spine alignment, rocking, head tilt</div>
+        </div>
+        <span class="score-badge badge-amber">67%</span>
+      </div>
+      <div class="presence-stat-row"><span class="ps-key">Upright frames</span><span class="ps-val good">72% of session</span></div>
+      <div class="presence-stat-row"><span class="ps-key">Forward lean</span><span class="ps-val good">18% — good signal</span></div>
+      <div class="presence-stat-row"><span class="ps-key">Slouch events</span><span class="ps-val warn">6 detected (>3s each)</span></div>
+      <div class="presence-stat-row"><span class="ps-key">Head rocking</span><span class="ps-val warn">Mild — under threshold</span></div>
+      <div class="presence-narrative">Your posture was good in the first 15 minutes then noticeably deteriorated. The 6 slouch events all occurred after minute 22 — likely fatigue. FAANG interviews run 45–60 min, so stamina matters.</div>
+    </div>
+
+    <div class="presence-card">
+      <div class="presence-card__header">
+        <div>
+          <div class="presence-card__title">Facial Expression & Affect</div>
+          <div class="presence-card__sub">Confidence, stress, composure signals</div>
+        </div>
+        <span class="score-badge badge-red">54%</span>
+      </div>
+      <div class="presence-stat-row"><span class="ps-key">Neutral/positive</span><span class="ps-val warn">62% of session</span></div>
+      <div class="presence-stat-row"><span class="ps-key">Stress markers</span><span class="ps-val bad">4 distinct events</span></div>
+      <div class="presence-stat-row"><span class="ps-key">Brow furrow</span><span class="ps-val bad">Detected on Q1 & Q2</span></div>
+      <div class="presence-stat-row"><span class="ps-key">Smile / warmth</span><span class="ps-val warn">Only at intro</span></div>
+      <div class="presence-narrative">You visibly showed stress when presented with the harder variant of the graph problem. Interviewers interpret a tense face as uncertainty even when your solution is on the right track. Practise a "calm face" as a deliberate skill.</div>
+    </div>
+
+    <div class="presence-card">
+      <div class="presence-card__header">
+        <div>
+          <div class="presence-card__title">Hand Gestures & Fidgeting</div>
+          <div class="presence-card__sub">Movement patterns via pose landmarks</div>
+        </div>
+        <span class="score-badge badge-green">73%</span>
+      </div>
+      <div class="presence-stat-row"><span class="ps-key">Purposeful gestures</span><span class="ps-val good">Frequently used</span></div>
+      <div class="presence-stat-row"><span class="ps-key">Face touching</span><span class="ps-val warn">7 times (mild concern)</span></div>
+      <div class="presence-stat-row"><span class="ps-key">Hair touching</span><span class="ps-val warn">3 events — anxiety marker</span></div>
+      <div class="presence-stat-row"><span class="ps-key">Visible fidget</span><span class="ps-val good">None detected</span></div>
+      <div class="presence-narrative">Your hand gestures were actually a strength — they reinforced your explanations effectively. The face and hair touching are mild self-soothing behaviours that spike during difficult questions; awareness alone usually reduces them.</div>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 3: SPEECH ═══ -->
+  <div class="section-header">
+    <div class="section-header__eyebrow">03 — Speech & Vocal Analysis</div>
+    <div class="section-header__title">How your words landed</div>
+    <div class="section-header__body">
+      Analysed from audio transcript via speaker diarisation and prosody detection. Speech quality directly impacts 3 of your 4 communication rubric scores. A technically correct answer delivered haltingly or too fast reads as less correct.
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
+      <div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:24px;font-weight:600;color:var(--green);font-family:'Instrument Serif',serif;">134</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em;">avg WPM</div>
+        <div style="font-size:11px;color:var(--green);margin-top:3px;">✓ Ideal range</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:24px;font-weight:600;color:var(--amber);font-family:'Instrument Serif',serif;">8.2</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em;">fillers / min</div>
+        <div style="font-size:11px;color:var(--amber);margin-top:3px;">↓ Target under 4</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:24px;font-weight:600;color:var(--red);font-family:'Instrument Serif',serif;">2</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em;">dead pauses</div>
+        <div style="font-size:11px;color:var(--red);margin-top:3px;">&gt;8 sec silence</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:24px;font-weight:600;color:var(--green);font-family:'Instrument Serif',serif;">91%</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em;">transcription confidence</div>
+        <div style="font-size:11px;color:var(--green);margin-top:3px;">✓ Clear audio</div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">42-minute speech timeline</div>
+    <div class="speech-timeline">
+      <div class="speech-block sb-speak" style="width:12%">Intro</div>
+      <div class="speech-block sb-speak" style="width:18%">Q1 Solve</div>
+      <div class="speech-block sb-pause" style="width:4%">···</div>
+      <div class="speech-block sb-filler" style="width:5%">Fillers</div>
+      <div class="speech-block sb-speak" style="width:14%">Explain</div>
+      <div class="speech-block sb-pause" style="width:5%">···</div>
+      <div class="speech-block sb-speak" style="width:10%">Q2 Start</div>
+      <div class="speech-block sb-fast" style="width:8%">Fast</div>
+      <div class="speech-block sb-speak" style="width:12%">Recovery</div>
+      <div class="speech-block sb-pause" style="width:3%">·</div>
+      <div class="speech-block sb-speak" style="width:9%">Wrap-up</div>
+    </div>
+    <div class="timeline-legend">
+      <div class="tl-item"><div class="tl-dot" style="background:#3d8b6e"></div>Normal speech</div>
+      <div class="tl-item"><div class="tl-dot" style="background:var(--bg3)"></div>Pause / silence</div>
+      <div class="tl-item"><div class="tl-dot" style="background:#b45309"></div>High filler density</div>
+      <div class="tl-item"><div class="tl-dot" style="background:#c2410c"></div>Too fast (&gt;170 WPM)</div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);margin:20px 0 16px;"></div>
+
+    <!-- Top fillers -->
+    <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;">Top filler words detected</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <span style="padding:5px 12px;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:6px;font-size:12px;color:var(--amber);">"um" — 48×</span>
+      <span style="padding:5px 12px;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:6px;font-size:12px;color:var(--amber);">"like" — 31×</span>
+      <span style="padding:5px 12px;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:6px;font-size:12px;color:var(--amber);">"you know" — 14×</span>
+      <span style="padding:5px 12px;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:6px;font-size:12px;color:var(--amber);">"basically" — 11×</span>
+      <span style="padding:5px 12px;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:6px;font-size:12px;color:var(--amber);">"so yeah" — 7×</span>
+    </div>
+
+    <div style="margin-top:14px;padding:14px 16px;background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:10px;font-size:13px;color:var(--blue);line-height:1.6;">
+      <strong>Why this matters:</strong> Filler words at 8.2/min signal to an AI scorer that you're processing publicly rather than privately — it reduces the perceived confidence of your answer. The "basically" and "so yeah" patterns are specifically associated with trailing off from an explanation without landing. Record yourself and target &lt;4/min.
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 4: ENVIRONMENT ═══ -->
+  <div class="section-header">
+    <div class="section-header__eyebrow">04 — Environment Quality</div>
+    <div class="section-header__title">Your setup was working against you</div>
+    <div class="section-header__body">
+      The environment score affects how much signal the AI can extract from you. Poor lighting reduces facial expression accuracy. Echo reduces transcription confidence. These aren't soft observations — they degrade every other score on this page.
+    </div>
+  </div>
+
+  <div class="env-grid">
+    <div class="env-item">
+      <div class="env-item__icon">💡</div>
+      <div class="env-item__label">Lighting</div>
+      <div class="env-item__val"><span class="env-dot env-warn"></span>Fair</div>
+      <div class="env-item__note">Backlight detected from a window behind you. Face brightness variance was 34% — ideal is under 15%.</div>
+    </div>
+    <div class="env-item">
+      <div class="env-item__icon">📷</div>
+      <div class="env-item__label">Camera angle</div>
+      <div class="env-item__val"><span class="env-dot env-bad"></span>Below eye level</div>
+      <div class="env-item__note">Camera was approx 12° below eye level — upward angle detected. Raise your laptop by ~10cm.</div>
+    </div>
+    <div class="env-item">
+      <div class="env-item__icon">🏠</div>
+      <div class="env-item__label">Background</div>
+      <div class="env-item__val"><span class="env-dot env-good"></span>Clean</div>
+      <div class="env-item__note">No distracting elements detected. Good neutral background throughout.</div>
+    </div>
+    <div class="env-item">
+      <div class="env-item__icon">🔊</div>
+      <div class="env-item__label">Background noise</div>
+      <div class="env-item__val"><span class="env-dot env-warn"></span>Moderate</div>
+      <div class="env-item__note">Fan noise detected at ~32dB average. 3 external audio events (door, notification). Use earphones with mic.</div>
+    </div>
+    <div class="env-item">
+      <div class="env-item__icon">🎙</div>
+      <div class="env-item__label">Microphone</div>
+      <div class="env-item__val"><span class="env-dot env-warn"></span>Built-in laptop</div>
+      <div class="env-item__note">Room echo detected — hollow reverb on voice. External mic or earphones would reduce this significantly.</div>
+    </div>
+    <div class="env-item">
+      <div class="env-item__icon">👔</div>
+      <div class="env-item__label">Attire</div>
+      <div class="env-item__val"><span class="env-dot env-good"></span>Appropriate</div>
+      <div class="env-item__note">Solid colour, no pattern moiré, smart casual. Consistent with FAANG video interview expectations.</div>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 5: STRENGTHS & GAPS ═══ -->
+  <div class="section-header">
+    <div class="section-header__eyebrow">05 — Strengths & Priority Gaps</div>
+    <div class="section-header__title">What to build on, what to fix first</div>
+    <div class="section-header__body">
+      Not all weaknesses are equal. The gaps marked below are the ones most likely to cost you the offer in your next attempt at this level.
+    </div>
+  </div>
+
+  <div class="str-gap-grid">
+    <div>
+      <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:10px;">✓ Genuine strengths</div>
+      <ul class="str-list">
+        <li class="str-item green">
+          <span class="str-icon">💬</span>
+          <div class="str-text">
+            <strong>Technical Vocabulary</strong>
+            <span>8/10 — you used precise language (amortised, memoisation, adjacency list) without being prompted. This builds trust fast.</span>
+          </div>
+        </li>
+        <li class="str-item green">
+          <span class="str-icon">🗺</span>
+          <div class="str-text">
+            <strong>Problem Decomposition</strong>
+            <span>7/10 — you broke the problem into subproblems before coding, which is the FAANG gold standard. Don't let this slip under pressure.</span>
+          </div>
+        </li>
+        <li class="str-item green">
+          <span class="str-icon">🖐</span>
+          <div class="str-text">
+            <strong>Purposeful Gestures</strong>
+            <span>Your hand movements reinforced your verbal explanations rather than distracting from them. Rare in candidates at this stage.</span>
+          </div>
+        </li>
+        <li class="str-item green">
+          <span class="str-icon">🎯</span>
+          <div class="str-text">
+            <strong>Constraint Awareness</strong>
+            <span>You asked about input constraints before diving in — something many candidates skip. It signals senior-level thinking.</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+    <div>
+      <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;">⚠ Priority gaps</div>
+      <ul class="str-list">
+        <li class="str-item amber">
+          <span class="str-icon">🧮</span>
+          <div class="str-text">
+            <strong>Complexity Analysis</strong>
+            <span>Misanalysed time complexity twice. FAANG interviewers consider this a near-instant filter. Practice deriving O() from first principles, not intuition.</span>
+          </div>
+        </li>
+        <li class="str-item amber">
+          <span class="str-icon">🔄</span>
+          <div class="str-text">
+            <strong>Alternative Solutions</strong>
+            <span>You only proposed alternatives when directly prompted. Strong FAANG candidates proactively say "I could also approach this with X, but Y is better because…"</span>
+          </div>
+        </li>
+        <li class="str-item amber">
+          <span class="str-icon">😶</span>
+          <div class="str-text">
+            <strong>Facial Composure Under Pressure</strong>
+            <span>Visible stress on medium-difficulty questions reduces the interviewer's confidence in you — even when your answer is heading the right way.</span>
+          </div>
+        </li>
+        <li class="str-item amber">
+          <span class="str-icon">🔇</span>
+          <div class="str-text">
+            <strong>Dead Silence Gaps</strong>
+            <span>Two 8+ second silences scored as zero data for the AI and reads as freezing to a human. Bridge every pause with verbal narration.</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 6: HIRE PROBABILITY ═══ -->
+  <div class="section-header">
+    <div class="section-header__eyebrow">06 — Hire Probability</div>
+    <div class="section-header__title">Where you stand and why</div>
+  </div>
+
+  <div class="hire-section">
+    <div class="hire-header">
+      <div class="hire-verdict">
+        Strong communicator,<br/>
+        <em>not yet at FAANG bar</em><br/>
+        technically.
+      </div>
+      <div class="hire-prob-display">
+        <div class="hire-prob-num">38%</div>
+        <div class="hire-prob-label">estimated pass probability</div>
+        <div class="hire-prob-label" style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;">at current performance level</div>
+      </div>
+    </div>
+
+    <div class="hire-breakdown">
+      <div class="hb-item">
+        <div class="hb-val val-amber">58%</div>
+        <div class="hb-label">Technical Score</div>
+      </div>
+      <div class="hb-item">
+        <div class="hb-val val-amber">64%</div>
+        <div class="hb-label">Presence Score</div>
+      </div>
+      <div class="hb-item">
+        <div class="hb-val val-green">71%</div>
+        <div class="hb-label">Speech Score</div>
+      </div>
+      <div class="hb-item">
+        <div class="hb-val val-red">44%</div>
+        <div class="hb-label">Environment</div>
+      </div>
+    </div>
+
+    <div class="hire-narrative">
+      Your communication profile is genuinely strong — a 7.0 average in the Comms category puts you ahead of ~60% of candidates at this stage. The problem is that FAANG interviewers do a holistic calibration, and your <strong>system thinking (4.5/10)</strong> and <strong>complexity analysis errors</strong> would likely trigger a "No Hire" from a senior engineer, regardless of how well you communicated. The good news: these are learnable skills, not aptitude gaps. If you bring the algorithmic category to a 7+ average in your next session, the hire probability jumps to roughly <strong>65–70%</strong>.
+    </div>
+
+    <!-- What would tip the scales -->
+    <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;">What would change the outcome</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+      <div style="padding:14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--r);">
+        <div style="font-size:11px;color:var(--green);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">If you fix complexity errors</div>
+        <div style="font-size:20px;font-weight:600;color:var(--green);">+18%</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px;">hire probability gain</div>
+      </div>
+      <div style="padding:14px;background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:var(--r);">
+        <div style="font-size:11px;color:var(--blue);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">If you cut fillers to &lt;4/min</div>
+        <div style="font-size:20px;font-weight:600;color:var(--blue);">+7%</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px;">hire probability gain</div>
+      </div>
+      <div style="padding:14px;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:var(--r);">
+        <div style="font-size:11px;color:var(--amber);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">If you fix your environment</div>
+        <div style="font-size:20px;font-weight:600;color:var(--amber);">+5%</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px;">hire probability gain</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 7: ACTION PLAN ═══ -->
+  <div class="section-header">
+    <div class="section-header__eyebrow">07 — Your Action Plan</div>
+    <div class="section-header__title">Exactly what to do next</div>
+    <div class="section-header__body">
+      Prioritised by impact. Don't work on everything at once — the first three will give you 80% of the improvement.
+    </div>
+  </div>
+
+  <div class="action-list">
+    <div class="action-item">
+      <div class="action-num">1</div>
+      <div class="action-body">
+        <strong>Drill complexity analysis from first principles — 30 min/day for 2 weeks</strong>
+        <p>Stop estimating O() by feel. For every LeetCode problem you solve, derive time and space complexity line-by-line before checking the solution. Pay special attention to recursive calls and the hidden cost of built-in operations (e.g., slicing a list in Python is O(k), not O(1)).</p>
+        <span class="action-tag tag-now">Start today</span>
+      </div>
+    </div>
+    <div class="action-item">
+      <div class="action-num">2</div>
+      <div class="action-body">
+        <strong>Fix your environment before the next session</strong>
+        <p>Camera up (stack books, raise to eye level), close the window blind behind you or move your desk, and use earphones. These are one-time fixes that permanently raise your scores across presence, speech, and overall confidence.</p>
+        <span class="action-tag tag-now">Start today</span>
+      </div>
+    </div>
+    <div class="action-item">
+      <div class="action-num">3</div>
+      <div class="action-body">
+        <strong>Record yourself for 2 minutes answering a mock question daily</strong>
+        <p>Play it back and count fillers. Your target is under 4/min. Most people drop from 8 to 4 within 10 days of doing this — the act of listening to yourself is enough. Don't script answers; just build the awareness.</p>
+        <span class="action-tag tag-week">This week</span>
+      </div>
+    </div>
+    <div class="action-item">
+      <div class="action-num">4</div>
+      <div class="action-body">
+        <strong>Practise proactive tradeoff narration using a "3-option rule"</strong>
+        <p>For every problem in your next 20 mock sessions, force yourself to name three approaches before implementing any of them: brute force → better → optimal. Even if options 1 and 2 are obvious, saying them out loud trains the habit and directly lifts your System Thinking score.</p>
+        <span class="action-tag tag-week">This week</span>
+      </div>
+    </div>
+    <div class="action-item">
+      <div class="action-num">5</div>
+      <div class="action-body">
+        <strong>Do a 5-minute "calm face" warm-up before each interview session</strong>
+        <p>Sit in front of your camera, start a recording, and present to yourself for 5 minutes on a topic you know well. Notice when tension appears in your face. Practise keeping an open, slightly engaged expression even while thinking hard — this is a learnable physical skill.</p>
+        <span class="action-tag tag-month">2-week habit</span>
+      </div>
+    </div>
+    <div class="action-item">
+      <div class="action-num">6</div>
+      <div class="action-body">
+        <strong>Target DP and graph problem sets specifically</strong>
+        <p>Your session revealed a missed DP opportunity (you chose BFS on a problem where memoisation was optimal). Spend 2 weeks on the Blind 75 DP subset and focus on recognising the "optimal substructure" signal in problem statements. This is the highest ROI technical investment for FAANG at your current level.</p>
+        <span class="action-tag tag-month">2–4 weeks</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEXT SESSION CTA -->
+  <div style="margin-top:32px;">
+    <div class="next-card">
+      <div>
+        <div class="next-eyebrow">Ready to improve?</div>
+        <div class="next-title">Schedule Mock #8 with<br/>harder graph + DP problems</div>
+        <div class="next-body">Your next session will focus on Dynamic Programming and complex graph traversal — the two areas with the highest gap vs. FAANG bar. Estimated readiness window: 10–14 days of focused prep.</div>
+      </div>
+      <button type="button" class="next-btn" data-tf-book>Book next session →</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Animate metric bars on load
+  window.addEventListener('load', () => {
+    const fills = document.querySelectorAll('.metric-bar-fill');
+    fills.forEach(el => {
+      const w = el.style.width;
+      el.style.width = '0%';
+      requestAnimationFrame(() => {
+        setTimeout(() => { el.style.width = w; }, 200);
+      });
+    });
+  });
+</script>
