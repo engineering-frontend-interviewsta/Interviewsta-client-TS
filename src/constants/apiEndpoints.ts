@@ -107,7 +107,11 @@ export const USER_ADMIN_ENDPOINTS = {
   STATS: '/user/admin/stats',
 } as const;
 
+<<<<<<< HEAD
+/** Resume (Django) */
+=======
 /** Resume (legacy Django — kept for history pages only) */
+>>>>>>> main
 export const RESUME_APP_ENDPOINTS = {
   UPLOAD_FILES: 'upload-files/',
 } as const;

@@ -18,6 +18,13 @@ import {
 } from 'recharts';
 import { ROUTES } from '../../../constants/routerConstants';
 import { useAuth } from '../../../context/AuthContext';
+import { useTheme } from '../../../context/ThemeContext';
+import {
+  chartTooltipContentStyle,
+  chartTooltipItemStyle,
+  chartTooltipLabelStyle,
+  getDashboardChartPalette,
+} from '../../Dashboard/chartTheme';
 import {
   getTeacherStudentAnalytics,
   getTeacherStudentDetail,
@@ -41,6 +48,10 @@ type TeacherStudentDetailResponse = {
 
 export default function TeacherStudentDetailPage() {
   const { roles } = useAuth();
+  const { resolvedTheme } = useTheme();
+  const chart = useMemo(() => getDashboardChartPalette(resolvedTheme), [resolvedTheme]);
+  const trendGradId = `tsdTrend-${resolvedTheme}`;
+  const typeTrendGradId = `tsdTypeTrend-${resolvedTheme}`;
   const { studentUserId = '' } = useParams();
   const [data, setData] = useState<TeacherStudentDetailResponse | null>(null);
   const [analytics, setAnalytics] = useState<TeacherStudentAnalyticsResponse | null>(null);
@@ -252,17 +263,20 @@ export default function TeacherStudentDetailPage() {
                     ) : (
                       <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={byTypeData} layout="vertical" margin={{ top: 5, right: 20, left: 80, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f3f0f7" />
-                          <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
-                          <YAxis type="category" dataKey="name" width={75} tick={{ fontSize: 12, fontWeight: 600 }} />
-                          <Tooltip
-                            contentStyle={{
-                              borderRadius: 'var(--radius-lg)',
-                              border: '1px solid var(--color-border-light)',
-                              fontFamily: 'var(--font-sans)',
-                            }}
+                          <CartesianGrid strokeDasharray="3 3" stroke={chart.barGrid} />
+                          <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: chart.barAxis }} />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            width={75}
+                            tick={{ fontSize: 12, fontWeight: 600, fill: chart.barAxis }}
                           />
-                          <Bar dataKey="avg" fill="#6d28d9" radius={[0, 6, 6, 0]} />
+                          <Tooltip
+                            contentStyle={chartTooltipContentStyle}
+                            labelStyle={chartTooltipLabelStyle}
+                            itemStyle={chartTooltipItemStyle}
+                          />
+                          <Bar dataKey="avg" fill={chart.barFill} radius={[0, 6, 6, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     )}
@@ -271,7 +285,7 @@ export default function TeacherStudentDetailPage() {
 
                 <div className="perf-chart">
                   <div className="perf-chart__inner">
-                    <h3 className="perf-chart__title">Top rubric sleeves (avg)</h3>
+                    <h3 className="perf-chart__title">Top Overall Skills (avg)</h3>
                     {sleeveRadarData.length === 0 ? (
                       <div className="perf-chart__empty">
                         <p className="perf-chart__empty-title">No rubric data yet</p>
@@ -280,16 +294,20 @@ export default function TeacherStudentDetailPage() {
                     ) : (
                       <ResponsiveContainer width="100%" height={300}>
                         <RadarChart data={sleeveRadarData}>
-                          <PolarGrid />
-                          <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
-                          <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-                          <Radar dataKey="value" stroke="#6d28d9" fill="#6d28d9" fillOpacity={0.25} strokeWidth={2} />
+                          <PolarGrid stroke={chart.trendGrid} />
+                          <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10, fill: chart.trendAxis }} />
+                          <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10, fill: chart.trendAxis }} />
+                          <Radar
+                            dataKey="value"
+                            stroke={chart.radarStroke}
+                            fill={chart.radarFill}
+                            fillOpacity={0.25}
+                            strokeWidth={2}
+                          />
                           <Tooltip
-                            contentStyle={{
-                              borderRadius: 'var(--radius-lg)',
-                              border: '1px solid var(--color-border-light)',
-                              fontFamily: 'var(--font-sans)',
-                            }}
+                            contentStyle={chartTooltipContentStyle}
+                            labelStyle={chartTooltipLabelStyle}
+                            itemStyle={chartTooltipItemStyle}
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             formatter={(v: any) => [`${Number(v).toFixed(1)}%`, 'Avg']}
                           />
@@ -316,19 +334,17 @@ export default function TeacherStudentDetailPage() {
                   ) : (
                     <ResponsiveContainer width="100%" height={280}>
                       <BarChart data={byTypeData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} />
-                        <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={chart.trendGrid} />
+                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: chart.trendAxis }} interval={0} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: chart.trendAxis }} />
                         <Tooltip
-                          contentStyle={{
-                            borderRadius: 'var(--radius-lg)',
-                            border: '1px solid var(--color-border-light)',
-                            fontFamily: 'var(--font-sans)',
-                          }}
+                          contentStyle={chartTooltipContentStyle}
+                          labelStyle={chartTooltipLabelStyle}
+                          itemStyle={chartTooltipItemStyle}
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           formatter={(value: any) => [value, 'Sessions']}
                         />
-                        <Bar dataKey="count" fill="#0f172a" radius={[6, 6, 0, 0]} />
+                        <Bar dataKey="count" fill={chart.histogramFill} radius={[6, 6, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -352,24 +368,33 @@ export default function TeacherStudentDetailPage() {
                     <ResponsiveContainer width="100%" height={280}>
                       <AreaChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                         <defs>
-                          <linearGradient id="tsdTrend" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#0f172a" stopOpacity={0.35} />
-                            <stop offset="100%" stopColor="#0f172a" stopOpacity={0} />
+                          <linearGradient id={trendGradId} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={chart.trendStroke} stopOpacity={0.35} />
+                            <stop offset="100%" stopColor={chart.trendStroke} stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="idx" tickFormatter={(v: number) => trendData[v]?.label ?? ''} tick={{ fontSize: 11 }} />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={chart.trendGrid} />
+                        <XAxis
+                          dataKey="idx"
+                          tickFormatter={(v: number) => trendData[v]?.label ?? ''}
+                          tick={{ fontSize: 11, fill: chart.trendAxis }}
+                        />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: chart.trendAxis }} />
                         <Tooltip
-                          contentStyle={{
-                            borderRadius: 'var(--radius-lg)',
-                            border: '1px solid var(--color-border-light)',
-                            fontFamily: 'var(--font-sans)',
-                          }}
+                          contentStyle={chartTooltipContentStyle}
+                          labelStyle={chartTooltipLabelStyle}
+                          itemStyle={chartTooltipItemStyle}
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           formatter={(v: any) => [`${v}%`, 'Avg']}
+                          cursor={{ stroke: chart.trendAxis, strokeWidth: 1, strokeDasharray: '3 3' }}
                         />
-                        <Area type="monotone" dataKey="score" stroke="#0f172a" strokeWidth={2} fill="url(#tsdTrend)" />
+                        <Area
+                          type="monotone"
+                          dataKey="score"
+                          stroke={chart.trendStroke}
+                          strokeWidth={2}
+                          fill={`url(#${trendGradId})`}
+                        />
                       </AreaChart>
                     </ResponsiveContainer>
                   )}
@@ -416,24 +441,33 @@ export default function TeacherStudentDetailPage() {
                       <ResponsiveContainer width="100%" height={280}>
                         <AreaChart data={tabTrendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                           <defs>
-                            <linearGradient id="tsdTypeTrend" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#0f172a" stopOpacity={0.35} />
-                              <stop offset="100%" stopColor="#0f172a" stopOpacity={0} />
+                            <linearGradient id={typeTrendGradId} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={chart.trendStroke} stopOpacity={0.35} />
+                              <stop offset="100%" stopColor={chart.trendStroke} stopOpacity={0} />
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                          <XAxis dataKey="idx" tickFormatter={(v: number) => tabTrendData[v]?.label ?? ''} tick={{ fontSize: 11 }} />
-                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={chart.trendGrid} />
+                          <XAxis
+                            dataKey="idx"
+                            tickFormatter={(v: number) => tabTrendData[v]?.label ?? ''}
+                            tick={{ fontSize: 11, fill: chart.trendAxis }}
+                          />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: chart.trendAxis }} />
                           <Tooltip
-                            contentStyle={{
-                              borderRadius: 'var(--radius-lg)',
-                              border: '1px solid var(--color-border-light)',
-                              fontFamily: 'var(--font-sans)',
-                            }}
+                            contentStyle={chartTooltipContentStyle}
+                            labelStyle={chartTooltipLabelStyle}
+                            itemStyle={chartTooltipItemStyle}
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             formatter={(v: any) => [`${v}%`, 'Avg']}
+                            cursor={{ stroke: chart.trendAxis, strokeWidth: 1, strokeDasharray: '3 3' }}
                           />
-                          <Area type="monotone" dataKey="score" stroke="#0f172a" strokeWidth={2} fill="url(#tsdTypeTrend)" />
+                          <Area
+                            type="monotone"
+                            dataKey="score"
+                            stroke={chart.trendStroke}
+                            strokeWidth={2}
+                            fill={`url(#${typeTrendGradId})`}
+                          />
                         </AreaChart>
                       </ResponsiveContainer>
                     )}
@@ -451,16 +485,20 @@ export default function TeacherStudentDetailPage() {
                     ) : (
                       <ResponsiveContainer width="100%" height={300}>
                         <RadarChart data={tabSleeveRadarData}>
-                          <PolarGrid />
-                          <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
-                          <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-                          <Radar dataKey="value" stroke="#6d28d9" fill="#6d28d9" fillOpacity={0.25} strokeWidth={2} />
+                          <PolarGrid stroke={chart.trendGrid} />
+                          <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10, fill: chart.trendAxis }} />
+                          <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10, fill: chart.trendAxis }} />
+                          <Radar
+                            dataKey="value"
+                            stroke={chart.radarStroke}
+                            fill={chart.radarFill}
+                            fillOpacity={0.25}
+                            strokeWidth={2}
+                          />
                           <Tooltip
-                            contentStyle={{
-                              borderRadius: 'var(--radius-lg)',
-                              border: '1px solid var(--color-border-light)',
-                              fontFamily: 'var(--font-sans)',
-                            }}
+                            contentStyle={chartTooltipContentStyle}
+                            labelStyle={chartTooltipLabelStyle}
+                            itemStyle={chartTooltipItemStyle}
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             formatter={(v: any) => [`${Number(v).toFixed(1)}%`, 'Avg']}
                           />

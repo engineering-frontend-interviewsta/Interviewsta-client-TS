@@ -35,11 +35,11 @@ export const TOKEN = {
 } as const;
 
 export const PLAN_TIERS = {
-  FREE:     { tier: 0, slug: 'free',         name: 'Free',         credits: 4,   priceInr: 0,    priceDisplay: 'Free'    },
-  PRO:      { tier: 1, slug: 'pro',          name: 'Pro',          credits: 40,  priceInr: 1660, priceDisplay: '₹1660/mo' },
-  PRO_PLUS: { tier: 2, slug: 'pro-plus',     name: 'Pro+',         credits: 100, priceInr: 2499, priceDisplay: '₹2499/mo'},
-  ORG:      { tier: 3, slug: 'organisation', name: 'Organization', credits: -1,  priceInr: -1,   priceDisplay: 'Custom'  },
-  DEV:      { tier: 4, slug: 'developer',    name: 'Developer',    credits: -1,  priceInr: 0,    priceDisplay: 'Internal'},
+  FREE:     { tier: 0, slug: 'free',         name: 'Free',         credits: 4,    priceInr: 0,   priceDisplay: 'Free'    },
+  PRO:      { tier: 1, slug: 'pro',          name: 'Pro',          credits: 500,  priceInr: 499, priceDisplay: '₹499/mo' },
+  PRO_PLUS: { tier: 2, slug: 'pro-plus',     name: 'Pro+',         credits: 1000, priceInr: 999, priceDisplay: '₹999/mo' },
+  ORG:      { tier: 3, slug: 'organisation', name: 'Organization', credits: -1,   priceInr: -1,  priceDisplay: 'Custom'  },
+  DEV:      { tier: 4, slug: 'developer',    name: 'Developer',    credits: -1,   priceInr: 0,   priceDisplay: 'Internal'},
 } as const;
 
 /** Credit cost ranges: 70–75 for technical/coding, 80–85 for company/AI-ML, 100 for case-study/management */

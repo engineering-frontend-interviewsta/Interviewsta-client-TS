@@ -24,6 +24,7 @@ import InterviewLoadingPopup from './components/InterviewLoadingPopup';
 import InterviewStartGateModal from './components/InterviewStartGateModal';
 import AppStickyBackBar from '../../components/shared/AppStickyBackBar';
 import { decodeInterviewAccessPayload } from '../../utils/decodeInterviewAccessJwt';
+import { getUseSarvamAudio } from '../../utils/sarvamAudioPreference';
 import './VideoInterview.css';
 
 const START_POLL_MS = 1500;
@@ -65,7 +66,7 @@ function consultingPayloadFromTest(test: InterviewTest): Record<string, unknown>
 }
 
 export default function VideoInterview() {
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
   const navigate = useNavigate();
   const [parentTypes, setParentTypes] = useState<ParentInterviewType[]>([]);
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
@@ -180,6 +181,11 @@ export default function VideoInterview() {
         ...(tags.length > 0 && { Tags: tags }),
         ...extraPayload,
       };
+      const isDevOrAdmin =
+        (roles?.includes('developer') ?? false) || (roles?.includes('admin') ?? false);
+      if (isDevOrAdmin && getUseSarvamAudio()) {
+        payload.use_sarvam_audio = true;
+      }
       const myGen = ++launchGenRef.current;
       const doneRef = { current: false };
 
@@ -265,7 +271,7 @@ export default function VideoInterview() {
         setStarting(false);
       }
     },
-    [navigate]
+    [navigate, roles]
   );
 
   const openMediaGate = useCallback((test: InterviewTest, extra: Record<string, unknown> = {}) => {

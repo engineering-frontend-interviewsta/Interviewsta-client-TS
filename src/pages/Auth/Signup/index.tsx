@@ -156,8 +156,13 @@ export default function Signup() {
             {/* <option value="student">Student</option>
             <option value="teacher">Teacher</option>
             <option value="org_admin">Organization admin</option>
+<<<<<<< HEAD
+            <option value="admin">Admin</option> */}
+          </select>
+=======
             <option value="admin">Admin</option>
           */}</select>
+>>>>>>> main
         </div>
         <div className="auth-field">
           <label htmlFor="signup-password" className="auth-label">

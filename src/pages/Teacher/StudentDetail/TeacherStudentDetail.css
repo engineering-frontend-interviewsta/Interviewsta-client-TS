@@ -36,7 +36,7 @@
 .tsd-badge {
   border: 1px solid rgba(124, 58, 237, 0.22);
   background: rgba(124, 58, 237, 0.08);
-  color: #4c1d95;
+  color: var(--color-primary-dark);
   border-radius: 999px;
   padding: 0.25rem 0.55rem;
   font-size: var(--text-xs);
@@ -47,7 +47,7 @@
   flex-shrink: 0;
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-xl);
-  background: #fff;
+  background: var(--color-surface);
   padding: 0.75rem 0.9rem;
   text-align: right;
   min-width: 160px;
@@ -86,7 +86,7 @@
 .tsd-metric {
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
-  background: #ffffff;
+  background: var(--color-surface);
   padding: 0.85rem 0.9rem;
 }
 
@@ -125,7 +125,7 @@
 .tsd-tab--active {
   border-color: rgba(124, 58, 237, 0.35);
   background: rgba(124, 58, 237, 0.08);
-  color: #4c1d95;
+  color: var(--color-primary-dark);
 }
 
 .tsd-grid {
@@ -147,7 +147,7 @@
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .tsd-table {
