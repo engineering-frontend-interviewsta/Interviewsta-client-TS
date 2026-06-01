@@ -36,7 +36,7 @@
   flex-shrink: 0;
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--color-surface);
   padding: 0.65rem 0.8rem;
   text-align: right;
   min-width: 190px;
@@ -87,7 +87,7 @@
 .tcd-metric {
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
-  background: #ffffff;
+  background: var(--color-surface);
   padding: 0.85rem 0.9rem;
 }
 
@@ -128,7 +128,7 @@
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .tcd-table {
@@ -185,7 +185,7 @@
 .tcd-card {
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-xl);
-  background: #fff;
+  background: var(--color-surface);
   padding: 0.95rem;
 }
 
@@ -225,7 +225,7 @@
 .tcd-danger {
   border: 1px solid rgba(220, 38, 38, 0.25);
   background: rgba(220, 38, 38, 0.06);
-  color: #b91c1c;
+  color: var(--color-error-text);
   border-radius: var(--radius-md);
   padding: 0.4rem 0.6rem;
   font-weight: 900;
@@ -239,7 +239,7 @@
   border-radius: 999px;
   border: 1px solid rgba(245, 158, 11, 0.35);
   background: rgba(245, 158, 11, 0.12);
-  color: #92400e;
+  color: var(--color-warning-text);
   font-size: var(--text-xxs);
   font-weight: 900;
   text-transform: uppercase;
@@ -287,7 +287,7 @@
 .tcd-secondary {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: #fff;
+  background: var(--color-surface);
   padding: 0.55rem 1rem;
   font-size: var(--text-sm);
   font-weight: 900;
@@ -319,7 +319,7 @@
 .tcd-tab--active {
   border-color: rgba(124, 58, 237, 0.35);
   background: rgba(124, 58, 237, 0.08);
-  color: #4c1d95;
+  color: var(--color-primary-dark);
 }
 
 .tcd-actions {
@@ -459,7 +459,7 @@
 .tcd-rankings {
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-xl);
-  background: #fff;
+  background: var(--color-surface);
   padding: 1rem;
 }
 
@@ -508,7 +508,7 @@
 
 .tcd-rankings__badge {
   font-weight: 900;
-  color: #4c1d95;
+  color: var(--color-primary-dark);
   background: rgba(124, 58, 237, 0.12);
   border: 1px solid rgba(124, 58, 237, 0.22);
   border-radius: 999px;

@@ -153,7 +153,7 @@ export interface ResumeReport {
   fileName: string;
   date: string;
   overallScore: number | undefined;
-  jobMatchScore: number | undefined;
+  //jobMatchScore: number | undefined;
   targetRole: string | undefined;
   company: string | undefined;
   keyStrengths: string[] | undefined;

@@ -244,8 +244,8 @@ export default function ResumeAnalysisReport({ result, fileName }: ResumeAnalysi
                                     />
                                   </div>
                                 </div>
-                                <span className="feedback-report__metric-score">{subScore}%</span>
-                                <span className="feedback-report__metric-note">{c.weight}% weight</span>
+                                <span className="feedback-report__metric-score">{subScore}</span>
+                                <span className="feedback-report__metric-note">{c.weight} points</span>
                               </div>
                             );
                           })}
@@ -279,10 +279,10 @@ export default function ResumeAnalysisReport({ result, fileName }: ResumeAnalysi
                     </span>
                     <div className="feedback-report__metric-bar-wrap">
                       <div className="feedback-report__metric-track">
-                        <div className={fillClass(score)} style={{ width: `${score}%` }} />
+                        <div className={fillClass(score)} style={{ width: `${score}` }} />
                       </div>
                     </div>
-                    <span className="feedback-report__metric-score">{score}%</span>
+                    <span className="feedback-report__metric-score">{score}</span>
                   </div>
                 ))}
               </div>

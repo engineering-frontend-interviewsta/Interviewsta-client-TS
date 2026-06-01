@@ -123,7 +123,7 @@ export default function UsageCreditsTab({ account, onUpgrade, onBuyCredits, isWh
               style={{ width: total > 0 ? `${Math.min(100, (usedInterview / total) * 100)}%` : '0%' }}
             />
           </div>
-          <p className="account-tab__usage-meta">{usedInterview} credits ({CREDIT_COSTS.INTERVIEW_MIN}–{CREDIT_COSTS.INTERVIEW_MAX} credits/session depending on type)</p>
+          <p className="account-tab__usage-meta">{usedInterview} credits (70–100 credits/session depending on type)</p>
         </div>
 
         <div className="account-tab__usage-item">

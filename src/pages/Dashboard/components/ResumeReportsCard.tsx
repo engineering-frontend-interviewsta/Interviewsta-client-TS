@@ -47,9 +47,9 @@ export default function ResumeReportsCard({ reports, onReportClick }: ResumeRepo
                     </p>
                   </div>
                   <div className="reports-card__item-meta-block">
-                    {report.overallScore != null && (
+                    {/* {report.overallScore != null && (
                       <span className="reports-card__item-score">{report.overallScore}%</span>
-                    )}
+                    )} */}
                     {report.jobMatchScore != null && (
                       <span className="reports-card__item-score-secondary">{report.jobMatchScore}% match</span>
                     )}

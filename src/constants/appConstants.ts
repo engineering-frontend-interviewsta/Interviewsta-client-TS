@@ -42,7 +42,7 @@ export const PLAN_TIERS = {
   DEV:      { tier: 4, slug: 'developer',    name: 'Developer',    credits: -1,   priceInr: 0,   priceDisplay: 'Internal'},
 } as const;
 
-/** 70–75 for technical/coding, 80–85 for company/AI-ML, 100 for case-study/management */
+/** Credit cost ranges: 70–75 for technical/coding, 80–85 for company/AI-ML, 100 for case-study/management */
 export const CREDIT_COSTS = {
   INTERVIEW_MIN: 70,
   INTERVIEW_MAX: 100,
