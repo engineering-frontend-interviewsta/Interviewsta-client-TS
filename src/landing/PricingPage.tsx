@@ -5,16 +5,21 @@ import { motion } from 'framer-motion';
 import { getPaymentPlans } from '../services/paymentService';
 import type { PlanTierInfo } from '../types/account';
 import { ROUTES } from '../constants/routerConstants';
-import { CREDIT_COSTS, FALLBACK_DISPLAY_PLANS } from '../constants/appConstants';
+import {
+  CREDIT_COSTS,
+  FALLBACK_DISPLAY_PLANS,
+  PLAN_TIERS,
+  PUBLIC_PAID_PLAN_SLUGS,
+} from '../constants/appConstants';
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toLocaleString('en-IN')}`;
 }
 
 const FREE_FEATURES = [
-  '3 interview sessions / month',
-  '1 resume analysis / month',
-  'Basic AI feedback',
+  '1 free full-length interview (no credit card)',
+  `${PLAN_TIERS.FREE.credits} credits/month`,
+  'Summary AI feedback',
   'Session history (7 days)',
 ];
 
@@ -41,6 +46,18 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
+const PLAN_TAGLINES: Record<string, string> = {
+  pro: 'For serious interview prep',
+  'pro-plus': 'Maximum practice & analytics',
+};
+
+function normalizePublicPaidPlans(plans: PlanTierInfo[]): PlanTierInfo[] {
+  const order = new Map<string, number>(PUBLIC_PAID_PLAN_SLUGS.map((slug, index) => [slug, index]));
+  return plans
+    .filter((plan) => (PUBLIC_PAID_PLAN_SLUGS as readonly string[]).includes(plan.slug))
+    .sort((a, b) => (order.get(a.slug) ?? 99) - (order.get(b.slug) ?? 99));
+}
+
 export default function PricingPage() {
   const [plans, setPlans] = useState<PlanTierInfo[]>([]);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
@@ -50,7 +67,9 @@ export default function PricingPage() {
   useEffect(() => {
     getPaymentPlans()
       .then((res) => {
-        const paidPlans = res.filter((p) => p.monthlyPaise > 0 || p.annualPaise > 0);
+        const paidPlans = normalizePublicPaidPlans(
+          res.filter((p) => p.monthlyPaise > 0 || p.annualPaise > 0),
+        );
         if (paidPlans.length > 0) {
           setPlans(paidPlans);
           return;
@@ -195,10 +214,11 @@ export default function PricingPage() {
             </motion.div>
 
             {/* Paid plan cards */}
-            {plans.map((plan, index) => {
+            {plans.map((plan) => {
               const activePrice = billingInterval === 'annual' ? plan.annualPaise : plan.monthlyPaise;
               const displayPrice = activePrice > 0 ? formatRupees(activePrice) : 'Not available';
-              const isPopular = index === 0 || plan.slug.toLowerCase() === 'pro';
+              const isPopular = plan.slug === 'pro';
+              const tagline = PLAN_TAGLINES[plan.slug] ?? 'Paid plan';
               const monthlyCredits = plan.credits;
               const interviewSessions =
                 monthlyCredits === -1 ? -1 : Math.floor(monthlyCredits / CREDIT_COSTS.INTERVIEW_MIN);
@@ -226,7 +246,7 @@ export default function PricingPage() {
                     {plan.name}
                   </h2>
                   <p className={`mb-6 text-sm ${isPopular ? 'text-white/70' : 'text-[var(--color-text-muted)]'}`}>
-                    {plan.slug}
+                    {tagline}
                   </p>
 
                   <div className="mb-6">
@@ -259,10 +279,14 @@ export default function PricingPage() {
                       <CheckCircle className={`h-4 w-4 flex-shrink-0 ${isPopular ? 'text-white' : 'text-[var(--color-primary)]'}`} />
                       Full session history &amp; transcripts
                     </li>
-                    {isPopular && (
+                    <li className="flex items-center gap-2 text-sm">
+                      <CheckCircle className={`h-4 w-4 flex-shrink-0 ${isPopular ? 'text-white' : 'text-[var(--color-primary)]'}`} />
+                      Priority support
+                    </li>
+                    {plan.slug === 'pro-plus' && (
                       <li className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="h-4 w-4 flex-shrink-0 text-white" />
-                        Priority support
+                        <CheckCircle className={`h-4 w-4 flex-shrink-0 ${isPopular ? 'text-white' : 'text-[var(--color-primary)]'}`} />
+                        Advanced analytics &amp; insights
                       </li>
                     )}
                   </ul>

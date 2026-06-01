@@ -42,11 +42,31 @@ export const PLAN_TIERS = {
   DEV:      { tier: 4, slug: 'developer',    name: 'Developer',    credits: -1,   priceInr: 0,   priceDisplay: 'Internal'},
 } as const;
 
-/** Mirror of NestJS payment seed — used when /payment/plans is unreachable (e.g. Render suspended). */
+/** Paid tiers shown on marketing/billing UI (excludes legacy Basic). */
+export const PUBLIC_PAID_PLAN_SLUGS = ['pro', 'pro-plus'] as const;
+
+/** Nest payment seed annual prices (paise) — not derived from monthly list price. */
+const PRO_ANNUAL_PAISE = 499_900;
+const PRO_PLUS_ANNUAL_PAISE = 999_900;
+
+/** Mirror of PLAN_TIERS + Nest payment seed — used when /payment/plans is unreachable. */
 export const FALLBACK_DISPLAY_PLANS = [
-  { id: 'fallback-basic', name: 'Basic', slug: 'basic', credits: 10, monthlyPaise: 59900, annualPaise: 599900 },
-  { id: 'fallback-pro', name: 'Pro', slug: 'pro', credits: 500, monthlyPaise: 49900, annualPaise: 499900 },
-  { id: 'fallback-pro-plus', name: 'Pro+', slug: 'pro-plus', credits: 1000, monthlyPaise: 99900, annualPaise: 999900 },
+  {
+    id: 'fallback-pro',
+    name: PLAN_TIERS.PRO.name,
+    slug: PLAN_TIERS.PRO.slug,
+    credits: PLAN_TIERS.PRO.credits,
+    monthlyPaise: PLAN_TIERS.PRO.priceInr * 100,
+    annualPaise: PRO_ANNUAL_PAISE,
+  },
+  {
+    id: 'fallback-pro-plus',
+    name: PLAN_TIERS.PRO_PLUS.name,
+    slug: PLAN_TIERS.PRO_PLUS.slug,
+    credits: PLAN_TIERS.PRO_PLUS.credits,
+    monthlyPaise: PLAN_TIERS.PRO_PLUS.priceInr * 100,
+    annualPaise: PRO_PLUS_ANNUAL_PAISE,
+  },
 ] as const;
 
 /** 70–75 for technical/coding, 80–85 for company/AI-ML, 100 for case-study/management */
