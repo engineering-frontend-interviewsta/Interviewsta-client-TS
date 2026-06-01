@@ -184,11 +184,6 @@ export default function VideoInterview() {
         ...(isDevOrAdmin && getUseSarvamAudio() && { use_sarvam_audio: true }),
         ...extraPayload,
       };
-      const isDevOrAdmin =
-        (roles?.includes('developer') ?? false) || (roles?.includes('admin') ?? false);
-      if (isDevOrAdmin && getUseSarvamAudio()) {
-        payload.use_sarvam_audio = true;
-      }
       const myGen = ++launchGenRef.current;
       const doneRef = { current: false };
 

@@ -38,7 +38,6 @@ export default function SettingsTab() {
   const [sessionReminders, setSessionReminders] = useState(false);
   const [useSarvamAudio, setUseSarvamAudioState] = useState(() => getUseSarvamAudio());
   const [saved, setSaved] = useState(false);
-  const [useSarvamAudio, setUseSarvamAudioState] = useState(() => getUseSarvamAudio());
 
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
