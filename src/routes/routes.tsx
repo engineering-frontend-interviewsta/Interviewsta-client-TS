@@ -150,16 +150,12 @@ const routeConfig = [
     children: [{ index: true, element: <Feedback /> }],
   },
   {
-<<<<<<< HEAD
-    path: '/student',
-=======
     path: ROUTES.RESUME_FEEDBACK_HISTORY,
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [{ index: true, element: <Feedback /> }],
   },
   {
->>>>>>> main
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [

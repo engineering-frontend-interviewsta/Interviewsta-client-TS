@@ -11,15 +11,11 @@ import BrandLogo from '../components/shared/BrandLogo';
 import { getOrgSetupStatus } from '../services/b2bService';
 import './AppLayout.css';
 
-<<<<<<< HEAD
-const HIDE_HEADER_PATHS: string[] = [ROUTES.INTERVIEW_INTERFACE];
-=======
 const HIDE_HEADER_PATHS: string[] = [
   ROUTES.INTERVIEW_INTERFACE,
   ROUTES.TEST_VIDEO,
   ROUTES.EXPERIMENTAL_TEST_VIDEO,
 ];
->>>>>>> main
 const ORG_ADMIN_BLOCKED_PREFIXES: string[] = [
   ROUTES.VIDEO_INTERVIEW,
   ROUTES.LEARNING,
@@ -47,10 +43,7 @@ export default function AppLayout() {
   const isOrgAdmin = roles?.includes('org_admin');
   const isTeacher = roles?.includes('teacher');
   const isStudent = roles?.includes('student');
-<<<<<<< HEAD
-=======
   const showInterviewDevToggle = interviewDevToolsAllowedForUser(roles);
->>>>>>> main
   const primaryRole = roles?.[0] ?? null;
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);

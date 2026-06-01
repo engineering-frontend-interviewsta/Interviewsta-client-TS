@@ -46,14 +46,6 @@ export default function ResumeReportsCard({ reports, onReportClick }: ResumeRepo
                       {[report.date, report.targetRole, report.company].filter(Boolean).join(' · ') || '—'}
                     </p>
                   </div>
-                  <div className="reports-card__item-meta-block">
-                    {/* {report.overallScore != null && (
-                      <span className="reports-card__item-score">{report.overallScore}%</span>
-                    )} */}
-                    {report.jobMatchScore != null && (
-                      <span className="reports-card__item-score-secondary">{report.jobMatchScore}% match</span>
-                    )}
-                  </div>
                 </div>
               </li>
             ))}
