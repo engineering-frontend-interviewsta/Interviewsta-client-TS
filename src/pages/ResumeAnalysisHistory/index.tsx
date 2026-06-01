@@ -101,7 +101,6 @@ export default function ResumeAnalysisHistory() {
                   <th>Target role</th>
                   <th>Company</th>
                   <th>Overall score</th>
-                  <th>Job match</th>
                 </tr>
               </thead>
               <tbody>
@@ -114,14 +113,11 @@ export default function ResumeAnalysisHistory() {
                     <td className={`resume-history__cell-score ${getScoreClass(report.overallScore)}`}>
                       {report.overallScore != null ? `${report.overallScore}%` : '—'}
                     </td>
-                    <td className={`resume-history__cell-score ${getScoreClass(report.jobMatchScore)}`}>
-                      {report.jobMatchScore != null ? `${report.jobMatchScore}%` : '—'}
-                    </td>
                   </tr>
                 ))}
                 {pagedReports.length === 0 && (
                   <tr>
-                    <td className="resume-history__empty" colSpan={6}>No resume analysis reports yet.</td>
+                    <td className="resume-history__empty" colSpan={5}>No resume analysis reports yet.</td>
                   </tr>
                 )}
               </tbody>
