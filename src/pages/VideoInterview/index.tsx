@@ -175,10 +175,13 @@ export default function VideoInterview() {
     async (test: InterviewTest, extraPayload: Record<string, unknown> = {}) => {
       const interviewType = test.parent?.type ?? 'technical';
       const tags = (test.topics?.length ? test.topics : test.subjects) ?? [];
+      const isDevOrAdmin =
+        (roles?.includes('developer') ?? false) || (roles?.includes('admin') ?? false);
       const payload: StartInterviewPayload = {
         interview_test_id: test.id,
         ...(test.company && { company: test.company }),
         ...(tags.length > 0 && { Tags: tags }),
+        ...(isDevOrAdmin && getUseSarvamAudio() && { use_sarvam_audio: true }),
         ...extraPayload,
       };
       const isDevOrAdmin =

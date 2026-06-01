@@ -42,7 +42,14 @@ export const PLAN_TIERS = {
   DEV:      { tier: 4, slug: 'developer',    name: 'Developer',    credits: -1,   priceInr: 0,   priceDisplay: 'Internal'},
 } as const;
 
-/** Credit cost ranges: 70–75 for technical/coding, 80–85 for company/AI-ML, 100 for case-study/management */
+/** Mirror of NestJS payment seed — used when /payment/plans is unreachable (e.g. Render suspended). */
+export const FALLBACK_DISPLAY_PLANS = [
+  { id: 'fallback-basic', name: 'Basic', slug: 'basic', credits: 10, monthlyPaise: 59900, annualPaise: 599900 },
+  { id: 'fallback-pro', name: 'Pro', slug: 'pro', credits: 500, monthlyPaise: 49900, annualPaise: 499900 },
+  { id: 'fallback-pro-plus', name: 'Pro+', slug: 'pro-plus', credits: 1000, monthlyPaise: 99900, annualPaise: 999900 },
+] as const;
+
+/** 70–75 for technical/coding, 80–85 for company/AI-ML, 100 for case-study/management */
 export const CREDIT_COSTS = {
   INTERVIEW_MIN: 70,
   INTERVIEW_MAX: 100,

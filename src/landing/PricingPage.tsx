@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { getPaymentPlans } from '../services/paymentService';
 import type { PlanTierInfo } from '../types/account';
 import { ROUTES } from '../constants/routerConstants';
-import { CREDIT_COSTS } from '../constants/appConstants';
+import { CREDIT_COSTS, FALLBACK_DISPLAY_PLANS } from '../constants/appConstants';
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toLocaleString('en-IN')}`;
@@ -45,15 +45,23 @@ export default function PricingPage() {
   const [plans, setPlans] = useState<PlanTierInfo[]>([]);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [usingFallback, setUsingFallback] = useState(false);
 
   useEffect(() => {
     getPaymentPlans()
       .then((res) => {
         const paidPlans = res.filter((p) => p.monthlyPaise > 0 || p.annualPaise > 0);
-        setPlans(paidPlans);
+        if (paidPlans.length > 0) {
+          setPlans(paidPlans);
+          return;
+        }
+        setPlans([...FALLBACK_DISPLAY_PLANS]);
+        setUsingFallback(true);
       })
-      .catch(() => setError('Unable to load plans right now.'))
+      .catch(() => {
+        setPlans([...FALLBACK_DISPLAY_PLANS]);
+        setUsingFallback(true);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -137,22 +145,14 @@ export default function PricingPage() {
           </div>
         )}
 
-        {/* Error */}
-        {!loading && error && (
-          <div className="rounded-[var(--radius-xl)] border border-[var(--color-error-border)] bg-[var(--color-error-bg)] p-5 text-center text-[var(--color-error-text)]">
-            {error}
-          </div>
-        )}
-
-        {/* No plans */}
-        {!loading && !error && plans.length === 0 && (
-          <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center text-[var(--color-text-muted)]">
-            Plans are not configured yet. Please check back shortly.
+        {usingFallback && !loading && (
+          <div className="mb-8 rounded-[var(--radius-xl)] border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-800">
+            Live pricing is temporarily unavailable. Showing standard plan rates — checkout may be unavailable until the service is back online.
           </div>
         )}
 
         {/* Plans grid */}
-        {!loading && !error && plans.length > 0 && (
+        {!loading && plans.length > 0 && (
           <motion.div
             variants={containerVariants}
             initial="hidden"
