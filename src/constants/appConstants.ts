@@ -42,11 +42,11 @@ export const PLAN_TIERS = {
   DEV:      { tier: 4, slug: 'developer',    name: 'Developer',    credits: -1,   priceInr: 0,   priceDisplay: 'Internal'},
 } as const;
 
+/** Credit cost ranges: 70–75 for technical/coding, 80–85 for company/AI-ML, 100 for case-study/management */
 export const CREDIT_COSTS = {
-  /** Per-interview credit cost varies by type (70–100). This is the minimum for UI references. */
   INTERVIEW_MIN: 70,
   INTERVIEW_MAX: 100,
-  RESUME: 1,
+  RESUME: 10,
 } as const;
 
 /** Approximate INR per USD used for credit preview calculations */
